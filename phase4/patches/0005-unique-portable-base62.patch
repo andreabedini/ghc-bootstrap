@@ -1,0 +1,36 @@
+GHC 6.2.2 -- mhs: iToBase62 without indexCharOffAddr#
+basicTypes/Unique.lhs indexed an unboxed string literal ("..."#) with
+indexCharOffAddr# to print uniques in base 62. MicroHs has neither the
+literal nor the primop; for a 62-element constant table the list index is
+equivalent. Same as 4.08.2's patch 0004 (there the table was a ByteArray).
+
+--- a/ghc/compiler/basicTypes/Unique.lhs
++++ b/ghc/compiler/basicTypes/Unique.lhs
+@@ -231,17 +231,19 @@
+ \begin{code}
+ iToBase62 :: Int -> SDoc
+ 
+-iToBase62 n@(I# n#)
++-- The original indexed an unboxed string literal ("..."#) with
++-- indexCharOffAddr# to avoid a list index. MicroHs has neither, and for a
++-- 62-element constant table the portable version is equivalent -- the same
++-- change as 4.08.2's patch 0004, where the table was a ByteArray.
++iToBase62 n
+   = ASSERT(n >= 0)
+-    if n# <# 62# then
+-	case (indexCharOffAddr# chars62# n#) of { c ->
+-	char (C# c) }
++    if n < 62 then
++	char (chars62 !! n)
+     else
+-	case (quotRem n 62)		of { (q, I# r#) ->
+-	case (indexCharOffAddr# chars62# r#) of { c  ->
+-	(<>) (iToBase62 q) (char (C# c)) }}
++	case (quotRem n 62)		of { (q, r) ->
++	(<>) (iToBase62 q) (char (chars62 !! r)) }
+   where
+-     chars62# = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"#
++     chars62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ \end{code}
+ 
+ %************************************************************************

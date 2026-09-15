@@ -1,0 +1,23 @@
+GHC 6.2.2 -- mhs: unboxed character literals 'x'#
+basicTypes/OccName.lhs compares Char# values against '\xc0'# and friends.
+Unboxed character literals are GHC-only syntax; Char# = Char in the
+GlaExts shim, so the boxed literal denotes the same value. Same as 4.08.2's
+patch 0005; 6.2.2 has only these two lines left (the old lexer, which had
+22 more, was replaced by the alex one).
+
+--- a/ghc/compiler/basicTypes/OccName.lhs
++++ b/ghc/compiler/basicTypes/OccName.lhs
+@@ -713,9 +713,11 @@
+ 
+ isSymbolASCII c = c `elem` "!#$%&*+./<=>?@\\^|~-"
+ isSymbolISO   c = ord c `elem` (0xd7 : 0xf7 : [0xa1 .. 0xbf])
+-isUpperISO    (C# c#) = c# `geChar#` '\xc0'# && c# `leChar#` '\xde'# && c# `neChar#` '\xd7'#
++-- Unboxed char literals ('\xc0') are GHC-only syntax; Char# = Char in the
++-- shim, so the boxed literal denotes the same value (4.08.2 patch 0005).
++isUpperISO    (C# c#) = c# `geChar#` '\xc0' && c# `leChar#` '\xde' && c# `neChar#` '\xd7'
+ 	--0xc0 <= oc && oc <= 0xde && oc /= 0xd7 where oc = ord c
+-isLowerISO    (C# c#) = c# `geChar#` '\xdf'# && c# `leChar#` '\xff'# && c# `neChar#` '\xf7'#
++isLowerISO    (C# c#) = c# `geChar#` '\xdf' && c# `leChar#` '\xff' && c# `neChar#` '\xf7'
+ 	--0xdf <= oc && oc <= 0xff && oc /= 0xf7 where oc = ord c
+ \end{code}
+ \begin{code}

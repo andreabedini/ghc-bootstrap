@@ -1,0 +1,11 @@
+--- a/ghc/utils/genprimopcode/Main.hs
++++ b/ghc/utils/genprimopcode/Main.hs
+@@ -259,7 +259,7 @@
+ 	-- don't need the Prelude here so we add -fno-implicit-prelude.
+      ++ "module GHC.PrimopWrappers where\n" 
+      ++ "import qualified GHC.Prim\n" 
+-     ++ unlines (map f (filter (not.dodgy) (filter is_primop entries)))
++     ++ unlines (map f (filter (not . dodgy) (filter is_primop entries)))  -- mhs: "not.dodgy" lexes as record-dot selection
+      where
+         f spec = let args = map (\n -> "a" ++ show n) [1 .. arity (ty spec)]
+                      src_name = wrap (name spec)

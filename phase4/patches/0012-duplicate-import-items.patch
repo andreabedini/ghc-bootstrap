@@ -1,0 +1,228 @@
+GHC 6.2.2 -- mhs: duplicate import items
+GHC tolerates an item listed twice in an import list (tyConDataCons,
+ModGuts, mkSubst, tcSplitSigmaTy, ...); MicroHs reports the second
+occurrence as "not exported" (DECISIONS.md D22). Eighteen files
+lose their duplicates. Same as 4.08.2's patches 0011, 0013, 0015. Three
+hunks in TcRnDriver and Desugar also fall under patch 0013 (the same
+import list needed both edits); they are here.
+
+--- a/ghc/compiler/basicTypes/DataCon.lhs
++++ b/ghc/compiler/basicTypes/DataCon.lhs
+@@ -32,7 +32,9 @@
+ 			  mkTyVarTys, splitTyConApp_maybe, repType, 
+ 			  mkPredTys, isStrictType
+ 			)
+-import TyCon		( TyCon, tyConDataCons, tyConDataCons, isProductTyCon,
++-- tyConDataCons was listed twice; mhs reports a duplicate import item as
++-- "not exported" (D22, as in 4.08.2 patches 0011/0013/0015).
++import TyCon		( TyCon, tyConDataCons, isProductTyCon,
+ 			  isTupleTyCon, isUnboxedTupleTyCon, isRecursiveTyCon )
+ import Class		( Class, classTyCon )
+ import Name		( Name, NamedThing(..), nameUnique )
+--- a/ghc/compiler/coreSyn/CoreUtils.lhs
++++ b/ghc/compiler/coreSyn/CoreUtils.lhs
+@@ -60,8 +60,7 @@
+ 			  splitFunTy,
+ 			  applyTys, isUnLiftedType, seqType, mkTyVarTy,
+ 			  splitForAllTy_maybe, isForAllTy, splitNewType_maybe, 
+-			  splitTyConApp_maybe, eqType, funResultTy, applyTy,
+-			  funResultTy, applyTy
++			  splitTyConApp_maybe, eqType, funResultTy, applyTy
+ 			)
+ import TyCon		( tyConArity )
+ import TysWiredIn	( boolTy, trueDataCon, falseDataCon )
+--- a/ghc/compiler/coreSyn/Subst.lhs
++++ b/ghc/compiler/coreSyn/Subst.lhs
+@@ -58,7 +58,7 @@
+ 			  specInfo, setSpecInfo, 
+ 			  setArityInfo, unknownArity, arityInfo,
+ 			  unfoldingInfo, setUnfoldingInfo,
+-			  WorkerInfo(..), workerExists, workerInfo, setWorkerInfo, WorkerInfo,
++			  WorkerInfo(..), workerExists, workerInfo, setWorkerInfo, 
+                           lbvarInfo, LBVarInfo(..), setLBVarInfo, hasNoLBVarInfo
+ 			)
+ import BasicTypes	( OccInfo(..) )
+--- a/ghc/compiler/deSugar/Desugar.lhs
++++ b/ghc/compiler/deSugar/Desugar.lhs
+@@ -9,11 +9,11 @@
+ #include "HsVersions.h"
+ 
+ import CmdLineOpts	( DynFlag(..), dopt, opt_SccProfilingOn )
+-import HscTypes		( ModGuts(..), ModGuts, HscEnv(..), ExternalPackageState(..), 
++import HscTypes		( ModGuts(..),  HscEnv(..), ExternalPackageState(..), 
+ 			  PersistentCompilerState(..), Dependencies(..), TypeEnv, GlobalRdrEnv,
+ 	  		  lookupType, unQualInScope )
+-import HsSyn		( MonoBinds, RuleDecl(..), RuleBndr(..), 
+-			  HsExpr(..), HsBinds(..), MonoBinds(..) )
++import HsSyn		( MonoBinds(..), RuleDecl(..), RuleBndr(..), 
++			  HsExpr(..), HsBinds(..) )
+ import TcHsSyn		( TypecheckedRuleDecl, TypecheckedHsExpr )
+ import TcRnTypes	( TcGblEnv(..), ImportAvails(..) )
+ import MkIface		( mkUsageInfo )
+--- a/ghc/compiler/hsSyn/Convert.lhs
++++ b/ghc/compiler/hsSyn/Convert.lhs
+@@ -16,7 +16,7 @@
+ 	(	HsExpr(..), HsLit(..), ArithSeqInfo(..), 
+ 		HsStmtContext(..), TyClDecl(..),
+ 		Match(..), GRHSs(..), GRHS(..), HsPred(..),
+-		HsDecl(..), TyClDecl(..), InstDecl(..), ConDecl(..),
++		HsDecl(..),  InstDecl(..), ConDecl(..),
+ 		Stmt(..), HsBinds(..), MonoBinds(..), Sig(..),
+ 		Pat(..), HsConDetails(..), HsOverLit, BangType(..),
+ 		placeHolderType, HsType(..), HsTupCon(..),
+--- a/ghc/compiler/main/Main.hs
++++ b/ghc/compiler/main/Main.hs
+@@ -48,7 +48,7 @@
+ 
+ import DriverUtil	( add, handle, handleDyn, later, unknownFlagsErr )
+ import CmdLineOpts	( dynFlag, restoreDynFlags,
+-			  saveDynFlags, setDynFlags, getDynFlags, dynFlag,
++			  saveDynFlags, setDynFlags, getDynFlags, 
+ 			  DynFlags(..), HscLang(..), v_Static_hsc_opts
+ 			)
+ import BasicTypes	( failed )
+--- a/ghc/compiler/main/MkIface.lhs
++++ b/ghc/compiler/main/MkIface.lhs
+@@ -25,7 +25,7 @@
+ import TcRnTypes	( ImportAvails(..) )
+ import RnHsSyn		( RenamedInstDecl, RenamedTyClDecl )
+ import HscTypes		( VersionInfo(..), ModIface(..), 
+-			  ModGuts(..), ModGuts, 
++			  ModGuts(..),  
+ 			  GhciMode(..), HscEnv(..), Dependencies(..),
+ 			  FixityEnv, lookupFixity, collectFixities,
+ 			  IfaceDecls, mkIfaceDecls, dcl_tycl, dcl_rules, dcl_insts,
+--- a/ghc/compiler/main/TidyPgm.lhs
++++ b/ghc/compiler/main/TidyPgm.lhs
+@@ -37,7 +37,7 @@
+ import HscTypes		( PersistentCompilerState( pcs_nc ), 
+ 			  NameCache( nsNames, nsUniqs ),
+ 			  TypeEnv, extendTypeEnvList, typeEnvIds,
+-			  ModGuts(..), ModGuts, TyThing(..)
++			  ModGuts(..),  TyThing(..)
+ 			)
+ import Maybes		( orElse )
+ import ErrUtils		( showPass, dumpIfSet_core )
+--- a/ghc/compiler/ndpFlatten/Flattening.hs
++++ b/ghc/compiler/ndpFlatten/Flattening.hs
+@@ -74,7 +74,7 @@
+ import TypeRep      (Type(..))
+ import Type         (isTypeKind)
+ import HscTypes	    (PersistentCompilerState, ModGuts(..), 
+-		     ModGuts, HscEnv(..) )
++		      HscEnv(..) )
+ import CoreFVs	    (exprFreeVars)
+ import CoreSyn	    (Expr(..), Bind(..), Alt(..), AltCon(..), Note(..),
+ 		     CoreBndr, CoreExpr, CoreBind, mkLams, mkLets,
+--- a/ghc/compiler/parser/RdrHsSyn.lhs
++++ b/ghc/compiler/parser/RdrHsSyn.lhs
+@@ -95,7 +95,7 @@
+ 
+ import HsSyn		-- Lots of it
+ import RdrName		( RdrName, isRdrTyVar, mkRdrUnqual, mkUnqual, rdrNameOcc, 
+-			  isRdrTyVar, isRdrDataCon, isUnqual, getRdrName, isQual,
++			   isRdrDataCon, isUnqual, getRdrName, isQual,
+ 			  setRdrNameSpace )
+ import BasicTypes	( RecFlag(..), FixitySig(..), maxPrecedence )
+ import Class            ( DefMeth (..) )
+--- a/ghc/compiler/rename/RnEnv.lhs
++++ b/ghc/compiler/rename/RnEnv.lhs
+@@ -14,7 +14,7 @@
+ import HsSyn
+ import RdrHsSyn		( RdrNameHsType, RdrNameFixitySig, extractHsTyRdrTyVars )
+ import RdrName		( RdrName, rdrNameModule, rdrNameOcc, isQual, isUnqual, isOrig,
+-			  mkRdrUnqual, mkRdrQual, setRdrNameSpace, rdrNameOcc,
++			  mkRdrUnqual, mkRdrQual, setRdrNameSpace, 
+ 			  lookupRdrEnv, rdrEnvToList, elemRdrEnv, 
+ 			  extendRdrEnv, addListToRdrEnv, emptyRdrEnv,
+ 			  isExact_maybe, unqualifyRdrName
+--- a/ghc/compiler/simplCore/SimplCore.lhs
++++ b/ghc/compiler/simplCore/SimplCore.lhs
+@@ -15,7 +15,7 @@
+ import CoreSyn
+ import CoreFVs		( ruleRhsFreeVars )
+ import HscTypes		( HscEnv(..), GhciMode(..),
+-			  ModGuts(..), ModGuts, Avails, availsToNameSet, 
++			  ModGuts(..),  Avails, availsToNameSet, 
+ 			  PackageRuleBase, HomePackageTable, ModDetails(..),
+ 			  HomeModInfo(..)
+ 			)
+--- a/ghc/compiler/specialise/Specialise.lhs
++++ b/ghc/compiler/specialise/Specialise.lhs
+@@ -14,7 +14,7 @@
+ 			  tyVarsOfTypes, tyVarsOfTheta, isClassPred,
+ 			  mkForAllTys, tcCmpType
+ 			)
+-import Subst		( Subst, mkSubst, substTy, mkSubst, extendSubstList, mkInScopeSet,
++import Subst		( Subst, mkSubst, substTy,  extendSubstList, mkInScopeSet,
+ 			  simplBndr, simplBndrs, 
+ 			  substAndCloneId, substAndCloneIds, substAndCloneRecIds,
+ 			  lookupIdSubst, substInScope
+--- a/ghc/compiler/typecheck/Inst.lhs
++++ b/ghc/compiler/typecheck/Inst.lhs
+@@ -52,7 +52,7 @@
+ 		)
+ import TcType	( Type, TcType, TcThetaType, TcTyVarSet,
+ 		  SourceType(..), PredType, TyVarDetails(VanillaTv),
+-		  tcSplitForAllTys, tcSplitForAllTys, mkTyConApp,
++		  tcSplitForAllTys,  mkTyConApp,
+ 		  tcSplitPhiTy, mkGenTyConApp,
+ 		  isIntTy,isFloatTy, isIntegerTy, isDoubleTy,
+ 		  tcIsTyVarTy, mkPredTy, mkTyVarTy, mkTyVarTys,
+--- a/ghc/compiler/typecheck/TcMatches.lhs
++++ b/ghc/compiler/typecheck/TcMatches.lhs
+@@ -25,7 +25,7 @@
+ import RnHsSyn		( RenamedMatch, RenamedGRHSs, RenamedStmt, RenamedHsExpr,
+ 			  RenamedPat, RenamedMatchContext )
+ import TcHsSyn		( TcMatch, TcGRHSs, TcStmt, TcDictBinds, TcHsBinds, TcExpr,
+-			  TcMonoBinds, TcPat, TcStmt, ExprCoFn,
++			  TcMonoBinds, TcPat,  ExprCoFn,
+ 			  isIdCoercion, (<$>), (<.>) )
+ 
+ import TcRnMonad
+--- a/ghc/compiler/typecheck/TcRnDriver.lhs
++++ b/ghc/compiler/typecheck/TcRnDriver.lhs
+@@ -92,14 +92,14 @@
+ import HscTypes		( PersistentCompilerState(..), InteractiveContext(..),
+ 			  ModIface, ModDetails(..), ModGuts(..),
+ 			  HscEnv(..), Dependencies(..),
+-			  ModIface(..), ModDetails(..), IfaceDecls(..),
++			    IfaceDecls(..),
+ 			  GhciMode(..), noDependencies,
+ 			  Deprecations(..), plusDeprecs,
+ 			  emptyGlobalRdrEnv,
+ 			  GenAvailInfo(Avail), availsToNameSet, 
+ 			  ForeignStubs(..),
+ 			  TypeEnv, TyThing, typeEnvTyCons, 
+-			  extendTypeEnvWithIds, typeEnvIds, typeEnvTyCons,
++			  extendTypeEnvWithIds, typeEnvIds, 
+ 			  extendLocalRdrEnv, emptyFixityEnv
+ 			)
+ #ifdef GHCI
+--- a/ghc/compiler/typecheck/TcRnTypes.lhs
++++ b/ghc/compiler/typecheck/TcRnTypes.lhs
+@@ -49,11 +49,11 @@
+ 
+ import HsSyn		( PendingSplice, HsOverLit, MonoBinds, RuleDecl, ForeignDecl )
+ import RnHsSyn		( RenamedHsExpr, RenamedPat, RenamedArithSeqInfo )
+-import HscTypes		( GhciMode, ExternalPackageState, HomePackageTable, 
++import HscTypes		( GhciMode, ExternalPackageState(..), HomePackageTable, -- mhs: was imported twice
+ 			  NameCache, GlobalRdrEnv, LocalRdrEnv, FixityEnv,
+ 			  TypeEnv, TyThing, Avails, GenAvailInfo(..), AvailInfo,
+ 			   availName, IsBootInterface, Deprecations, emptyGlobalRdrEnv,
+-			   ExternalPackageState(..), emptyExternalPackageState )
++			    emptyExternalPackageState )
+ import Packages		( PackageName )
+ import TcType		( TcTyVarSet, TcType, TcTauType, TcThetaType, 
+ 			  TcPredType, TcKind, tcCmpPred, tcCmpType, tcCmpTypes )
+--- a/ghc/compiler/types/Generics.lhs
++++ b/ghc/compiler/types/Generics.lhs
+@@ -12,7 +12,7 @@
+ 			  mkFunTy, isTyVarTy, getTyVar_maybe,
+ 			  funTyCon
+ 			)
+-import TcType		( tcSplitTyConApp_maybe, tcSplitSigmaTy, tcSplitSigmaTy )
++import TcType		( tcSplitTyConApp_maybe, tcSplitSigmaTy )
+ import DataCon          ( DataCon, dataConOrigArgTys, dataConWrapId, isExistentialDataCon )
+ 
+ import TyCon            ( TyCon, tyConTyVars, tyConDataCons_maybe, 

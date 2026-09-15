@@ -1,0 +1,280 @@
+GHC 6.2.2 -- mhs: trailing blanks after \begin{code} / \end{code}
+Bird-track and LaTeX-style literate Haskell is unlit'd before compilation.
+GHC's unlit accepts "\begin{code} " with trailing whitespace; MicroHs's
+unlit matches the marker exactly, so a code block whose delimiter carries
+a trailing blank or tab is silently not code and the module is empty or
+truncated. Same as 4.08.2's patch 0001. Whitespace-only change, 26 sites.
+
+--- a/ghc/compiler/basicTypes/BasicTypes.lhs
++++ b/ghc/compiler/basicTypes/BasicTypes.lhs
+@@ -270,7 +270,7 @@
+ %*									*
+ %************************************************************************
+ 
+-\begin{code} 
++\begin{code}
+ data RecFlag = Recursive 
+ 	     | NonRecursive
+ 
+--- a/ghc/compiler/basicTypes/MkId.lhs
++++ b/ghc/compiler/basicTypes/MkId.lhs
+@@ -95,7 +95,7 @@
+ import ListSetOps	( assoc, assocMaybe )
+ import UnicodeUtil      ( stringToUtf8 )
+ import List		( nubBy )
+-\end{code}		
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/basicTypes/OccName.lhs
++++ b/ghc/compiler/basicTypes/OccName.lhs
+@@ -231,7 +231,7 @@
+ %*									*
+ %************************************************************************
+ 
+-\begin{code} 
++\begin{code}
+ occNameFS :: OccName -> EncodedFS
+ occNameFS (OccName _ s) = s
+ 
+--- a/ghc/compiler/codeGen/CgStackery.lhs
++++ b/ghc/compiler/codeGen/CgStackery.lhs
+@@ -272,7 +272,7 @@
+ updateFrameSize | opt_SccProfilingOn = pROF_UF_SIZE
+ 		| opt_GranMacros     = trace ("updateFrameSize = " ++ (show gRAN_UF_SIZE))gRAN_UF_SIZE
+ 		| otherwise          = uF_SIZE
+-\end{code}			
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/deSugar/DsExpr.lhs
++++ b/ghc/compiler/deSugar/DsExpr.lhs
+@@ -150,7 +150,7 @@
+ 	--
+ 	-- NB The previous case dealt with unlifted bindings, so we
+ 	--    only have to deal with lifted ones now; so Rec is ok
+-\end{code}	
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/deSugar/Match.lhs
++++ b/ghc/compiler/deSugar/Match.lhs
+@@ -630,7 +630,7 @@
+     dsExpr (HsApp co_fn (HsVar var))				`thenDs` \ rhs ->
+     match (new_var:vars) [EqnInfo n ctx (pat:pats) result]	`thenDs` \ result' ->
+     returnDs (adjustMatchResult (bindNonRec new_var rhs) result')
+-\end{code}	
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/ilxGen/IlxGen.lhs
++++ b/ghc/compiler/ilxGen/IlxGen.lhs
+@@ -1299,7 +1299,7 @@
+ 
+ pprId id = singleQuotes (ppr id)
+ 
+-\end{code}			
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/prelude/PrelRules.lhs
++++ b/ghc/compiler/prelude/PrelRules.lhs
+@@ -436,4 +436,4 @@
+   = Just (if s1 == s2 then trueVal else falseVal)
+ 
+ match_eq_string other = Nothing
+-\end{code}		
++\end{code}
+--- a/ghc/compiler/rename/RnSource.lhs
++++ b/ghc/compiler/rename/RnSource.lhs
+@@ -867,7 +867,7 @@
+ rnCoreBndrs (b:bs) thing_inside = rnCoreBndr b		$ \ name' ->
+ 				  rnCoreBndrs bs 	$ \ names' ->
+ 				  thing_inside (name':names')
+-\end{code}    
++\end{code}
+ 
+ \begin{code}
+ rnCoreAlt (con, bndrs, rhs)
+@@ -950,7 +950,7 @@
+     	 hsep [ int n_rules_slurped, text "rule decls imported, out of",  
+     	        int (n_rules_slurped + n_rules_left), text "read"]
+ 	]
+-\end{code}    
++\end{code}
+ 
+ %*********************************************************
+ %*							 *
+--- a/ghc/compiler/simplCore/SimplMonad.lhs
++++ b/ghc/compiler/simplCore/SimplMonad.lhs
+@@ -936,7 +936,7 @@
+ 			-- to work in Template Haskell when simplifying
+ 			-- splices, so we get simpler code for literal strings
+ 	SimplPhase n -> Just (isActive n)
+-\end{code}	
++\end{code}
+ 
+ 
+ %************************************************************************
+--- a/ghc/compiler/simplCore/Simplify.lhs
++++ b/ghc/compiler/simplCore/Simplify.lhs
+@@ -649,7 +649,7 @@
+     loop_breaker = isLoopBreaker occ_info
+     old_info     = idInfo old_bndr
+     occ_info     = occInfo old_info
+-\end{code}    
++\end{code}
+ 
+ 
+ 
+@@ -1041,7 +1041,7 @@
+ 
+ makeThatCall env var fun args cont
+   = simplExprF env fun (pushContArgs env args cont)
+-\end{code}		   
++\end{code}
+ 
+ 
+ %************************************************************************
+--- a/ghc/compiler/typecheck/TcForeign.lhs
++++ b/ghc/compiler/typecheck/TcForeign.lhs
+@@ -327,7 +327,7 @@
+        case check hscLang of
+ 	 Nothing  -> returnM ()
+ 	 Just err -> addErrTc (text "Illegal foreign declaration:" <+> err)
+-\end{code} 
++\end{code}
+ 			   
+ Warnings
+ 
+--- a/ghc/compiler/typecheck/TcIfaceSig.lhs
++++ b/ghc/compiler/typecheck/TcIfaceSig.lhs
+@@ -330,7 +330,7 @@
+   where
+     names = [name | UfValBinder name _  <- bndrs]
+     tys   = [ty   | UfValBinder _    ty <- bndrs]
+-\end{code}    
++\end{code}
+ 
+ \begin{code}
+ tcCoreAlt scrut_ty (UfDefault, names, rhs)
+--- a/ghc/compiler/typecheck/TcInstDcls.lhs
++++ b/ghc/compiler/typecheck/TcInstDcls.lhs
+@@ -204,7 +204,7 @@
+     returnM (gbl_env, 
+ 	     generic_inst_info ++ deriv_inst_info ++ local_inst_info,
+ 	     deriv_binds, fvs)
+-\end{code} 
++\end{code}
+ 
+ \begin{code}
+ tcLocalInstDecl1 :: RenamedInstDecl 
+--- a/ghc/compiler/typecheck/TcMatches.lhs
++++ b/ghc/compiler/typecheck/TcMatches.lhs
+@@ -288,7 +288,7 @@
+ %*									*
+ %************************************************************************
+ 
+-\begin{code}	  
++\begin{code}
+ tcMatchPats
+ 	:: [(RenamedPat, Expected TcRhoType)]
+ 	-> Expected TcRhoType
+--- a/ghc/compiler/typecheck/TcRnDriver.lhs
++++ b/ghc/compiler/typecheck/TcRnDriver.lhs
+@@ -333,7 +333,7 @@
+ 
+     returnM (new_ic, bound_names, tc_expr)
+     }}
+-\end{code}		
++\end{code}
+ 
+ 
+ Here is the grand plan, implemented in tcUserStmt
+@@ -896,7 +896,7 @@
+ 	-- Returns the extended environment
+ 
+     returnM tcg_env
+-\end{code}    
++\end{code}
+ 
+ 
+ 
+--- a/ghc/compiler/typecheck/TcType.lhs
++++ b/ghc/compiler/typecheck/TcType.lhs
+@@ -509,7 +509,7 @@
+ 	Nothing 		      -> False 	-- (a)
+ 	Just tv | tv `elemVarSet` acc -> False	-- (b) or (c)
+ 		| otherwise           -> allDistinctTyVars tys (acc `extendVarSet` tv)
+-\end{code}    
++\end{code}
+ 
+ 
+ %************************************************************************
+--- a/ghc/compiler/typecheck/TcUnify.lhs
++++ b/ghc/compiler/typecheck/TcUnify.lhs
+@@ -109,7 +109,7 @@
+ instance Outputable ty => Outputable (Expected ty) where
+   ppr (Check ty)   = ptext SLIT("Expected type") <+> ppr ty
+   ppr (Infer hole) = ptext SLIT("Inferring type")
+-\end{code}		   
++\end{code}
+ 
+ 
+ %************************************************************************
+@@ -433,7 +433,7 @@
+ tc_sub exp_sty expected_ty act_sty actual_ty
+   = uTys exp_sty expected_ty act_sty actual_ty	`thenM_`
+     returnM idCoercion
+-\end{code}    
++\end{code}
+     
+ %************************************************************************
+ %*									*
+@@ -542,7 +542,7 @@
+   where
+     free_tvs = tyVarsOfType expected_ty `unionVarSet` extra_tvs
+     sig_msg  = ptext SLIT("expected type of an expression")
+-\end{code}    
++\end{code}
+ 
+     
+ 
+--- a/ghc/compiler/types/InstEnv.lhs
++++ b/ghc/compiler/types/InstEnv.lhs
+@@ -64,7 +64,7 @@
+ 	 | cls_inst_env <-  eltsUFM env
+ 	 , (tyvars, tys, dfun) <- cls_inst_env
+ 	 ]
+-\end{code}		      
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/utils/FastString.lhs
++++ b/ghc/compiler/utils/FastString.lhs
+@@ -76,7 +76,7 @@
+ import Char             ( chr, ord )
+ 
+ #define hASH_TBL_SIZE 993
+-\end{code} 
++\end{code}
+ 
+ @FastString@s are packed representations of strings
+ with a unique id for fast comparisons. The unique id
+--- a/ghc/compiler/utils/Panic.lhs
++++ b/ghc/compiler/utils/Panic.lhs
+@@ -168,7 +168,7 @@
+ #else
+ myTry = Exception.try
+ #endif
+-\end{code}	
++\end{code}
+ 
+ Compatibility stuff:
+ 

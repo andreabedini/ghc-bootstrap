@@ -1,0 +1,57 @@
+GHC 6.2.2 -- mhs: mk_supply# takes a parameter; genSym from GhcCompat
+mk_supply# in basicTypes/UniqSupply.lhs was a CAF of type IO UniqSupply.
+GHC's unsafeInterleaveIO re-executes the action on every run, so each node
+of the supply tree drew a fresh unique; MicroHs memoises the thunk, so the
+shared CAF was evaluated once and every Name in a module collided. Giving
+mk_supply# an (unused) depth parameter makes each recursive occurrence a
+distinct application, hence a distinct thunk, under either semantics.
+genSymZh was reached through `foreign import ccall "genSymZh" unsafe`
+(safety after the entity string, which mhs does not parse) and is a C
+counter; GhcCompat.genSym is the same counter in an IORef.
+4.08.2's patch 0010, verbatim.
+
+--- a/ghc/compiler/basicTypes/UniqSupply.lhs
++++ b/ghc/compiler/basicTypes/UniqSupply.lhs
+@@ -71,20 +71,34 @@
+ 	-- here comes THE MAGIC:
+ 
+ 	-- This is one of the most hammered bits in the whole compiler
+-	mk_supply#
++	-- mk_supply# was a CAF: a nullary binding of type IO UniqSupply. GHC's
++	-- unsafeInterleaveIO returns an action that re-executes on every run, so
++	-- each node of the tree drew a fresh unique. MicroHs's memoises the
++	-- thunk, so the one shared CAF was evaluated once and *every* node got
++	-- the same unique -- which made every Name in a module collide.
++	--
++	-- Taking a parameter makes each recursive occurrence a distinct
++	-- application, hence a distinct thunk, which restores the intended
++	-- behaviour under either semantics. The depth is otherwise unused.
++	-- (4.08.2 patch 0010, verbatim; mhs)
++	mk_supply# :: Int -> IO UniqSupply
++	mk_supply# d
+ 	  = unsafeInterleaveIO (
+-		mk_unique   >>= \ uniq ->
+-		mk_supply#  >>= \ s1 ->
+-		mk_supply#  >>= \ s2 ->
++		mk_unique        >>= \ uniq ->
++		mk_supply# (d+1) >>= \ s1 ->
++		mk_supply# (d+2) >>= \ s2 ->
+ 		return (MkSplitUniqSupply uniq s1 s2)
+ 	    )
+ 
+-	mk_unique = genSymZh		>>= \ (W# u#) ->
+-		    return (I# (w2i (mask# `or#` u#)))
++	-- genSymZh is a C counter reached through the FFI (safety after the
++	-- entity string, which mhs does not parse). GhcCompat.genSym is the
++	-- same counter in an IORef; see phase2/patches. (mhs)
++	mk_unique = genSym			>>= \ u ->
++		    return (I# (w2i (mask# `or#` (i2w u))))
+     in
+-    mk_supply#
++    mk_supply# 0
+ 
+-foreign import ccall "genSymZh" unsafe genSymZh :: IO Word
++-- foreign import ccall "genSymZh" unsafe genSymZh :: IO Word  -- mhs: replaced by GhcCompat.genSym
+ 
+ splitUniqSupply (MkSplitUniqSupply _ s1 s2) = (s1, s2)
+ \end{code}

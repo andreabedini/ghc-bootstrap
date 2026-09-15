@@ -1,0 +1,224 @@
+--- a/ghc/compiler/basicTypes/BasicTypes.lhs
++++ b/ghc/compiler/basicTypes/BasicTypes.lhs
+@@ -150,7 +150,7 @@
+ %*									*
+ %************************************************************************
+ 
+-\begin{code} 
++\begin{code}
+ data RecFlag = Recursive 
+ 	     | NonRecursive
+ 
+--- a/ghc/compiler/basicTypes/DataCon.lhs
++++ b/ghc/compiler/basicTypes/DataCon.lhs
+@@ -401,7 +401,7 @@
+ %*									*
+ %************************************************************************
+ 
+-\begin{code}	
++\begin{code}
+ splitProductType_maybe
+ 	:: Type 			-- A product type, perhaps
+ 	-> Maybe (TyCon, 		-- The type constructor
+--- a/ghc/compiler/basicTypes/MkId.lhs
++++ b/ghc/compiler/basicTypes/MkId.lhs
+@@ -97,7 +97,7 @@
+ import Outputable
+ import Util		( assoc )
+ import List		( nub )
+-\end{code}		
++\end{code}
+ 
+ 
+ %************************************************************************
+--- a/ghc/compiler/basicTypes/OccName.lhs
++++ b/ghc/compiler/basicTypes/OccName.lhs
+@@ -202,7 +202,7 @@
+ %*									*
+ %************************************************************************
+ 
+-\begin{code} 
++\begin{code}
+ occNameFS :: OccName -> EncodedFS
+ occNameFS (OccName _ s) = s
+ 
+--- a/ghc/compiler/basicTypes/Unique.lhs
++++ b/ghc/compiler/basicTypes/Unique.lhs
+@@ -650,7 +650,7 @@
+ uniques so we can look them up easily when we want to conjure them up
+ during type checking.
+ 
+-\begin{code}					  
++\begin{code}
+ fromIntClassOpKey	      = mkPreludeMiscIdUnique 101
+ fromIntegerClassOpKey	      = mkPreludeMiscIdUnique 102
+ minusClassOpKey		      = mkPreludeMiscIdUnique 103
+--- a/ghc/compiler/codeGen/CgStackery.lhs
++++ b/ghc/compiler/codeGen/CgStackery.lhs
+@@ -232,7 +232,7 @@
+ seqFrameSize    | opt_SccProfilingOn  = sCC_SEQ_FRAME_SIZE
+ 	        | opt_GranMacros      = gRAN_SEQ_FRAME_SIZE
+ 		| otherwise           = sEQ_FRAME_SIZE
+-\end{code}			
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/coreSyn/CoreUtils.lhs
++++ b/ghc/compiler/coreSyn/CoreUtils.lhs
+@@ -506,7 +506,7 @@
+ 		Just unf -> exprIsConApp_maybe unf
+ 
+     analyse other = Nothing
+-\end{code} 
++\end{code}
+ 
+ 
+ %************************************************************************
+--- a/ghc/compiler/main/MkIface.lhs
++++ b/ghc/compiler/main/MkIface.lhs
+@@ -262,7 +262,7 @@
+ %************************************************************************
+ 
+ 
+-\begin{code}			 
++\begin{code}
+ ifaceInstances :: Handle -> Bag InstInfo -> IO IdSet		-- The IdSet is the needed dfuns
+ ifaceInstances if_hdl inst_infos
+   | null togo_insts = return emptyVarSet		 
+--- a/ghc/compiler/prelude/PrelRules.lhs
++++ b/ghc/compiler/prelude/PrelRules.lhs
+@@ -466,4 +466,4 @@
+ 		   `App` n)
+ 
+ match_append_lit_str other = Nothing
+-\end{code}		
++\end{code}
+--- a/ghc/compiler/rename/Rename.lhs
++++ b/ghc/compiler/rename/Rename.lhs
+@@ -744,5 +744,5 @@
+ 
+     val_decls     = length [() | SigD _	  <- decls]
+     inst_decls    = length [() | InstD _  <- decls]
+-\end{code}    
++\end{code}
+ 
+--- a/ghc/compiler/rename/RnSource.lhs
++++ b/ghc/compiler/rename/RnSource.lhs
+@@ -845,7 +845,7 @@
+ rnCoreBndrs (b:bs) thing_inside = rnCoreBndr b		$ \ name' ->
+ 				  rnCoreBndrs bs 	$ \ names' ->
+ 				  thing_inside (name':names')
+-\end{code}    
++\end{code}
+ 
+ \begin{code}
+ rnCoreAlt (con, bndrs, rhs)
+--- a/ghc/compiler/simplCore/BinderInfo.lhs
++++ b/ghc/compiler/simplCore/BinderInfo.lhs
+@@ -76,7 +76,7 @@
+   | NotInsideSCC    -- It's ok.
+ 
+ noBinderInfo = ManyOcc 0	-- A non-committal value
+-\end{code} 
++\end{code}
+ 
+ \begin{code}
+ binderInfoToOccInfo :: BinderInfo -> OccInfo
+--- a/ghc/compiler/simplCore/Simplify.lhs
++++ b/ghc/compiler/simplCore/Simplify.lhs
+@@ -584,7 +584,7 @@
+ 
+   where
+     occ_info = idOccInfo old_bndr
+-\end{code}    
++\end{code}
+ 
+ 
+ %************************************************************************
+@@ -819,7 +819,7 @@
+ 	-- Done
+     rebuild (mkApps (Var var) args') cont'
+     }}
+-\end{code}		   
++\end{code}
+ 
+ 
+ \begin{code}
+--- a/ghc/compiler/typecheck/TcEnv.lhs
++++ b/ghc/compiler/typecheck/TcEnv.lhs
+@@ -196,7 +196,7 @@
+     case lookupUFM ue uv_name of
+       Just uv -> returnNF_Tc uv
+       Nothing -> failWithTc (uvNameOutOfScope uv_name)
+-\end{code}	
++\end{code}
+ 
+ 
+ The TypeEnv
+--- a/ghc/compiler/typecheck/TcIfaceSig.lhs
++++ b/ghc/compiler/typecheck/TcIfaceSig.lhs
+@@ -310,7 +310,7 @@
+   where
+     names = [name | UfValBinder name _  <- bndrs]
+     tys   = [ty   | UfValBinder _    ty <- bndrs]
+-\end{code}    
++\end{code}
+ 
+ \begin{code}
+ tcCoreAlt scrut_ty (UfDefault, names, rhs)
+--- a/ghc/compiler/typecheck/TcInstUtil.lhs
++++ b/ghc/compiler/typecheck/TcInstUtil.lhs
+@@ -68,7 +68,7 @@
+ classDataCon :: Class -> DataCon
+ classDataCon clas = case tyConDataCons (classTyCon clas) of
+ 		      (dict_constr:no_more) -> ASSERT( null no_more ) dict_constr 
+-\end{code}		      
++\end{code}
+ 
+ %************************************************************************
+ %*									*
+--- a/ghc/compiler/typecheck/TcPat.lhs
++++ b/ghc/compiler/typecheck/TcPat.lhs
+@@ -424,7 +424,7 @@
+ 
+     returnTc (data_con, ex_tvs', dicts, lie_avail, arg_tys')
+     }
+-\end{code}	      
++\end{code}
+ 
+ ------------------------------------------------------
+ \begin{code}
+--- a/ghc/compiler/utils/FastString.lhs
++++ b/ghc/compiler/utils/FastString.lhs
+@@ -109,7 +109,7 @@
+ #if __GLASGOW_HASKELL__ >= 400
+ #define IOok STret
+ #endif
+-\end{code} 
++\end{code}
+ 
+ @FastString@s are packed representations of strings
+ with a unique id for fast comparisons. The unique id
+--- a/ghc/compiler/utils/PrimPacked.lhs
++++ b/ghc/compiler/utils/PrimPacked.lhs
+@@ -51,7 +51,7 @@
+ import PrelST
+ #endif
+ 
+-\end{code} 
++\end{code}
+ 
+ Return the length of a @\\NUL@ terminated character string:
+ 
+--- a/ghc/compiler/utils/StringBuffer.lhs
++++ b/ghc/compiler/utils/StringBuffer.lhs
+@@ -111,7 +111,7 @@
+ import PrimPacked
+ import FastString
+ import Char 		(isDigit)
+-\end{code} 
++\end{code}
+ 
+ \begin{code}
+ data StringBuffer

@@ -1,0 +1,27 @@
+#!/bin/sh
+# Compile happy 1.19.5 with mhs + the ghc-on-mhs shims.
+set -u
+R=/home/andrea/work/haskell/ghc-bootstrap
+M="$R/MicroHs"
+S="$R/build/happy-1.19.5/src"
+export PATH="$M/bin:$PATH"
+export HAPPY_DATADIR="$R/build/happy-1.19.5/templates"
+INC="-i$R/phase2/happy-noglr -i$R/phase1/shims -i$R/phase1/happy-shim -i$S"
+mkdir -p "$R/build/happy-mhs" && cd "$R/build/happy-mhs" || exit 1
+
+echo "== per-module =="
+for f in "$S"/*.lhs "$S"/*.hs; do
+  m=$(basename "$f"); m="${m%.*}"
+  printf "%-20s " "$m"
+  out=$("$M/bin/mhs" -C -c -fno-code -XCPP $INC "$m" 2>&1 | tr '\n' ' ')
+  case "$out" in
+    *"No code generated"*) echo OK ;;
+    *) echo "$out" | sed 's|.*uncaught exception: ||' | cut -c1-180 ;;
+  esac
+done
+
+echo
+echo "== link =="
+"$M/bin/mhs" -C -XCPP $INC Main -o"$R/build/happy-mhs/happy.c" 2>&1 \
+  | sed 's|.*uncaught exception: ||' | head -6
+ls -la "$R/build/happy-mhs/happy.c" 2>/dev/null

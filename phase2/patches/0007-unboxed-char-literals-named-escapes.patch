@@ -1,0 +1,93 @@
+--- a/ghc/compiler/parser/Lex.lhs
++++ b/ghc/compiler/parser/Lex.lhs
+@@ -405,7 +405,7 @@
+ 	tab y bol atbol buf = --trace ("tab: " ++ show (I# y) ++ " : " ++ show (currentChar buf)) $
+ 	  case currentChar# buf of
+ 
+-	    '\NUL'# ->
++	    '\NUL' ->
+ 	 	   if bufferExhausted (stepOn buf)
+ 	       		then cont ITeof buf s'
+ 			else trace "lexer: misplaced NUL?" $ 
+@@ -482,7 +482,7 @@
+  where
+    loop buf = 
+      case currentChar# buf of
+-	'\NUL'# | bufferExhausted (stepOn buf) -> 
++	'\NUL' | bufferExhausted (stepOn buf) -> 
+ 		lexError "unterminated `{-'" buf
+ 
+ 	'-' | lookAhead# buf 1# `eqChar#` '}' ->
+@@ -611,7 +611,7 @@
+ 	      ch2  = lookAhead# buf 2#
+ 	      buf' = setCurrentPos# buf 2#
+ 
+-    '\NUL'# ->
++    '\NUL' ->
+ 	    if bufferExhausted (stepOn buf) then
+ 	       cont ITeof buf
+ 	    else
+--- a/ghc/compiler/utils/StringBuffer.lhs
++++ b/ghc/compiler/utils/StringBuffer.lhs
+@@ -382,7 +382,7 @@
+    loop c# = 
+     case indexCharOffAddr# fo c# of
+      ch# | pred (C# ch#) -> StringBuffer fo l# c# c#
+-	 | ch# `eqChar#` '\NUL'# && c# >=# l# -> StringBuffer fo l# l# l# -- EOB, return immediately.
++	 | ch# `eqChar#` '\NUL' && c# >=# l# -> StringBuffer fo l# l# l# -- EOB, return immediately.
+          | otherwise     -> loop (c# +# 1#)
+ 
+ stepOverLexeme :: StringBuffer -> StringBuffer
+@@ -395,7 +395,7 @@
+    loop c# = 
+     case indexCharOffAddr# fo c# of
+      ch# | pred (C# ch#) -> loop (c# +# 1#)
+-	 | ch# `eqChar#` '\NUL'# && c# >=# l# -> StringBuffer fo l# l# l# -- EOB, return immediately.
++	 | ch# `eqChar#` '\NUL' && c# >=# l# -> StringBuffer fo l# l# l# -- EOB, return immediately.
+          | otherwise     -> StringBuffer fo l# s# c#
+ 
+ expandWhile# :: (Char# -> Bool) -> StringBuffer -> StringBuffer
+@@ -405,7 +405,7 @@
+    loop c# = 
+     case indexCharOffAddr# fo c# of
+      ch# | pred ch# -> loop (c# +# 1#)
+-	 | ch# `eqChar#` '\NUL'# && c# >=# l# -> StringBuffer fo l# s# c# -- EOB, return immediately.
++	 | ch# `eqChar#` '\NUL' && c# >=# l# -> StringBuffer fo l# s# c# -- EOB, return immediately.
+          | otherwise     -> StringBuffer fo l# s# c#
+ 
+ scanNumLit :: Integer -> StringBuffer -> (Integer,StringBuffer)
+@@ -415,7 +415,7 @@
+    loop acc c# = 
+     case indexCharOffAddr# fo c# of
+      ch# | isDigit (C# ch#) -> loop (acc*10 + (toInteger (I# (ord# ch# -# ord# '0')))) (c# +# 1#)
+-	 | ch# `eqChar#` '\NUL'# && c# >=# l# -> (acc, StringBuffer fo l# s# c#) -- EOB, return immediately.
++	 | ch# `eqChar#` '\NUL' && c# >=# l# -> (acc, StringBuffer fo l# s# c#) -- EOB, return immediately.
+          | otherwise        -> (acc,StringBuffer fo l# s# c#)
+ 
+ 
+@@ -426,7 +426,7 @@
+    loop c# [] = Just (StringBuffer fo l# s# c#)
+    loop c# ((C# x#):xs) =
+     case indexCharOffAddr# fo c# of
+-      ch# | ch# `eqChar#` '\NUL'# && c# >=# l# -> Nothing
++      ch# | ch# `eqChar#` '\NUL' && c# >=# l# -> Nothing
+ 	  | ch# `eqChar#` x# -> loop (c# +# 1#) xs
+           | otherwise        -> loop (c# +# 1#) str
+ 	
+@@ -478,7 +478,7 @@
+ 	      else  -- a real end of string delimiter after all.
+ 		  StringBuffer fo l# s# c#
+         _ -> StringBuffer fo l# s# c#
+-    '\NUL'# ->
++    '\NUL' ->
+ 	if c# >=# l# then -- hit sentinel, this doesn't look too good..
+ 	   StringBuffer fo l# l# l#
+ 	else
+@@ -530,6 +530,6 @@
+  else
+     unsafeWriteBuffer (StringBuffer fo (current# -# start_pos#) start_pos# start_pos#)
+ 		      (current# -# 1#)
+-		      '\NUL'#
++		      '\NUL'
+ 
+ \end{code}

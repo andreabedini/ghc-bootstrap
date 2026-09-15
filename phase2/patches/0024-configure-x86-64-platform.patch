@@ -1,0 +1,36 @@
+--- a/configure
++++ b/configure
+@@ -778,6 +778,15 @@
+         HostVendor_CPP='unknown'
+         HostOS_CPP='linuxaout'
+         ;;
++x86_64-*-linux*)
++	HostPlatform=x86_64-unknown-linux
++	TargetPlatform=x86_64-unknown-linux
++	BuildPlatform=x86_64-unknown-linux
++        HostPlatform_CPP='x86_64_unknown_linux'
++        HostArch_CPP='x86_64'
++        HostVendor_CPP='unknown'
++        HostOS_CPP='linux'
++        ;;
+ i[3456]86-*-linux*)
+ 	HostPlatform=i386-unknown-linux # hack again
+ 	TargetPlatform=i386-unknown-linux
+--- a/configure.in
++++ b/configure.in
+@@ -128,6 +128,15 @@
+         HostVendor_CPP='unknown'
+         HostOS_CPP='linuxaout'
+         ;;
++x86_64-*-linux*)
++	HostPlatform=x86_64-unknown-linux
++	TargetPlatform=x86_64-unknown-linux
++	BuildPlatform=x86_64-unknown-linux
++        HostPlatform_CPP='x86_64_unknown_linux'
++        HostArch_CPP='x86_64'
++        HostVendor_CPP='unknown'
++        HostOS_CPP='linux'
++        ;;
+ i[[3456]]86-*-linux*)
+ 	HostPlatform=i386-unknown-linux # hack again
+ 	TargetPlatform=i386-unknown-linux

@@ -1,0 +1,150 @@
+GHC 6.2.2 -- mhs: arithmetic that must wrap, hFileSize, and exitWith
+Found by running the linked compiler (DECISIONS.md D47), not by
+typechecking. MicroHs traps where GHC wraps: fromInteger into
+Int8/Int16/Int32 is checked (utils/Binary.hs's Integer sign byte,
+basicTypes/Literal.lhs's narrow*Lit), and negate/abs of minBound raise
+(coreSyn/CoreUtils.lhs's hashExpr). utils/Binary.hs's readBinMem needs a
+file size and MicroHs handles have no hFileSize, so it reads the file
+whole by path. main/DriverUtil.hs: with __GLASGOW_HASKELL__=408 the driver
+takes its pre-5.01 catch-all branch, which swallows the ExitException
+that every clean exit throws; the >= 501 branch is taken under __MHS__ too.
+All under #if defined(__MHS__) or commented -- mhs.
+
+--- a/ghc/compiler/basicTypes/Literal.lhs
++++ b/ghc/compiler/basicTypes/Literal.lhs
+@@ -246,12 +246,23 @@
+   | i < 0     = MachWord (1 + tARGET_MAX_WORD + i)	-- (-1)  --->  tARGET_MAX_WORD
+   | otherwise = MachWord i
+ 
+-narrow8IntLit    (MachInt  i) = MachInt  (toInteger (fromInteger i :: Int8))
+-narrow16IntLit   (MachInt  i) = MachInt  (toInteger (fromInteger i :: Int16))
+-narrow32IntLit   (MachInt  i) = MachInt  (toInteger (fromInteger i :: Int32))
+-narrow8WordLit   (MachWord w) = MachWord (toInteger (fromInteger w :: Word8))
+-narrow16WordLit  (MachWord w) = MachWord (toInteger (fromInteger w :: Word16))
+-narrow32WordLit  (MachWord w) = MachWord (toInteger (fromInteger w :: Word32))
++-- mhs: these went through `fromInteger :: Integer -> Int8/Int16/Int32/Word8/
++-- ...`, which wraps modulo 2^n in Haskell 98 and GHC but *checks* in MicroHs
++-- (Data/Int/Int8.hs:32 `i8` -> `_overflowError`), so folding narrow8Int# on
++-- any value outside the target range raised "arithmetic overflow" instead of
++-- truncating. Do the truncation in Integer, which is what the primop means.
++narrowSigned, narrowUnsigned :: Int -> Integer -> Integer
++narrowUnsigned bits i = i `mod` (2 ^ bits)
++narrowSigned bits i = let m = 2 ^ bits
++                          u = i `mod` m
++                      in if u >= m `div` 2 then u - m else u
++
++narrow8IntLit    (MachInt  i) = MachInt  (narrowSigned    8 i)
++narrow16IntLit   (MachInt  i) = MachInt  (narrowSigned   16 i)
++narrow32IntLit   (MachInt  i) = MachInt  (narrowSigned   32 i)
++narrow8WordLit   (MachWord w) = MachWord (narrowUnsigned  8 w)
++narrow16WordLit  (MachWord w) = MachWord (narrowUnsigned 16 w)
++narrow32WordLit  (MachWord w) = MachWord (narrowUnsigned 32 w)
+ 
+ char2IntLit (MachChar c) = MachInt  (toInteger c)
+ int2CharLit (MachInt  i) = MachChar (fromInteger i)
+--- a/ghc/compiler/coreSyn/CoreUtils.lhs
++++ b/ghc/compiler/coreSyn/CoreUtils.lhs
+@@ -1124,10 +1124,16 @@
+ 
+ \begin{code}
+ hashExpr :: CoreExpr -> Int
+-hashExpr e | hash < 0  = 77	-- Just in case we hit -maxInt
+-	   | otherwise = hash
++-- mhs: was `hash = abs (hash_expr e)` with the guard below catching -maxInt.
++-- hash_expr multiplies until it wraps (that is the point of the guard), and
++-- MicroHs's `abs`/`negate` *raise* "arithmetic overflow" at minBound -- the
++-- runtime checks T_NEG unconditionally (eval.c:6592), unlike +/-/* which
++-- WANT_OVERFLOW=0 turns into wrap-around. Same result, minBound handled first.
++hashExpr e | hash == minBound = 77
++	   | hash < 0        = negate hash
++	   | otherwise       = hash
+ 	   where
+-	     hash = abs (hash_expr e)	-- Negative numbers kill UniqFM
++	     hash = hash_expr e		-- Negative numbers kill UniqFM
+ 
+ hash_expr (Note _ e)   		  = hash_expr e
+ hash_expr (Let (NonRec b r) e)    = hashId b
+--- a/ghc/compiler/main/DriverUtil.hs
++++ b/ghc/compiler/main/DriverUtil.hs
+@@ -118,7 +118,12 @@
+ handleDyn = flip catchDyn
+ 
+ handle :: (Exception -> IO a) -> IO a -> IO a
+-#if __GLASGOW_HASKELL__ < 501
++-- mhs: take the >= 501 branch as well. We compile with
++-- -D__GLASGOW_HASKELL__=408 (for HsVersions.h's pre-hierarchical names), but
++-- the 4.08 branch swallows the ExitException that every `exitWith` in the
++-- driver raises, so `ghc --version` ended in "the impossible happened".
++-- The EXCEPTION shim provides the ExitException constructor.
++#if __GLASGOW_HASKELL__ < 501 && !defined(__MHS__)
+ handle = flip Exception.catchAllIO
+ #else
+ handle h f = f `Exception.catch` \e -> case e of
+--- a/ghc/compiler/utils/Binary.hs
++++ b/ghc/compiler/utils/Binary.hs
+@@ -255,6 +255,18 @@
+   hClose h
+ 
+ readBinMem :: FilePath -> IO BinHandle
++#if defined(__MHS__)
++-- mhs: MicroHs's handles cannot report a size (no hFileSize), and readBinMem
++-- is the only caller that needs one. It has the path, so read the file whole
++-- in binary mode -- byte for byte, no utf8 layer (System/IO/Open.hs:65) --
++-- and let its length be the size. Same bytes as the hGetArray loop below,
++-- one open instead of stat + per-byte hGetChar.
++readBinMem filename = do
++  str <- readBinaryFile filename
++  let filesize = length str
++  arr <- newArray_ (0,filesize-1)
++  zipWithM_ (\ i c -> unsafeWrite arr i (fromIntegral (ord c))) [0..] str
++#else
+ readBinMem filename = do
+   h <- openBinaryFile filename ReadMode
+   filesize' <- hFileSize h
+@@ -264,6 +276,7 @@
+   when (count /= filesize)
+ 	(error ("Binary.readBinMem: only read " ++ show count ++ " bytes"))
+   hClose h
++#endif
+   arr_r <- newIORef arr
+   ix_r <- newFastMutInt
+   writeFastMutInt ix_r 0
+@@ -401,6 +414,30 @@
+ -- -----------------------------------------------------------------------------
+ -- Primitve Int writes
+ 
++#if defined(__MHS__)
++-- mhs: `fromInteger` into Int8/Int16/Int32 is *checked* in MicroHs
++-- (Data/Int/Int8.hs:32 `i8` -> `_overflowError`, likewise Int16/Int32), where
++-- Haskell 98 and GHC wrap modulo 2^n. These three instances read a word back
++-- as the signed value with the same bit pattern, so every 0x80..0xff byte --
++-- in particular the 0xff sign byte that `Binary Integer` below writes for
++-- every negative literal -- raised "arithmetic overflow" instead. Do the
++-- two's-complement fold by hand, in Integer, before narrowing.
++-- Int64 needs no such care: it is the machine word here and converts fine.
++mhsSigned :: (Num a) => Integer -> Integer -> a
++mhsSigned modulus u = fromInteger (if u >= modulus `div` 2 then u - modulus else u)
++
++instance Binary Int8 where
++  put_ h w = put_ h (fromIntegral w :: Word8)
++  get h    = do w <- get h; return $! (mhsSigned 256 (toInteger (w::Word8)))
++
++instance Binary Int16 where
++  put_ h w = put_ h (fromIntegral w :: Word16)
++  get h    = do w <- get h; return $! (mhsSigned 65536 (toInteger (w::Word16)))
++
++instance Binary Int32 where
++  put_ h w = put_ h (fromIntegral w :: Word32)
++  get h    = do w <- get h; return $! (mhsSigned 4294967296 (toInteger (w::Word32)))
++#else
+ instance Binary Int8 where
+   put_ h w = put_ h (fromIntegral w :: Word8)
+   get h    = do w <- get h; return $! (fromIntegral (w::Word8))
+@@ -412,6 +449,7 @@
+ instance Binary Int32 where
+   put_ h w = put_ h (fromIntegral w :: Word32)
+   get h    = do w <- get h; return $! (fromIntegral (w::Word32))
++#endif
+ 
+ instance Binary Int64 where
+   put_ h w = put_ h (fromIntegral w :: Word64)

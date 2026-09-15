@@ -1,0 +1,37 @@
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -1637,30 +1637,11 @@
+ -- floatss are always 1 word
+ floatToWord :: CAddrMode -> CAddrMode
+ floatToWord (CLit (MachFloat r))
+-  = runST (do
+-	arr <- newFloatArray ((0::Int),0)
+-	writeFloatArray arr 0 (fromRational r)
+-	i <- readIntArray arr 0
+-	return (CLit (MachInt (toInteger i)))
+-    )
++  = CLit (MachInt (toInteger (castFloatToInt (fromRational r))))
+ 
+ doubleToWords :: CAddrMode -> [CAddrMode]
+ doubleToWords (CLit (MachDouble r))
+-  | big_doubles				-- doubles are 2 words
+-  = runST (do
+-	arr <- newDoubleArray ((0::Int),1)
+-	writeDoubleArray arr 0 (fromRational r)
+-	i1 <- readIntArray arr 0
+-	i2 <- readIntArray arr 1
+-	return [ CLit (MachInt (toInteger i1))
+-	       , CLit (MachInt (toInteger i2))
+-	       ]
+-    )
+-  | otherwise				-- doubles are 1 word
+-  = runST (do
+-	arr <- newDoubleArray ((0::Int),0)
+-	writeDoubleArray arr 0 (fromRational r)
+-	i <- readIntArray arr 0
+-	return [ CLit (MachInt (toInteger i)) ]
+-    )
++  = [ CLit (MachInt (toInteger i))
++    | i <- castDoubleToInts big_doubles (fromRational r) ]
++
+ \end{code}

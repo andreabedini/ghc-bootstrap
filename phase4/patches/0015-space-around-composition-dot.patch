@@ -1,0 +1,375 @@
+GHC 6.2.2 -- mhs: `f.g` spaced to `f . g`
+MicroHs lexes `a.b` with no spaces as a record-dot field selection
+(OverloadedRecordDot), so a composition written `not.isTyVar` becomes
+"Cannot satisfy constraint: HasField". Every such composition is spaced.
+A few of the sites are in comments or in JavaGen's emitted Java text
+(`x_inst.x`); the textual substitution was applied uniformly and the
+results kept. Same as 4.08.2's patches 0014 and 0016.
+
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -512,7 +512,7 @@
+ 	Nothing -> empty)
+   $$ hcat [ ppLocalness lbl, ptext SLIT("StgWord "), 
+ 	    pprCLabel lbl, ptext SLIT("[] = {") ]
+-  $$ hcat (punctuate comma (map (castToWord.pprAmode) amodes))
++  $$ hcat (punctuate comma (map (castToWord . pprAmode) amodes))
+   $$ ptext SLIT("};")
+ 
+ castToWord s = text "(W_)(" <> s <> char ')'
+--- a/ghc/compiler/compMan/CompManager.lhs
++++ b/ghc/compiler/compMan/CompManager.lhs
+@@ -575,7 +575,7 @@
+ 
+         when (verb >= 2) $
+            hPutStrLn stderr (showSDoc (text "Stable modules:" 
+-                               <+> sep (map (text.moduleNameUserString) stable_mods)))
++                               <+> sep (map (text . moduleNameUserString) stable_mods)))
+ 
+ 	-- Unload any modules which are going to be re-linked this
+ 	-- time around.
+@@ -704,7 +704,7 @@
+   = do let new_cmstate = CmState{ hpt=hpt, mg=mods,
+                                   gmode=ghci_mode, pcs=pcs,
+ 				  ic = emptyInteractiveContext }
+-           mods_loaded = map (moduleNameUserString.modSummaryName) mods
++           mods_loaded = map (moduleNameUserString . modSummaryName) mods
+ 
+        return (new_cmstate, ok, mods_loaded)
+ 
+@@ -712,7 +712,7 @@
+ -- cleaning up.  The preprocessed file *might* be the same as the
+ -- source file, but that doesn't do any harm.
+ ppFilesFromSummaries summaries
+-  = [ fn | Just fn <- map (ml_hspp_file.ms_location) summaries ]
++  = [ fn | Just fn <- map (ml_hspp_file . ms_location) summaries ]
+ 
+ -----------------------------------------------------------------------------
+ -- getValidLinkables
+@@ -956,7 +956,7 @@
+ upsweep_mods ghci_mode dflags oldUI reachable_from threaded cleanup
+      ((CyclicSCC ms):_)
+    = do hPutStrLn stderr ("Module imports form a cycle for modules:\n\t" ++
+-                          unwords (map (moduleNameUserString.modSummaryName) ms))
++                          unwords (map (moduleNameUserString . modSummaryName) ms))
+         return (Failed, threaded, [])
+ 
+ upsweep_mods ghci_mode dflags oldUI reachable_from threaded cleanup
+--- a/ghc/compiler/cprAnalysis/CprAnalyse.lhs
++++ b/ghc/compiler/cprAnalysis/CprAnalyse.lhs
+@@ -99,7 +99,7 @@
+ -- For pretty debugging
+ instance Outputable AbsVal where
+   ppr Top    	= ptext SLIT("Top")
+-  ppr (Fun r)	= ptext SLIT("Fun->") <> (parens.ppr) r
++  ppr (Fun r)	= ptext SLIT("Fun->") <> (parens . ppr) r
+   ppr Tuple     = ptext SLIT("Tuple ")
+   ppr Bot       = ptext SLIT("Bot")
+ 
+--- a/ghc/compiler/deSugar/Check.lhs
++++ b/ghc/compiler/deSugar/Check.lhs
+@@ -647,7 +647,7 @@
+ simplify_con con (RecCon fs)      
+   | null fs   = PrefixCon [wild_pat | t <- dataConOrigArgTys con]
+ 		-- Special case for null patterns; maybe not a record at all
+-  | otherwise = PrefixCon (map (simplify_pat.snd) all_pats)
++  | otherwise = PrefixCon (map (simplify_pat . snd) all_pats)
+   where
+      -- pad out all the missing fields with WildPats.
+     field_pats = map (\ f -> (getName f, wild_pat))
+--- a/ghc/compiler/deSugar/DsForeign.lhs
++++ b/ghc/compiler/deSugar/DsForeign.lhs
+@@ -149,7 +149,7 @@
+ 	  -> CImportSpec
+ 	  -> CCallConv
+ 	  -> Safety
+-	  -> Bool	-- True <=> no headers in the f.i decl
++	  -> Bool	-- True <=> no headers in the f . i decl
+ 	  -> DsM ([Binding], SDoc, SDoc)
+ dsCImport id (CLabel cid) _ _ no_hdrs
+  = resultWrapper (idType id) `thenDs` \ (resTy, foRhs) ->
+--- a/ghc/compiler/ghci/ByteCodeGen.lhs
++++ b/ghc/compiler/ghci/ByteCodeGen.lhs
+@@ -247,7 +247,7 @@
+ {-
+    | trace (showSDoc (
+               (char ' '
+-               $$ (ppr.filter (not.isTyVar).varSetElems.fst) rhs
++               $$ (ppr . filter (not . isTyVar).varSetElems.fst) rhs
+                $$ pprCoreExpr (deAnnotate rhs)
+                $$ char ' '
+               ))) False
+@@ -590,7 +590,7 @@
+ 	-> Id -> [AnnExpr' Id VarSet]
+ 	-> BcM BCInstrList
+ doTailCall init_d s p fn args
+-  = do_pushes init_d args (map (primRepToArgRep.atomRep) args)
++  = do_pushes init_d args (map (primRepToArgRep . atomRep) args)
+   where
+   do_pushes d [] reps = do
+ 	ASSERTM( null reps )
+@@ -689,7 +689,7 @@
+ 	   -- algebraic alt with some binders
+            | ASSERT(isAlgCase) otherwise =
+              let
+-		 (ptrs,nptrs) = partition (isFollowableRep.idPrimRep) real_bndrs
++		 (ptrs,nptrs) = partition (isFollowableRep . idPrimRep) real_bndrs
+ 		 ptr_sizes    = map idSizeW ptrs
+ 		 nptrs_sizes  = map idSizeW nptrs
+ 		 bind_sizes   = ptr_sizes ++ nptrs_sizes
+@@ -702,7 +702,7 @@
+ 	     rhs_code <- schemeE (d_alts+size) s p' rhs
+              return (my_discr alt, unitOL (UNPACK size) `appOL` rhs_code)
+ 	   where
+-	     real_bndrs = filter (not.isTyVar) bndrs
++	     real_bndrs = filter (not . isTyVar) bndrs
+ 
+ 
+         my_discr (DEFAULT, binds, rhs) = NoDiscr {-shouldn't really happen-}
+@@ -1136,7 +1136,7 @@
+               -> [(Discr, BCInstrList)] 
+               -> BcM BCInstrList
+ mkMultiBranch maybe_ncons raw_ways
+-   = let d_way     = filter (isNoDiscr.fst) raw_ways
++   = let d_way     = filter (isNoDiscr . fst) raw_ways
+          notd_ways = naturalMergeSortLe 
+                         (\w1 w2 -> leAlt (fst w1) (fst w2))
+                         (filter (not.isNoDiscr.fst) raw_ways)
+--- a/ghc/compiler/ghci/ByteCodeInstr.lhs
++++ b/ghc/compiler/ghci/ByteCodeInstr.lhs
+@@ -137,7 +137,7 @@
+ 	$$ nest 6 (text "bitmap: " <+> text (show bsize) <+> text (show bitmap))
+         $$ nest 6 (vcat (map ppr instrs))
+         $$ case origin of
+-              Left alts -> vcat (map (pprCoreAlt.deAnnAlt) alts)
++              Left alts -> vcat (map (pprCoreAlt . deAnnAlt) alts)
+               Right rhs -> pprCoreExpr (deAnnotate rhs)
+ 
+ instance Outputable BCInstr where
+--- a/ghc/compiler/ghci/ByteCodeItbls.lhs
++++ b/ghc/compiler/ghci/ByteCodeItbls.lhs
+@@ -260,7 +260,7 @@
+          fieldSz nptrs itbl,
+          fieldSz tipe itbl,
+          fieldSz srtlen itbl,
+-         fieldSz (head.code) itbl * itblCodeLength]
++         fieldSz (head . code) itbl * itblCodeLength]
+ 
+    alignment itbl 
+       = SIZEOF_VOID_P
+--- a/ghc/compiler/ghci/InteractiveUI.hs
++++ b/ghc/compiler/ghci/InteractiveUI.hs
+@@ -390,7 +390,7 @@
+ 
+ runStmt :: String -> GHCi [Name]
+ runStmt stmt
+- | null (filter (not.isSpace) stmt) = return []
++ | null (filter (not . isSpace) stmt) = return []
+  | otherwise
+  = do st <- getGHCiState
+       dflags <- io getDynFlags
+--- a/ghc/compiler/ghci/Linker.lhs
++++ b/ghc/compiler/ghci/Linker.lhs
+@@ -582,7 +582,7 @@
+                                in  mapM (linkBCO ie ce_out) ul_bcos )
+ 
+         let ce_all_additions = zip nms hvals
+-            ce_top_additions = filter (isExternalName.fst) ce_all_additions
++            ce_top_additions = filter (isExternalName . fst) ce_all_additions
+             ce_additions     = if toplevs_only then ce_top_additions 
+                                                else ce_all_additions
+             ce_out = -- make sure we're not inserting duplicate names into the 
+--- a/ghc/compiler/hsSyn/HsExpr.lhs
++++ b/ghc/compiler/hsSyn/HsExpr.lhs
+@@ -202,7 +202,7 @@
+ 
+   | ELazyPat	(HsExpr id) -- ~ pattern
+ 
+-  | HsType      (HsType id)     -- Explicit type argument; e.g  f {| Int |} x y
++  | HsType      (HsType id)     -- Explicit type argument; e . g  f {| Int |} x y
+ \end{code}
+ 
+ Everything from here on appears only in typechecker output.
+--- a/ghc/compiler/ilxGen/IlxGen.lhs
++++ b/ghc/compiler/ilxGen/IlxGen.lhs
+@@ -103,7 +103,7 @@
+ importsNone sofar = sofar
+ 
+ importsBind :: IlxEnv -> StgBinding -> ImportsInfo -> ImportsInfo
+-importsBind env (StgNonRec _ b rhs) = importsRhs env rhs.importsVar env b
++importsBind env (StgNonRec _ b rhs) = importsRhs env rhs . importsVar env b
+ importsBind env (StgRec _ pairs) = foldR (\(b,rhs) -> importsRhs env rhs . importsVar env b) pairs
+ 
+ importsRhs :: IlxEnv -> StgRhs -> ImportsInfo -> ImportsInfo
+@@ -112,8 +112,8 @@
+ 
+ importsExpr :: IlxEnv -> StgExpr -> ImportsInfo -> ImportsInfo
+ importsExpr env (StgLit _) = importsNone
+-importsExpr env (StgApp f args) = importsVar env f.importsStgArgs env args
+-importsExpr env (StgConApp con args) = importsDataCon env con.importsStgArgs env args
++importsExpr env (StgApp f args) = importsVar env f . importsStgArgs env args
++importsExpr env (StgConApp con args) = importsDataCon env con . importsStgArgs env args
+ importsExpr env (StgOpApp (StgFCallOp (CCall (CCallSpec (StaticTarget c) cc _)) _) args rty)
+   = addCCallInfo (c,cc, map stgArgType tm_args, rty) . importsStgArgs env args
+   where 
+@@ -360,7 +360,7 @@
+ 	-- Code for the body of the main apply method
+     body_code = vcat [empty,
+                       pprIlxLocals env_with_args locals,
+-		      ilxExpr (IlxEEnv env_with_locals (mkUniqSet (filter (not.isTyVar) args))) rhs Return,
++		      ilxExpr (IlxEEnv env_with_locals (mkUniqSet (filter (not . isTyVar) args))) rhs Return,
+                       empty
+ 	        ]
+ 
+@@ -610,7 +610,7 @@
+ -- values such as integers and addresses, i.e. things not
+ -- mapped down to GC'able objects.
+ ilxWipe env ids 
+-   = vcat (map (ilxWipeOne env) (filter (not.isVoidIlxRepId) ids))
++   = vcat (map (ilxWipeOne env) (filter (not . isVoidIlxRepId) ids))
+ 
+ ilxWipeOne env id
+    = case lookupIlxVarEnv env id of
+--- a/ghc/compiler/ilxGen/tests/life.hs
++++ b/ghc/compiler/ilxGen/tests/life.hs
+@@ -148,7 +148,7 @@
+ life1 n xss 
+   = foldr_1 (glue1 (copy3 (n+2) '\VT')) N
+             (map5 disp1
+-              (zip1_ (map6 (string_ListChar.show) (ints 0))
++              (zip1_ (map6 (string_ListChar . show) (ints 0))
+                     gens))
+     where
+     gens = take3 (740::Int) (iterate1 (gen1 n) (initial1 n xss))
+--- a/ghc/compiler/javaGen/JavaGen.lhs
++++ b/ghc/compiler/javaGen/JavaGen.lhs
+@@ -379,8 +379,8 @@
+ 	final Thunk x = new Thunk( x_inst );
+ 	...ditto for y...
+ 
+-	x_inst.x = x;
+-	x_inst.y = y;
++	x_inst . x = x;
++	x_inst . y = y;
+ 	...ditto for y...
+ -}
+   = (map mk_class prs) ++ (map mk_inst prs) ++ 
+--- a/ghc/compiler/main/DriverPhases.hs
++++ b/ghc/compiler/main/DriverPhases.hs
+@@ -39,7 +39,7 @@
+    Haskell compiler       | .hs           | -C, -S        | .hc, .s
+    C compiler (opt.)      | .hc or .c     | -S            | .s
+    assembler              | .s  or .S     | -c            | .o
+-   linker                 | other         | -             | a.out
++   linker                 | other         | -             | a . out
+ -}
+ 
+ data Phase 
+--- a/ghc/compiler/main/DriverState.hs
++++ b/ghc/compiler/main/DriverState.hs
+@@ -551,7 +551,7 @@
+       		    foldr1 (\a b -> a ++ '/':b) 
+       		    (map (wayName . lkupWay) ws))
+       else let ways    = map lkupWay ws
+-      	       tag     = mkBuildTag (filter (not.wayRTSOnly) ways)
++      	       tag     = mkBuildTag (filter (not . wayRTSOnly) ways)
+       	       rts_tag = mkBuildTag ways
+       	       flags   = map wayOpts ways
+       	   in do
+--- a/ghc/compiler/main/HscStats.lhs
++++ b/ghc/compiler/main/HscStats.lhs
+@@ -62,7 +62,7 @@
+       | not short   = hcat [text str, int n]
+       | otherwise   = hcat [text (trim str), equals, int n, semi]
+     
+-    trim ls     = takeWhile (not.isSpace) (dropWhile isSpace ls)
++    trim ls     = takeWhile (not . isSpace) (dropWhile isSpace ls)
+ 
+     (fixity_sigs, bind_tys, _, bind_specs, bind_inlines) 
+ 	= count_sigs [d | SigD d <- decls]
+--- a/ghc/compiler/main/MkIface.lhs
++++ b/ghc/compiler/main/MkIface.lhs
+@@ -784,7 +784,7 @@
+  	| otherwise = ppr (getOcc n) <> char '|' <> pp_export (n':ns)
+     
+     pp_export []    = empty
+-    pp_export names = braces (hsep (map (ppr.getOcc) names))
++    pp_export names = braces (hsep (map (ppr . getOcc) names))
+ 
+ pprOcc :: Name -> SDoc	-- Print the occurrence name only
+ pprOcc n = pprOccName (nameOccName n)
+--- a/ghc/compiler/main/SysTools.lhs
++++ b/ghc/compiler/main/SysTools.lhs
+@@ -27,7 +27,7 @@
+ 	setDryRun,
+ 
+ 	getTopDir,		-- IO String	-- The value of $libdir
+-	getPackageConfigPath,	-- IO String	-- Where package.conf is
++	getPackageConfigPath,	-- IO String	-- Where package . conf is
+         getUsageMsgPaths,       -- IO (String,String)
+ 
+ 	-- Interface to system tools
+--- a/ghc/compiler/nativeGen/AsmRegAlloc.lhs
++++ b/ghc/compiler/nativeGen/AsmRegAlloc.lhs
+@@ -71,7 +71,7 @@
+               $$
+               (text "code = ")
+               $$
+-              (vcat (map (docToSDoc.pprInstr) flatInstrs))
++              (vcat (map (docToSDoc . pprInstr) flatInstrs))
+             )
+     tryGeneral (resv:resvs)
+        = case generalAlloc resv of
+--- a/ghc/compiler/parser/RdrHsSyn.lhs
++++ b/ghc/compiler/parser/RdrHsSyn.lhs
+@@ -896,7 +896,7 @@
+ 			_other      -> var_export
+           where 
+ 		tc_export  = AvailTC (rdrNameOcc (tcdName d)) 
+-				(map (rdrNameOcc.fst) (tyClDeclNames d))
++				(map (rdrNameOcc . fst) (tyClDeclNames d))
+ 		var_export = Avail (rdrNameOcc (tcdName d))
+ \end{code}
+ 
+--- a/ghc/compiler/rename/RnEnv.lhs
++++ b/ghc/compiler/rename/RnEnv.lhs
+@@ -1041,7 +1041,7 @@
+ warnUnusedGroup names
+   = addSrcLoc def_loc	$
+     addWarn		$
+-    sep [msg <> colon, nest 4 (fsep (punctuate comma (map (ppr.fst) names)))]
++    sep [msg <> colon, nest 4 (fsep (punctuate comma (map (ppr . fst) names)))]
+   where
+     (name1, prov1) = head names
+     loc1  	   = nameSrcLoc name1
+--- a/ghc/compiler/types/Type.lhs
++++ b/ghc/compiler/types/Type.lhs
+@@ -645,7 +645,7 @@
+ 
+ 
+ tyVarsOfTypes :: [Type] -> TyVarSet
+-tyVarsOfTypes tys = foldr (unionVarSet.tyVarsOfType) emptyVarSet tys
++tyVarsOfTypes tys = foldr (unionVarSet . tyVarsOfType) emptyVarSet tys
+ 
+ tyVarsOfPred :: PredType -> TyVarSet
+ tyVarsOfPred = tyVarsOfSourceType	-- Just a subtype
+--- a/ghc/compiler/utils/Bag.lhs
++++ b/ghc/compiler/utils/Bag.lhs
+@@ -109,7 +109,7 @@
+ foldBag t u e EmptyBag        = e
+ foldBag t u e (UnitBag x)     = u x
+ foldBag t u e (TwoBags b1 b2) = (foldBag t u e b1) `t` (foldBag t u e b2)
+-foldBag t u e (ListBag xs)    = foldr (t.u) e xs
++foldBag t u e (ListBag xs)    = foldr (t . u) e xs
+ foldBag t u e (ListOfBags bs) = foldr (\b r -> foldBag e u t b `t` r) e bs
+ -}
+ 
+@@ -117,7 +117,7 @@
+ foldBag t u e EmptyBag        = e
+ foldBag t u e (UnitBag x)     = u x `t` e
+ foldBag t u e (TwoBags b1 b2) = foldBag t u (foldBag t u e b2) b1
+-foldBag t u e (ListBag xs)    = foldr (t.u) e xs
++foldBag t u e (ListBag xs)    = foldr (t . u) e xs
+ foldBag t u e (ListOfBags bs) = foldr (\b r -> foldBag t u r b) e bs
+ 
+ foldrBag :: (a -> r -> r) -> r

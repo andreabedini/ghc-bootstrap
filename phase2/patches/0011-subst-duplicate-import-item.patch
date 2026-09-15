@@ -1,0 +1,11 @@
+--- a/ghc/compiler/coreSyn/Subst.lhs
++++ b/ghc/compiler/coreSyn/Subst.lhs
+@@ -48,7 +48,7 @@
+ import Name		( isLocallyDefined )
+ import IdInfo		( IdInfo, isFragileOccInfo,
+ 			  specInfo, setSpecInfo, 
+-			  WorkerInfo(..), workerExists, workerInfo, setWorkerInfo, WorkerInfo
++			  WorkerInfo(..), workerExists, workerInfo, setWorkerInfo
+ 			)
+ import BasicTypes	( OccInfo(..) )
+ import UniqSupply	( UniqSupply, uniqFromSupply, splitUniqSupply )

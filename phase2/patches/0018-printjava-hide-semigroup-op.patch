@@ -1,0 +1,10 @@
+--- a/ghc/compiler/javaGen/PrintJava.lhs
++++ b/ghc/compiler/javaGen/PrintJava.lhs
+@@ -6,6 +6,7 @@
+ \begin{code}
+ module PrintJava( compilationUnit ) where
+ 
++import Prelude hiding ((<>))
+ import Java
+ import Outputable
+ import Char( toLower )

@@ -1,0 +1,66 @@
+--- a/ghc/compiler/usageSP/UsageSPUtils.lhs
++++ b/ghc/compiler/usageSP/UsageSPUtils.lhs
+@@ -381,6 +381,11 @@
+ 
+ -- monad required for the above
+ newtype Id a = Id a ; unId (Id a) = a
++instance Functor Id where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative Id where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad Id where { a >>= f  = f (unId a) ; return a = Id a }
+ 
+ -- lambda-annotating function for use along with the above
+@@ -538,6 +543,11 @@
+ uniqSMMToUs (UsToUniqSMM us) = us
+ usToUniqSMM = UsToUniqSMM
+ 
++instance Functor UniqSMM where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative UniqSMM where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad UniqSMM where
+   m >>= f  = UsToUniqSMM $ uniqSMMToUs m `thenUs` \ a ->
+                            uniqSMMToUs (f a)
+@@ -554,6 +564,11 @@
+                                   -> (a,flexi,VarEnv Var))
+ unAnnotM (AnnotM f) = f
+ 
++instance Functor (AnnotM flexi) where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative (AnnotM flexi) where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad (AnnotM flexi) where
+   a >>= f  = AnnotM (\ us ve -> let (r,us',ve') = unAnnotM a us ve
+                                 in  unAnnotM (f r) us' ve')
+--- a/ghc/compiler/usageSP/UsageSPLint.lhs
++++ b/ghc/compiler/usageSP/UsageSPLint.lhs
+@@ -400,6 +400,11 @@
+ newtype ULintM a = ULintM (SDoc -> (a,Bag ULintErr))
+ unULintM (ULintM f) = f
+ 
++instance Functor ULintM where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative ULintM where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad ULintM where
+   m >>= f  = ULintM $ \ loc -> let (a ,errs ) = (unULintM m) loc
+                                    (a',errs') = (unULintM (f a)) loc
+--- a/ghc/compiler/javaGen/JavaGen.lhs
++++ b/ghc/compiler/javaGen/JavaGen.lhs
+@@ -381,6 +381,11 @@
+ 			    )
+ 		}
+ 
++instance Functor LifterM where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative LifterM where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad LifterM where
+ 	return a = LifterM (\ n s -> (a,[],[],s))
+ 	(LifterM m) >>= fn = LifterM (\ n s ->

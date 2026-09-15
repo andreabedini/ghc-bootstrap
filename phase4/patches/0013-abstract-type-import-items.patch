@@ -1,0 +1,115 @@
+GHC 6.2.2 -- mhs: T(..) does not import an abstract type's field selectors
+Several modules export a type abstractly and its field selectors by name
+(HscTypes.IfaceDecls, TyCon.TyCon, Var.varType); GHC lets an importer's
+`T(..)` pick the selectors up, MicroHs does not, so they are named
+explicitly. Conversely where a module needs a type's constructors
+(ForeignCall, Type, MonoBinds) the import says `T(..)`. Two comment-only
+edits (Unique{-instance NamedThing-} in PprAbsC and RnIfaces) came from
+the same substitution and are kept for byte fidelity.
+
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -49,7 +49,7 @@
+ import PrimOp		( primOpNeedsWrapper )
+ import MachOp		( MachOp(..) )
+ import PrimRep		( isFloatingRep, PrimRep(..), getPrimRepSize )
+-import Unique		( pprUnique, Unique{-instance NamedThing-} )
++import Unique		( pprUnique, Unique{-instance NamedThing(..)-} )
+ import UniqSet		( emptyUniqSet, elementOfUniqSet,
+ 			  addOneToUniqSet, UniqSet
+ 			)
+--- a/ghc/compiler/deSugar/DsCCall.lhs
++++ b/ghc/compiler/deSugar/DsCCall.lhs
+@@ -24,7 +24,7 @@
+ import Maybes		( maybeToBool )
+ import ForeignCall	( ForeignCall(..), CCallSpec(..), CCallTarget(..), Safety, CCallConv(..) )
+ import DataCon		( splitProductType_maybe, dataConSourceArity, dataConWrapId )
+-import ForeignCall	( ForeignCall, CCallTarget(..) )
++import ForeignCall	( ForeignCall(..), CCallTarget(..) )
+ 
+ import TcType		( tcSplitTyConApp_maybe )
+ import Type		( Type, isUnLiftedType, mkFunTys, mkFunTy,
+--- a/ghc/compiler/hsSyn/HsTypes.lhs
++++ b/ghc/compiler/hsSyn/HsTypes.lhs
+@@ -33,7 +33,7 @@
+ #include "HsVersions.h"
+ 
+ import Class		( FunDep )
+-import TcType		( Type, Kind, ThetaType, SourceType(..), 
++import TcType		( Type(..), Kind, ThetaType, SourceType(..), 
+ 			  tcSplitSigmaTy, liftedTypeKind, eqKind, tcEqType
+ 			)
+ import TypeRep		( Type(..), TyNote(..) )	-- toHsType sees the representation
+--- a/ghc/compiler/ndpFlatten/FlattenMonad.hs
++++ b/ghc/compiler/ndpFlatten/FlattenMonad.hs
+@@ -68,7 +68,7 @@
+ import Outputable   (Outputable(ppr), pprPanic)
+ import UniqSupply   (UniqSupply, splitUniqSupply, uniqFromSupply)
+ import OccName	    (UserFS)
+-import Var          (Var(..))
++import Var          (Var(..), varType)
+ import Id	    (Id, mkSysLocal)
+ import Name	    (Name)
+ import VarSet       (VarSet, emptyVarSet, extendVarSet, varSetElems )
+--- a/ghc/compiler/ndpFlatten/Flattening.hs
++++ b/ghc/compiler/ndpFlatten/Flattening.hs
+@@ -69,7 +69,7 @@
+ import UniqSupply   (mkSplitUniqSupply)
+ import CmdLineOpts  (DynFlag(..))
+ import Literal      (Literal, literalType)
+-import Var	    (Var(..))
++import Var	    (Var(..), varType)
+ import DataCon	    (DataCon, dataConTag)
+ import TypeRep      (Type(..))
+ import Type         (isTypeKind)
+--- a/ghc/compiler/ndpFlatten/NDPCoreUtils.hs
++++ b/ghc/compiler/ndpFlatten/NDPCoreUtils.hs
+@@ -53,7 +53,9 @@
+ import BasicTypes (Boxity(..))
+ import Var        (Var)
+ import Type       (Type, splitTyConApp_maybe, splitFunTy)
+-import TyCon      (TyCon(..), isTupleTyCon)
++-- TyCon is exported abstractly and its fields by name; TyCon(..) does not
++-- pick those up in mhs, so name tyConName.
++import TyCon      (TyCon(..), tyConName, isTupleTyCon)
+ import PrelNames  (parrTyConName)
+ import TysWiredIn (parrTyCon, unitDataConId, tupleCon, intDataCon, mkPArrTy,
+ 		   boolTy) 
+--- a/ghc/compiler/rename/RnIfaces.lhs
++++ b/ghc/compiler/rename/RnIfaces.lhs
+@@ -34,7 +34,7 @@
+ import DataCon		( dataConTyCon, dataConWrapId )
+ import TyCon		( visibleDataCons, isSynTyCon, getSynTyConDefn, tyConClass_maybe, tyConName )
+ import Class		( className, classSCTheta )
+-import Name		( Name {-instance NamedThing-}, isWiredInName, nameIsLocalOrFrom, 
++import Name		( Name {-instance NamedThing(..)-}, isWiredInName, nameIsLocalOrFrom, 
+ 			  nameModule, NamedThing(..) )
+ import NameEnv 		( delFromNameEnv, lookupNameEnv )
+ import NameSet
+--- a/ghc/compiler/typecheck/TcRnDriver.lhs
++++ b/ghc/compiler/typecheck/TcRnDriver.lhs
+@@ -89,8 +89,11 @@
+ import TyCon		( tyConGenInfo )
+ import BasicTypes       ( EP(..), RecFlag(..) )
+ import Outputable
+-import HscTypes		( PersistentCompilerState(..), InteractiveContext(..),
+-			  ModIface, ModDetails(..), ModGuts(..),
++-- HscTypes exports IfaceDecls abstractly and its fields by name; GHC lets
++-- IfaceDecls(..) pick those up, mhs does not, so name them. Duplicate
++-- import items (ModIface, ModDetails, typeEnvTyCons) removed for mhs.
++import HscTypes		( PersistentCompilerState(..), InteractiveContext(..), dcl_tycl, dcl_rules, dcl_insts,
++			  ModIface(..), ModDetails(..), ModGuts(..),
+ 			  HscEnv(..), Dependencies(..),
+ 			    IfaceDecls(..),
+ 			  GhciMode(..), noDependencies,
+--- a/ghc/compiler/typecheck/TcType.lhs
++++ b/ghc/compiler/typecheck/TcType.lhs
+@@ -120,7 +120,7 @@
+ 
+ import Type		(	-- Re-exports
+ 			  tyVarsOfType, tyVarsOfTypes, tyVarsOfPred,
+-			  tyVarsOfTheta, Kind, Type, SourceType(..),
++			  tyVarsOfTheta, Kind, Type(..), SourceType(..),
+ 			  PredType, ThetaType, unliftedTypeKind,
+ 			  liftedTypeKind, openTypeKind, mkArrowKind,
+ 			  mkArrowKinds, mkForAllTy, mkForAllTys,

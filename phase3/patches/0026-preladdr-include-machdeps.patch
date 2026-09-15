@@ -1,0 +1,11 @@
+--- a/ghc/lib/std/PrelAddr.lhs
++++ b/ghc/lib/std/PrelAddr.lhs
+@@ -7,6 +7,8 @@
+ \begin{code}
+ {-# OPTIONS -fno-implicit-prelude #-}
+ 
++#include "MachDeps.h"
++
+ module PrelAddr (
+ 	  Addr(..)
+ 	, AddrOff(..)

@@ -1,0 +1,20 @@
+--- a/ghc/rts/Updates.hc
++++ b/ghc/rts/Updates.hc
+@@ -305,7 +305,7 @@
+ 	/* Now fill in the closure fields */
+ 
+ 	p = Hp;
+-        for (i = Words-1; i >= 0; i--) {
++        for (i = (I_)Words-1; i >= 0; i--) {
+ 	   *p-- = (W_) Sp[i];
+ 	}
+     }
+@@ -383,7 +383,7 @@
+       /* 
+        * Squeeze out update frame from stack.
+        */
+-      for (i = Words-1; i >= 0; i--) {
++      for (i = (I_)Words-1; i >= 0; i--) {
+ 	Sp[i+(sizeofW(StgUpdateFrame))] = Sp[i];
+       }
+       Sp += sizeofW(StgUpdateFrame);

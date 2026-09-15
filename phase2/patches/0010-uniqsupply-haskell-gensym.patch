@@ -1,0 +1,40 @@
+--- a/ghc/compiler/basicTypes/UniqSupply.lhs
++++ b/ghc/compiler/basicTypes/UniqSupply.lhs
+@@ -79,18 +79,30 @@
+ 	-- here comes THE MAGIC:
+ 
+ 	-- This is one of the most hammered bits in the whole compiler
+-	mk_supply#
++	-- mk_supply# was a CAF: a nullary binding of type IO UniqSupply. GHC's
++	-- unsafeInterleaveIO returns an action that re-executes on every run, so
++	-- each node of the tree drew a fresh unique. MicroHs's memoises the
++	-- thunk, so the one shared CAF was evaluated once and *every* node got
++	-- the same unique -- which made every Name in a module collide.
++	--
++	-- Taking a parameter makes each recursive occurrence a distinct
++	-- application, hence a distinct thunk, which restores the intended
++	-- behaviour under either semantics. The depth is otherwise unused.
++	mk_supply# :: Int -> IO UniqSupply
++	mk_supply# d
+ 	  = unsafeInterleaveIO (
+-		mk_unique   >>= \ uniq ->
+-		mk_supply#  >>= \ s1 ->
+-		mk_supply#  >>= \ s2 ->
++		mk_unique        >>= \ uniq ->
++		mk_supply# (d+1) >>= \ s1 ->
++		mk_supply# (d+2) >>= \ s2 ->
+ 		return (MkSplitUniqSupply uniq s1 s2)
+ 	    )
+ 
+-	mk_unique = _ccall_ genSymZh		>>= \ (W# u#) ->
+-		    return (I# (w2i (mask# `or#` u#)))
++	-- genSymZh was a C counter reached through GHC 4's _ccall_ syntax.
++	-- GhcCompat.genSym is the same counter in an IORef; see phase2/patches.
++	mk_unique = genSym			>>= \ u ->
++		    return (I# (w2i (mask# `or#` (i2w u))))
+     in
+-    mk_supply#
++    mk_supply# 0
+ 
+ splitUniqSupply (MkSplitUniqSupply _ s1 s2) = (s1, s2)
+ \end{code}

@@ -1,0 +1,336 @@
+GHC 6.2.2 -- mhs: _scc_ cost-centre annotations dropped
+`_scc_ "name" expr` is GHC's profiling annotation syntax; MicroHs does not
+parse it, and with no profiling it is the identity anyway. Every
+occurrence in the compiler goes: HscMain, SimplCore, OccurAnal, CodeOutput,
+MkIface, StgLint, SimplStg, PprAbsC, Digraph, AsmCodeGen. Same as 4.08.2's
+patch 0009. Note: in HscMain several of these lines also began with the
+`;` that patch 0010 removes elsewhere; where the two coincide on one line
+the whole edit is here.
+
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -97,9 +97,9 @@
+ -- printDoc LeftMode handle (pprAbsC absC (costs absC))
+ 
+ writeRealC handle absC
+- | opt_GranMacros = _scc_ "writeRealC" printForC handle $ 
++ | opt_GranMacros = printForC handle $ 
+ 				       pprCode CStyle (pprAbsC absC (costs absC))
+- | otherwise	  = _scc_ "writeRealC" printForC handle $
++ | otherwise	  = printForC handle $
+ 				       pprCode CStyle (pprAbsC absC (panic "costs"))
+ 
+ dumpRealC :: AbstractC -> SDoc
+--- a/ghc/compiler/main/CodeOutput.lhs
++++ b/ghc/compiler/main/CodeOutput.lhs
+@@ -158,11 +158,11 @@
+ #ifndef OMIT_NATIVE_CODEGEN
+ 
+   = do ncg_uniqs <- mkSplitUniqSupply 'n'
+-       let (stix_final, ncg_output_d) = _scc_ "NativeCodeGen" 
++       let (stix_final, ncg_output_d) = 
+ 				        nativeCodeGen flat_absC ncg_uniqs
+        dumpIfSet_dyn dflags Opt_D_dump_stix "Final stix code" stix_final
+        dumpIfSet_dyn dflags Opt_D_dump_asm "Asm code" (docToSDoc ncg_output_d)
+-       _scc_ "OutputAsm" doOutput filenm $
++       doOutput filenm $
+ 	   \f -> printDoc LeftMode f ncg_output_d
+   where
+ 
+--- a/ghc/compiler/main/HscMain.lhs
++++ b/ghc/compiler/main/HscMain.lhs
+@@ -118,7 +118,7 @@
+ hscMain hsc_env pcs mod location 
+ 	source_unchanged have_object maybe_old_iface
+  = do {
+-      (pcs_ch, maybe_chk_result) <- _scc_ "checkOldIface" 
++      (pcs_ch, maybe_chk_result) <- 
+ 				    checkOldIface hsc_env pcs mod 
+ 						  (ml_hi_file location)
+ 						  source_unchanged maybe_old_iface;
+@@ -152,7 +152,7 @@
+ 			showModMsg have_object mod location);
+ 
+       -- Typecheck 
+-      (pcs_tc, maybe_tc_result) <- _scc_ "tcRnIface"
++      (pcs_tc, maybe_tc_result) <- -- mhs: _scc_ dropped
+ 				   tcRnIface hsc_env pcs_ch old_iface ;
+ 
+       case maybe_tc_result of {
+@@ -192,7 +192,7 @@
+  	    -------------------
+  	    -- FLATTENING
+  	    -------------------
+-	; flat_result <- _scc_ "Flattening"
++	 flat_result <- 
+  			 flatten hsc_env pcs_tc ds_result
+ 
+ 
+@@ -217,14 +217,14 @@
+  	    -------------------
+  	    -- SIMPLIFY
+  	    -------------------
+-	; simpl_result <- _scc_     "Core2Core"
++	; simpl_result <- 
+ 			  core2core hsc_env pkg_rule_base flat_result
+ 
+  	    -------------------
+  	    -- TIDY
+  	    -------------------
+ 	; (pcs_simpl, tidy_result) 
+-	     <- _scc_ "CoreTidy"
++	     <- 
+ 	        tidyCorePgm dflags pcs_middle simpl_result
+ 
+ 	-- ZAP the persistent compiler state altogether now if we're
+@@ -244,7 +244,7 @@
+ 	    -- This has to happen *after* code gen so that the back-end
+ 	    -- info has been set.  Not yet clear if it matters waiting
+ 	    -- until after code output
+-	; new_iface <- _scc_ "MkFinalIface" 
++	; new_iface <- 
+ 			mkIface hsc_env location 
+                          	maybe_checked_iface tidy_result
+ 
+@@ -290,7 +290,7 @@
+  	    -------------------
+  	    -- RENAME and TYPECHECK
+  	    -------------------
+-	; (pcs_tc, maybe_tc_result) <- _scc_ "TypeCheck" 
++	 (pcs_tc, maybe_tc_result) <- 
+ 			     	       tcRnExtCore hsc_env pcs_ch rdr_module
+ 	; case maybe_tc_result of {
+       	     Nothing       -> return (Left  (HscFail pcs_tc));
+@@ -313,7 +313,7 @@
+  	    -------------------
+  	    -- RENAME and TYPECHECK
+  	    -------------------
+-	; (pcs_tc, maybe_tc_result) <- _scc_ "Typecheck-Rename" 
++	 (pcs_tc, maybe_tc_result) <- 
+ 				        tcRnModule hsc_env pcs_ch rdr_module
+ 	; case maybe_tc_result of {
+       	     Nothing -> return (Left (HscFail pcs_ch));
+@@ -322,7 +322,7 @@
+  	    -------------------
+  	    -- DESUGAR
+  	    -------------------
+-	; ds_result <- _scc_ "DeSugar" 
++	 ds_result <- 
+ 		       deSugar hsc_env pcs_tc tc_result
+ 	; return (Right (pcs_tc, ds_result))
+ 	}}}}}
+@@ -341,7 +341,7 @@
+  	    -------------------
+  	    -- PREPARE FOR CODE GENERATION
+ 	    -- Do saturation and convert to A-normal form
+-  prepd_binds <- _scc_ "CorePrep"
++  prepd_binds <- 
+ 		 corePrepPgm dflags core_binds type_env;
+ 
+   case dopt_HscLang dflags of
+@@ -364,11 +364,11 @@
+       other ->
+ 	do
+ 	    -----------------  Convert to STG ------------------
+-	    (stg_binds, cost_centre_info) <- _scc_ "CoreToStg"
++	    (stg_binds, cost_centre_info) <- 
+ 	    		 myCoreToStg dflags this_mod prepd_binds	
+ 
+             ------------------  Code generation ------------------
+-	    abstractC <- _scc_ "CodeGen"
++	    abstractC <- 
+ 		         codeGen dflags this_mod type_env foreign_stubs
+ 				 dir_imps cost_centre_info stg_binds
+ 
+@@ -384,7 +384,7 @@
+ myParseModule dflags src_filename
+  = do --------------------------  Parser  ----------------
+       showPass dflags "Parser"
+-      _scc_  "Parser" do
++      do
+       buf <- hGetStringBuffer src_filename
+ 
+       let loc  = mkSrcLoc (mkFastString src_filename) 1 0
+@@ -408,10 +408,10 @@
+ 
+ myCoreToStg dflags this_mod prepd_binds
+  = do 
+-      stg_binds <- _scc_ "Core2Stg" 
++      stg_binds <- 
+ 	     coreToStg dflags prepd_binds
+ 
+-      (stg_binds2, cost_centre_info) <- _scc_ "Core2Stg" 
++      (stg_binds2, cost_centre_info) <- 
+ 	     stg2stg dflags this_mod stg_binds
+ 
+       return (stg_binds2, cost_centre_info)
+@@ -504,7 +504,7 @@
+ hscParseStmt :: DynFlags -> String -> IO (Maybe RdrNameStmt)
+ hscParseStmt dflags str
+  = do showPass dflags "Parser"
+-      _scc_ "Parser"  do
++      do
+ 
+       buf <- stringToStringBuffer str
+ 
+--- a/ghc/compiler/main/MkIface.lhs
++++ b/ghc/compiler/main/MkIface.lhs
+@@ -166,7 +166,7 @@
+ 					   mi_deprecs  = deprecs } }
+ 
+ 		-- Add version information
+-	; let (final_iface, maybe_diffs) = _scc_ "versioninfo" addVersionInfo maybe_old_iface iface_w_decls
++	; let (final_iface, maybe_diffs) = addVersionInfo maybe_old_iface iface_w_decls
+ 
+ 		-- Write the interface file, if necessary
+ 	; when (must_write_hi_file maybe_diffs) $ do
+--- a/ghc/compiler/nativeGen/AsmCodeGen.lhs
++++ b/ghc/compiler/nativeGen/AsmCodeGen.lhs
+@@ -136,14 +136,14 @@
+ 
+ absCtoNat :: AbstractC -> UniqSM (SDoc, Pretty.Doc, [FastString])
+ absCtoNat absC
+-   = _scc_ "genCodeAbstractC" genCodeAbstractC absC        `thenUs` \ stixRaw ->
+-     _scc_ "genericOpt"       genericOpt stixRaw           `bind`   \ stixOpt ->
+-     _scc_ "liftStrings"      liftStrings stixOpt          `thenUs` \ stixLifted ->
+-     _scc_ "genMachCode"      genMachCode stixLifted       `thenUs` \ (pre_regalloc, imports) ->
+-     _scc_ "regAlloc"         regAlloc pre_regalloc        `bind`   \ almost_final ->
+-     _scc_ "x86fp_kludge"     x86fp_kludge almost_final    `bind`   \ final_mach_code ->
+-     _scc_ "vcat"     Pretty.vcat (map pprInstr final_mach_code)  `bind`   \ final_sdoc ->
+-     _scc_ "pprStixTrees"     pprStixStmts stixOpt         `bind`   \ stix_sdoc ->
++   = genCodeAbstractC absC        `thenUs` \ stixRaw ->
++     genericOpt stixRaw           `bind`   \ stixOpt ->
++     liftStrings stixOpt          `thenUs` \ stixLifted ->
++     genMachCode stixLifted       `thenUs` \ (pre_regalloc, imports) ->
++     regAlloc pre_regalloc        `bind`   \ almost_final ->
++     x86fp_kludge almost_final    `bind`   \ final_mach_code ->
++     Pretty.vcat (map pprInstr final_mach_code)  `bind`   \ final_sdoc ->
++     pprStixStmts stixOpt         `bind`   \ stix_sdoc ->
+      returnUs ({-\_ -> Pretty.vcat (map pprInstr almost_final),-}
+                stix_sdoc, final_sdoc, imports)
+      where
+--- a/ghc/compiler/simplCore/OccurAnal.lhs
++++ b/ghc/compiler/simplCore/OccurAnal.lhs
+@@ -286,7 +286,7 @@
+ 
+ \begin{code}
+ occAnalBind env (Rec pairs) body_usage
+-  = foldr (_scc_ "occAnalBind.dofinal" do_final_bind) (body_usage, []) sccs
++  = foldr (do_final_bind) (body_usage, []) sccs
+   where
+     binders = map fst pairs
+     rhs_env = env `addNewCands` binders
+@@ -298,12 +298,12 @@
+ 		      ]
+ 
+     sccs :: [SCC (Node Details1)]
+-    sccs = _scc_ "occAnalBind.scc" stronglyConnCompR edges
++    sccs = stronglyConnCompR edges
+ 
+ 
+     ---- stuff for dependency analysis of binds -------------------------------
+     edges :: [Node Details1]
+-    edges = _scc_ "occAnalBind.assoc"
++    edges = 
+ 	    [ (details, idUnique id, edges_from rhs_usage)
+ 	    | details@(id, rhs_usage, rhs) <- analysed_pairs
+ 	    ]
+@@ -318,7 +318,7 @@
+ 	-- which has n**2 cost, and this meant that edges_from alone 
+ 	-- consumed 10% of total runtime!
+     edges_from :: UsageDetails -> [Unique]
+-    edges_from rhs_usage = _scc_ "occAnalBind.edges_from"
++    edges_from rhs_usage = 
+ 			   keysUFM rhs_usage
+ 
+     ---- stuff to "re-constitute" bindings from dependency-analysis info ------
+--- a/ghc/compiler/simplCore/SimplCore.lhs
++++ b/ghc/compiler/simplCore/SimplCore.lhs
+@@ -147,31 +147,31 @@
+ 	doCorePasses dflags rb (stats `plusSimplCount` stats1) us2 binds1 to_dos
+ 
+ doCorePass dfs rb us binds (CoreDoSimplify mode switches) 
+-   = _scc_ "Simplify"      simplifyPgm dfs rb mode switches us binds
++   = simplifyPgm dfs rb mode switches us binds
+ doCorePass dfs rb us binds CoreCSE		        
+-   = _scc_ "CommonSubExpr" noStats dfs (cseProgram dfs binds)
++   = noStats dfs (cseProgram dfs binds)
+ doCorePass dfs rb us binds CoreLiberateCase	        
+-   = _scc_ "LiberateCase"  noStats dfs (liberateCase dfs binds)
++   = noStats dfs (liberateCase dfs binds)
+ doCorePass dfs rb us binds CoreDoFloatInwards       
+-   = _scc_ "FloatInwards"  noStats dfs (floatInwards dfs binds)
++   = noStats dfs (floatInwards dfs binds)
+ doCorePass dfs rb us binds (CoreDoFloatOutwards f)  
+-   = _scc_ "FloatOutwards" noStats dfs (floatOutwards dfs f us binds)
++   = noStats dfs (floatOutwards dfs f us binds)
+ doCorePass dfs rb us binds CoreDoStaticArgs	        
+-   = _scc_ "StaticArgs"    noStats dfs (doStaticArgs us binds)
++   = noStats dfs (doStaticArgs us binds)
+ doCorePass dfs rb us binds CoreDoStrictness	        
+-   = _scc_ "Stranal"       noStats dfs (dmdAnalPgm dfs binds)
++   = noStats dfs (dmdAnalPgm dfs binds)
+ doCorePass dfs rb us binds CoreDoWorkerWrapper      
+-   = _scc_ "WorkWrap"      noStats dfs (wwTopBinds dfs us binds)
++   = noStats dfs (wwTopBinds dfs us binds)
+ doCorePass dfs rb us binds CoreDoSpecialising       
+-   = _scc_ "Specialise"    noStats dfs (specProgram dfs us binds)
++   = noStats dfs (specProgram dfs us binds)
+ doCorePass dfs rb us binds CoreDoSpecConstr
+-   = _scc_ "SpecConstr"    noStats dfs (specConstrProgram dfs us binds)
++   = noStats dfs (specConstrProgram dfs us binds)
+ #ifdef OLD_STRICTNESS
+ doCorePass dfs rb us binds CoreDoOldStrictness
+-   = _scc_ "OldStrictness"      noStats dfs (doOldStrictness dfs binds)
++   = noStats dfs (doOldStrictness dfs binds)
+ #endif
+ doCorePass dfs rb us binds CoreDoPrintCore	        
+-   = _scc_ "PrintCore"     noStats dfs (printCore binds)
++   = noStats dfs (printCore binds)
+ doCorePass dfs rb us binds CoreDoGlomBinds	        
+    = noStats dfs (glomBinds dfs binds)
+ doCorePass dfs rb us binds (CoreDoRuleCheck phase pat)
+@@ -479,7 +479,7 @@
+       | let sz = coreBindsSize binds in sz == sz
+       = do {
+ 		-- Occurrence analysis
+-	   let { tagged_binds = _scc_ "OccAnal" occurAnalyseBinds binds } ;
++	   let { tagged_binds = occurAnalyseBinds binds } ;
+ 
+ 	   dumpIfSet_dyn dflags Opt_D_dump_occur_anal "Occurrence analysis"
+ 		     (pprCoreBindings tagged_binds);
+--- a/ghc/compiler/simplStg/SimplStg.lhs
++++ b/ghc/compiler/simplStg/SimplStg.lhs
+@@ -71,7 +71,7 @@
+ 	     end_pass us2 "StgStats" ccs binds
+ 
+ 	  StgDoMassageForProfiling ->
+-	     _scc_ "ProfMassage"
++	     
+ 	     let
+ 		 (collected_CCs, binds3)
+ 		   = stgMassageForProfiling module_name us1 binds
+--- a/ghc/compiler/stgSyn/StgLint.lhs
++++ b/ghc/compiler/stgSyn/StgLint.lhs
+@@ -58,7 +58,7 @@
+ lintStgBindings :: String -> [StgBinding] -> [StgBinding]
+ 
+ lintStgBindings whodunnit binds
+-  = _scc_ "StgLint"
++  = 
+     case (initL (lint_binds binds)) of
+       Nothing  -> binds
+       Just msg -> pprPanic "" (vcat [
+--- a/ghc/compiler/utils/Digraph.lhs
++++ b/ghc/compiler/utils/Digraph.lhs
+@@ -101,8 +101,8 @@
+ stronglyConnCompR edges
+   = map decode forest
+   where
+-    (graph, vertex_fn) = _scc_ "graphFromEdges" graphFromEdges edges
+-    forest	       = _scc_ "Digraph.scc" scc graph
++    (graph, vertex_fn) = graphFromEdges edges	-- mhs: _scc_ pragmas dropped
++    forest	       = scc graph
+     decode (Node v []) | mentions_itself v = CyclicSCC [vertex_fn v]
+ 		       | otherwise	   = AcyclicSCC (vertex_fn v)
+     decode other = CyclicSCC (dec other [])

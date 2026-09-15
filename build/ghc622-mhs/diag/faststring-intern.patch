@@ -1,0 +1,35 @@
+--- a/build/shims-6.2.2-run1/FastString.hs
++++ b/build/shims-6.2.2-run1/FastString.hs
+@@ -50,13 +50,31 @@
+ 
+ intern :: String -> Int
+ intern s = unsafePerformIO $ do
++  -- mhs: force s to normal form *before* reading the table. Forcing s can
++  -- itself call intern: OccName.mkWorkerOcc builds "$w" ++ occNameString occ,
++  -- and occNameString forces occ's FastString, whose strict unique field is
++  -- an intern thunk that may not have run yet. When M.lookup forced s *after*
++  -- the snapshot was taken, the nested call's insert was overwritten by the
++  -- outer one and both strings got the same unique. Seen as GHC.List.hi
++  -- carrying two signatures named $w$smaximum ($smaximum had been evicted),
++  -- so every importer that inlined the wrapper looped in the simplifier
++  -- (Data.Complex, Data.Graph, System.Console.GetOpt). GHC's real
++  -- mkFastString hashes the whole string before touching its table, so it
++  -- never had this re-entrancy. The insert is forced too, so the IORef never
++  -- holds a chain of unevaluated inserts.
++  forceString s
+   (next, tbl) <- readIORef internTable
+   case M.lookup s tbl of
+     Just u  -> return u
+     Nothing -> do
+-      writeIORef internTable (next + 1, M.insert s next tbl)
++      let tbl' = M.insert s next tbl
++      tbl' `seq` writeIORef internTable (next + 1, tbl')
+       return next
+ 
++-- Evaluate the spine and every character (mhs).
++forceString :: String -> IO ()
++forceString s = foldr seq () s `seq` return ()
++
+ mkFastString :: String -> FastString
+ mkFastString s = FastString (intern s) s
+ 

@@ -1,0 +1,50 @@
+GHC 6.2.2 -- mhs: `f :: T = e` split into signature and binding
+GHC accepted a type signature fused with its binding on one line
+(`getBaseDir :: IO (Maybe String) = do return Nothing`) or a signature
+directly followed by `= e` on the next line (HscMain initNameCache,
+PrelInfo ghcPrimExports, TcRnMonad getBannedProcLevels). Haskell 98 does
+not, and MicroHs rejects it; the binding gets its own left-hand side.
+
+--- a/ghc/compiler/main/HscMain.lhs
++++ b/ghc/compiler/main/HscMain.lhs
+@@ -642,6 +642,7 @@
+ 	      pcs_nc  = nc })
+ 
+ initNameCache :: IO NameCache
++initNameCache
+   = do us <- mkSplitUniqSupply 'r'
+        return (NameCache { nsUniqs = us,
+ 			   nsNames = initOrigNames,
+--- a/ghc/compiler/main/SysTools.lhs
++++ b/ghc/compiler/main/SysTools.lhs
+@@ -929,7 +929,9 @@
+ foreign import stdcall "GetModuleFileNameA" unsafe
+   getModuleFileName :: Ptr () -> CString -> Int -> IO Int32
+ #else
+-getBaseDir :: IO (Maybe String) = do return Nothing
++-- mhs: a signature fused with its binding, which GHC accepted and Haskell 98 does not.
++getBaseDir :: IO (Maybe String)
++getBaseDir = do return Nothing
+ #endif
+ 
+ #ifdef mingw32_HOST_OS
+--- a/ghc/compiler/prelude/PrelInfo.lhs
++++ b/ghc/compiler/prelude/PrelInfo.lhs
+@@ -103,6 +103,7 @@
+ 
+ \begin{code}
+ ghcPrimExports :: [RdrAvailInfo]
++ghcPrimExports	-- mhs: signature and binding were fused on one line
+  = map (Avail . nameOccName . idName) ghcPrimIds ++
+    map (Avail . primOpOcc) allThePrimOps ++
+    [ AvailTC occ [occ] |
+--- a/ghc/compiler/typecheck/TcRnMonad.lhs
++++ b/ghc/compiler/typecheck/TcRnMonad.lhs
+@@ -763,6 +763,7 @@
+ 	  ArrCtxt {proc_level = curr_lvl, proc_banned = curr_lvl : banned}
+ 
+ getBannedProcLevels :: TcM [ProcLevel]
++getBannedProcLevels	-- mhs: signature fused with binding (H98 rejects)
+   = do { env <- getLclEnv; return (proc_banned (tcl_arrow_ctxt env)) }
+ 
+ incProcLevel :: TcM a -> TcM a

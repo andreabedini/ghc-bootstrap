@@ -1,0 +1,20 @@
+module Main where
+import Data.Ratio
+main :: IO ()
+main = do
+  print (2 + 3 * 4 :: Int)
+  print (maxBound :: Int, minBound :: Int)
+  print (product [1..25] :: Integer)
+  print (2^100 :: Integer)
+  print ((2^100) `divMod` (3^40 :: Integer))
+  print (gcd (2^60 :: Integer) (6^30))
+  print (fromIntegral (2^62 :: Integer) :: Int)
+  print (3.5 :: Double, 1.0e-3 :: Double, pi :: Double)
+  print (sqrt 2 :: Double, exp 1 :: Double)
+  print (decodeFloat (1.5 :: Double), encodeFloat 3 4 :: Double)
+  print (2.5 :: Float, sqrt 2 :: Float, decodeFloat (1.5 :: Float))
+  print (truncate (1e10 :: Double) :: Int, round (2.5 :: Double) :: Integer, floor (-0.5 :: Double) :: Int)
+  print (fromIntegral (12345678901234 :: Integer) :: Double)
+  print (toRational (0.75 :: Double), 3 % 4 + 1 % 4 :: Rational)
+  print (read "42" :: Int, read "3.25" :: Double, read "[1,2,3]" :: [Int])
+  print (showsPrec 11 (-5 :: Int) "", show (Just (-1.5 :: Double)))

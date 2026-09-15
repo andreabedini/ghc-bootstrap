@@ -1,0 +1,263 @@
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -85,13 +85,13 @@
+ 
+ writeRealC :: Handle -> AbstractC -> IO ()
+ --writeRealC handle absC = 
+--- _scc_ "writeRealC" 
++-- 
+ -- printDoc LeftMode handle (pprAbsC absC (costs absC))
+ 
+ writeRealC handle absC
+- | opt_GranMacros = _scc_ "writeRealC" printForC handle $ 
++ | opt_GranMacros = printForC handle $ 
+ 				       pprCode CStyle (pprAbsC absC (costs absC))
+- | otherwise	  = _scc_ "writeRealC" printForC handle $
++ | otherwise	  = printForC handle $
+ 				       pprCode CStyle (pprAbsC absC (panic "costs"))
+ 
+ dumpRealC :: AbstractC -> SDoc
+--- a/ghc/compiler/coreSyn/CoreTidy.lhs
++++ b/ghc/compiler/coreSyn/CoreTidy.lhs
+@@ -75,7 +75,7 @@
+ 	beginPass "Tidy Core"
+ 
+         (binds_in1,mrulebase_in1) <- if opt_UsageSPOn
+-                                     then _scc_ "CoreUsageSPInf"
++                                     then 
+                                           doUsageSPInf us binds_in rulebase_in
+                                      else return (binds_in,Nothing)
+ 
+--- a/ghc/compiler/main/Main.lhs
++++ b/ghc/compiler/main/Main.lhs
+@@ -59,7 +59,7 @@
+ 
+ \begin{code}
+ main = stderr `seq`	-- Bug fix.  Sigh
+- --  _scc_ "main" 
++ --  
+  doIt classifyOpts
+ \end{code}
+ 
+@@ -96,7 +96,7 @@
+ 
+ 	--------------------------  Reader  ----------------
+     show_pass "Parser"	>>
+-    _scc_     "Parser"
++    
+     parseModule		>>= \ (mod_name, rdr_module) ->
+ 
+     dumpIfSet opt_D_dump_parsed "Parser" (ppr rdr_module) >>
+@@ -116,7 +116,7 @@
+ 
+ 	--------------------------  Rename  ----------------
+     show_pass "Renamer" 			>>
+-    _scc_     "Renamer"
++    
+ 
+     renameModule rn_uniqs rdr_module		>>= \ maybe_rn_stuff ->
+     case maybe_rn_stuff of {
+@@ -140,7 +140,7 @@
+ 
+ 	--------------------------  Typechecking ----------------
+     show_pass "TypeCheck" 				>>
+-    _scc_     "TypeCheck"
++    
+     typecheckModule tc_uniqs rn_name_supply
+ 		    iface_file_stuff rn_mod	        >>= \ maybe_tc_stuff ->
+     case maybe_tc_stuff of {
+@@ -152,12 +152,12 @@
+ 
+ 
+ 	--------------------------  Desugaring ----------------
+-    _scc_     "DeSugar"
++    
+     deSugar this_mod ds_uniqs tc_results	>>= \ (desugared, rules, h_code, c_code, fe_binders) ->
+ 
+ 
+ 	--------------------------  Main Core-language transformations ----------------
+-    _scc_     "Core2Core"
++    
+     core2core core_cmds desugared rules			>>= \ (simplified, orphan_rules) ->
+ 
+ 	-- Do the final tidy-up
+@@ -174,20 +174,20 @@
+ 
+ 	--------------------------  Convert to STG code -------------------------------
+     show_pass "Core2Stg" 			>>
+-    _scc_     "Core2Stg"
++    
+     let
+ 	stg_binds   = topCoreBindsToStg c2s_uniqs occ_anal_tidy_binds
+     in
+ 
+ 	--------------------------  Simplify STG code -------------------------------
+     show_pass "Stg2Stg" 			>>
+-    _scc_     "Stg2Stg"
++    
+     stg2stg stg_cmds this_mod st_uniqs stg_binds >>= \ (stg_binds2, cost_centre_info) ->
+ 
+ 
+ 	--------------------------  Interface file -------------------------------
+ 	-- Dump instance decls and type signatures into the interface file
+-    _scc_     "Interface"
++    
+     let
+ 	final_ids = collectFinalStgBinders (map fst stg_binds2)
+     in
+@@ -206,7 +206,7 @@
+ 
+ 	--------------------------  Code generation -------------------------------
+     show_pass "CodeGen" 			>>
+-    _scc_     "CodeGen"
++    
+     codeGen this_mod imported_modules
+ 	    cost_centre_info
+ 	    fe_binders
+@@ -216,7 +216,7 @@
+ 
+ 	--------------------------  Code output -------------------------------
+     show_pass "CodeOutput" 				>>
+-    _scc_     "CodeOutput"
++    
+     codeOutput this_mod local_tycons local_classes
+ 	       occ_anal_tidy_binds stg_binds2
+ 	       c_code h_code abstractC 
+--- a/ghc/compiler/parser/Lex.lhs
++++ b/ghc/compiler/parser/Lex.lhs
+@@ -397,7 +397,7 @@
+ 		})
+ 
+ 	-- first, start a new lexeme and lose all the whitespace
+-  =  _scc_ "Lexer" 
++  =  
+   tab line bol atbol (stepOverLexeme buf)
+   where
+ 	line = srcLocLine loc
+@@ -899,7 +899,7 @@
+ 
+  let lexeme  = lexemeToFastString buf' in
+ 
+- case _scc_ "Lex.haskellKeyword" lookupUFM haskellKeywordsFM lexeme of {
++ case lookupUFM haskellKeywordsFM lexeme of {
+  	Just kwd_token -> --trace ("hkeywd: "++_UNPK_(lexeme)) $
+ 			  cont kwd_token buf';
+  	Nothing        -> 
+@@ -996,7 +996,7 @@
+       new_buf     = mergeLexemes buf buf'
+       is_a_qvarid = cont (mk_qvar_token mod lexeme) new_buf
+      in
+-     case _scc_ "Lex.haskellKeyword" lookupUFM haskellKeywordsFM lexeme of {
++     case lookupUFM haskellKeywordsFM lexeme of {
+     	    Nothing          -> is_a_qvarid ;
+ 
+     	    Just kwd_token | isSpecial kwd_token   -- special ids (as, qualified, hiding) shouldn't be
+--- a/ghc/compiler/simplCore/OccurAnal.lhs
++++ b/ghc/compiler/simplCore/OccurAnal.lhs
+@@ -279,7 +279,7 @@
+ 
+ \begin{code}
+ occAnalBind env (Rec pairs) body_usage
+-  = foldr (_scc_ "occAnalBind.dofinal" do_final_bind) (body_usage, []) sccs
++  = foldr (do_final_bind) (body_usage, []) sccs
+   where
+     pp_item (_, bndr, _)     = ppr bndr
+ 
+@@ -293,12 +293,12 @@
+ 		      ]
+ 
+     sccs :: [SCC (Node Details1)]
+-    sccs = _scc_ "occAnalBind.scc" stronglyConnCompR edges
++    sccs = stronglyConnCompR edges
+ 
+ 
+     ---- stuff for dependency analysis of binds -------------------------------
+     edges :: [Node Details1]
+-    edges = _scc_ "occAnalBind.assoc"
++    edges = 
+ 	    [ (details, IBOX(u2i (idUnique id)), edges_from rhs_usage)
+ 	    | details@(id, rhs_usage, rhs) <- analysed_pairs
+ 	    ]
+@@ -313,7 +313,7 @@
+ 	-- which has n**2 cost, and this meant that edges_from alone 
+ 	-- consumed 10% of total runtime!
+     edges_from :: UsageDetails -> [Int]
+-    edges_from rhs_usage = _scc_ "occAnalBind.edges_from"
++    edges_from rhs_usage = 
+ 			   keysUFM rhs_usage
+ 
+     ---- stuff to "re-constitute" bindings from dependency-analysis info ------
+--- a/ghc/compiler/simplCore/SimplCore.lhs
++++ b/ghc/compiler/simplCore/SimplCore.lhs
+@@ -140,19 +140,19 @@
+ 
+ 	doCorePasses (stats `plusSimplCount` stats1) us2 binds1 lrb1 irb rb1 to_dos
+ 
+-doCorePass us binds lrb rb (CoreDoSimplify sw_chkr) = _scc_ "Simplify"      simplifyPgm rb sw_chkr us binds
+-doCorePass us binds lrb rb CoreCSE		    = _scc_ "CommonSubExpr" noStats (cseProgram binds)
+-doCorePass us binds lrb rb CoreLiberateCase	    = _scc_ "LiberateCase"  noStats (liberateCase binds)
+-doCorePass us binds lrb rb CoreDoFloatInwards       = _scc_ "FloatInwards"  noStats (floatInwards binds)
+-doCorePass us binds lrb rb (CoreDoFloatOutwards f)  = _scc_ "FloatOutwards" noStats (floatOutwards f us binds)
+-doCorePass us binds lrb rb CoreDoStaticArgs	    = _scc_ "StaticArgs"    noStats (doStaticArgs us binds)
+-doCorePass us binds lrb rb CoreDoStrictness	    = _scc_ "Stranal"       noStats (saBinds binds)
+-doCorePass us binds lrb rb CoreDoWorkerWrapper      = _scc_ "WorkWrap"      noStats (wwTopBinds us binds)
+-doCorePass us binds lrb rb CoreDoSpecialising       = _scc_ "Specialise"    noStats (specProgram us binds)
+-doCorePass us binds lrb rb CoreDoCPResult	    = _scc_ "CPResult"      noStats (cprAnalyse binds)
+-doCorePass us binds lrb rb CoreDoPrintCore	    = _scc_ "PrintCore"     noStats (printCore binds)
++doCorePass us binds lrb rb (CoreDoSimplify sw_chkr) = simplifyPgm rb sw_chkr us binds
++doCorePass us binds lrb rb CoreCSE		    = noStats (cseProgram binds)
++doCorePass us binds lrb rb CoreLiberateCase	    = noStats (liberateCase binds)
++doCorePass us binds lrb rb CoreDoFloatInwards       = noStats (floatInwards binds)
++doCorePass us binds lrb rb (CoreDoFloatOutwards f)  = noStats (floatOutwards f us binds)
++doCorePass us binds lrb rb CoreDoStaticArgs	    = noStats (doStaticArgs us binds)
++doCorePass us binds lrb rb CoreDoStrictness	    = noStats (saBinds binds)
++doCorePass us binds lrb rb CoreDoWorkerWrapper      = noStats (wwTopBinds us binds)
++doCorePass us binds lrb rb CoreDoSpecialising       = noStats (specProgram us binds)
++doCorePass us binds lrb rb CoreDoCPResult	    = noStats (cprAnalyse binds)
++doCorePass us binds lrb rb CoreDoPrintCore	    = noStats (printCore binds)
+ doCorePass us binds lrb rb CoreDoUSPInf
+-  = _scc_ "CoreUsageSPInf" 
++  = 
+     if opt_UsageSPOn then
+       do
+          (binds1, rules1) <- doUsageSPInf us binds lrb
+@@ -290,7 +290,7 @@
+       | let sz = coreBindsSize binds in sz == sz
+       = do {
+ 		-- Occurrence analysis
+-	   let { tagged_binds = _scc_ "OccAnal" occurAnalyseBinds binds } ;
++	   let { tagged_binds = occurAnalyseBinds binds } ;
+ 
+ 	   dumpIfSet opt_D_dump_occur_anal "Occurrence analysis"
+ 		     (pprCoreBindings tagged_binds);
+--- a/ghc/compiler/simplStg/SimplStg.lhs
++++ b/ghc/compiler/simplStg/SimplStg.lhs
+@@ -96,7 +96,7 @@
+ 	     end_pass us2 "StgStats" ccs binds
+ 
+ 	  StgDoLambdaLift ->
+-	     _scc_ "StgLambdaLift"
++	     
+ 		-- NB We have to do setStgVarInfo first!
+ 	     let
+ 		binds3 = liftProgram module_name us1 (setStgVarInfo opt_StgDoLetNoEscapes binds)
+@@ -104,7 +104,7 @@
+ 	     end_pass us2 "LambdaLift" ccs binds3
+ 
+ 	  StgDoMassageForProfiling ->
+-	     _scc_ "ProfMassage"
++	     
+ 	     let
+ 		 (collected_CCs, binds3)
+ 		   = stgMassageForProfiling module_name us1 binds
+--- a/ghc/compiler/stgSyn/StgLint.lhs
++++ b/ghc/compiler/stgSyn/StgLint.lhs
+@@ -58,7 +58,7 @@
+ lintStgBindings :: String -> [StgBinding] -> [StgBinding]
+ 
+ lintStgBindings whodunnit binds
+-  = _scc_ "StgLint"
++  = 
+     case (initL (lint_binds binds)) of
+       Nothing  -> binds
+       Just msg -> pprPanic "" (vcat [

@@ -1,0 +1,18 @@
+--- a/ghc/compiler/utils/Util.lhs
++++ b/ghc/compiler/utils/Util.lhs
+@@ -789,13 +789,13 @@
+ #if __HASKELL1__ > 4
+ seqList :: [a] -> b -> b
+ #else
+-seqList :: (Eval a) => [a] -> b -> b
++seqList :: [a] -> b -> b
+ #endif
+ seqList [] b = b
+ seqList (x:xs) b = x `seq` seqList xs b
+ 
+ #if __HASKELL1__ <= 4
+-($!)    :: (Eval a) => (a -> b) -> a -> b
++($!)    :: (a -> b) -> a -> b
+ f $! x  = x `seq` f x
+ #endif
+ \end{code}

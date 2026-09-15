@@ -1,0 +1,34 @@
+GHC 6.2.2 -- mhs: #include "../includes/MachDeps.h" explicitly
+MicroHs puts its own runtime include directory first on cpphs's -I list,
+and that directory carries a MachDeps.h of its own. utils/Binary.hs and
+utils/FastMutInt.lhs `#include "MachDeps.h"` and got MicroHs's file
+instead of GHC's; the relative path picks the tree's.
+
+--- a/ghc/compiler/utils/Binary.hs
++++ b/ghc/compiler/utils/Binary.hs
+@@ -51,7 +51,10 @@
+ #include "HsVersions.h"
+ 
+ -- The *host* architecture version:
+-#include "MachDeps.h"
++-- MicroHs puts its own runtime include dir first on cpphs's -I list, and it
++-- carries a MachDeps.h of its own that shadows GHC's; the explicit path is
++-- the form Constants.lhs already uses.
++#include "../includes/MachDeps.h"
+ 
+ import {-# SOURCE #-} Module
+ import FastString
+--- a/ghc/compiler/utils/FastMutInt.lhs
++++ b/ghc/compiler/utils/FastMutInt.lhs
+@@ -11,7 +11,10 @@
+ 	incFastMutInt, incFastMutIntBy
+   ) where
+ 
+-#include "MachDeps.h"
++-- MicroHs puts its own runtime include dir first on cpphs's -I list, and it
++-- carries a MachDeps.h of its own that shadows GHC's; the explicit path is
++-- the form Constants.lhs already uses.
++#include "../includes/MachDeps.h"
+ 
+ #ifndef SIZEOF_HSINT
+ #define SIZEOF_HSINT  INT_SIZE_IN_BYTES

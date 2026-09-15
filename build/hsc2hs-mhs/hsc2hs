@@ -1,0 +1,26 @@
+#!/bin/sh
+# ghc/utils/hsc2hs/hsc2hs.sh with the Makefile's SCRIPT_SUBST_VARS filled in for the
+# in-place (INSTALLING=0) layout: HSC2HS_BINDIR/HSC2HS_DIR = this directory,
+# HSC2HS_EXTRA = "--cc=$(CC) --ld=$(CC) --cflag=-D__GLASGOW_HASKELL__=$(ProjectVersionInt)
+# -I$(FPTOOLS_TOP_ABS_PLATFORM)/ghc/includes" (CC=gcc, ProjectVersionInt=622, and our
+# ghc/includes is build/ghc-6.2.2-run1/ghc/includes, the config.h with the HTYPE_* block).
+# HSC2HS_CFLAGS (ours, not the Makefile's; default --cflag=-std=gnu89): gcc >= 14 rejects the
+# K&R definitions in libraries/base/include/HsBase.h (__hscore_s_isblk(m) ...) as C99 errors;
+# build-hc.sh compiles the .hc files in the same gnu89 mode.  See FINDINGS.md.
+HSC2HS_BINDIR=/home/andrea/work/haskell/ghc-bootstrap/build/hsc2hs-mhs
+HSC2HS_DIR=/home/andrea/work/haskell/ghc-bootstrap/build/hsc2hs-mhs
+HS_PROG=hsc2hs-bin
+HSC2HS_EXTRA="--cc=gcc --ld=gcc ${HSC2HS_CFLAGS:---cflag=-std=gnu89} --cflag=-D__GLASGOW_HASKELL__=622 -I/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/includes"
+
+tflag="--template=$HSC2HS_DIR/template-hsc.h"
+for arg do
+    case "$arg" in
+        -c*)    HSC2HS_EXTRA=;;
+        --cc=*) HSC2HS_EXTRA=;;
+	-t*)	tflag=;;
+	--template=*) tflag=;;
+        --)     break;;
+    esac
+done
+
+$HSC2HS_BINDIR/$HS_PROG $tflag $HSC2HS_EXTRA "$@"

@@ -1,0 +1,154 @@
+diff --git i/hugs/Data/Version.hs w/hugs/Data/Version.hs
+new file mode 100644
+index 00000000..1ea62556
+--- /dev/null
++++ w/hugs/Data/Version.hs
+@@ -0,0 +1,11 @@
++-- Shim: Hugs's Data.Version predates makeVersion (base 4.8).
++module Data.Version(Version(..), makeVersion, showVersion) where
++
++data Version = Version { versionBranch :: [Int], versionTags :: [String] }
++  deriving (Eq, Ord, Show)
++
++makeVersion :: [Int] -> Version
++makeVersion b = Version b []
++
++showVersion :: Version -> String
++showVersion (Version b _) = foldr1 (\x y -> x ++ "." ++ y) (map show b)
+diff --git i/hugs/MHSPrelude.hs w/hugs/MHSPrelude.hs
+index 09300495..c8927486 100644
+--- i/hugs/MHSPrelude.hs
++++ w/hugs/MHSPrelude.hs
+@@ -6,12 +6,14 @@ module MHSPrelude(
+ --  module Control.Monad.Fail,
+   -- Exporting these with 'module Control.Arrow' does not work
+   first, second,
++  module Data.Int,
++  module Data.Word,
+   module Data.Monoid,
+   module Data.Semigroup,
+   (<$>), Applicative(..), (*>), (<*), (>=>), (<=<)
+   ) where
+ import Hugs.Prelude()
+-import Prelude hiding(fail)
++import Prelude hiding(fail, catch)
+ import qualified Prelude
+ import Control.Arrow(first, second)
+ import Control.Applicative
+@@ -24,6 +26,7 @@ import Data.Monoid
+ import Data.Ratio
+ import Data.Semigroup
+ import Data.Text(Text, append, pack)
++import Data.ByteString(ByteString)
+ import Data.Word
+ import Data.Version
+ import Debug.Trace
+@@ -64,9 +67,8 @@ subsequences xs = [] : sub xs
+           where f ys r = ys : (x : ys) : r
+ 
+ ------- Version --------
+-
+-makeVersion :: [Int] -> Version
+-makeVersion b = Version b []
++-- makeVersion now comes from the Data.Version shim (hugs/Data/Version.hs),
++-- which Version.hs imports directly; defining it here too made it ambiguous.
+ 
+ ------- Debug --------
+ 
+@@ -117,6 +119,16 @@ lookupEnv var = do
+     Left _ -> return Nothing
+     Right s -> return (Just s)
+ 
++-- Hugs has no setEnv (base 4.7+).  MicroHs uses it to publish MHSPKG to its
++-- own later lookupEnv calls; a no-op just means that cache is never primed.
++setEnv :: String -> String -> IO ()
++setEnv _ _ = return ()
++
++-- Hugs has no getExecutablePath (base 4.6+).  Callers in MicroHs already wrap
++-- it in a catch that falls back to getProgName, so failing is the right shim.
++getExecutablePath :: IO FilePath
++getExecutablePath = ioError (userError "getExecutablePath: not available under hugs")
++
+ openFileM :: FilePath -> IOMode -> IO (Maybe Handle)
+ openFileM path m = do
+   r <- try $ openFile path m
+@@ -126,7 +138,7 @@ openFileM path m = do
+ 
+ openBinaryFileM :: FilePath -> IOMode -> IO (Maybe Handle)
+ openBinaryFileM path m = do
+-  r <- (try $ openBinaryFile path m) :: IO (Either IOError Handle)
++  r <- (try $ openBinaryFile path m) :: IO (Either Exception Handle)
+   case r of
+     Left _ -> return Nothing
+     Right h -> return (Just h)
+@@ -212,6 +224,7 @@ force x = x `deepseq` x
+ 
+ instance NFData Int
+ instance NFData Int64
++instance NFData ByteString
+ instance NFData Word
+ instance NFData Float
+ instance NFData Double
+diff --git i/hugs/System/IO/Serialize.hs w/hugs/System/IO/Serialize.hs
+index 81bc636f..ea4b138a 100644
+--- i/hugs/System/IO/Serialize.hs
++++ w/hugs/System/IO/Serialize.hs
+@@ -7,9 +7,10 @@ module System.IO.Serialize(
+ -}
+   writeSerialized,
+   writeSerializedCompressed,
+-  readSerialized,
++  readSerialized, readSerializedH, readSerializedBS,
+   ) where
+---import System.IO
++import Data.ByteString(ByteString)
++import System.IO
+ 
+ {-
+ hSerialize   :: forall a . Handle -> a -> IO ()
+@@ -29,5 +30,11 @@ writeSerialized = errhugs
+ readSerialized ::  FilePath -> IO a
+ readSerialized = errhugs
+ 
++readSerializedH :: Handle -> IO a
++readSerializedH = errhugs
++
++readSerializedBS :: ByteString -> IO a
++readSerializedBS = errhugs
++
+ errhugs :: a
+ errhugs = error "System.IO.Serialize: serialization not available with hugs"
+diff --git i/hugs/System/IO/TimeMilli.hs w/hugs/System/IO/TimeMilli.hs
+index 1c5597ed..d4b5ee08 100644
+--- i/hugs/System/IO/TimeMilli.hs
++++ w/hugs/System/IO/TimeMilli.hs
+@@ -2,5 +2,12 @@ module System.IO.TimeMilli(getTimeMilli) where
+ import Data.Time
+ import Data.Time.Clock.POSIX
+ 
++-- Hugs's Int is 32 bits (prelude.h: typedef int Int, MAXPOSINT 0x7fffffff),
++-- but epoch milliseconds are ~1.7e12, so the Integer -> Int conversion raised
++-- an "arithmetic overflow" ArithException from bignums.c.  MicroHs only ever
++-- takes differences of these for timing reports, so reducing modulo 1e9 keeps
++-- every delta correct apart from one wrap every ~11.6 days.
+ getTimeMilli :: IO Int
+-getTimeMilli  = fmap (floor . (1000 *) . toRational . utcTimeToPOSIXSeconds) getCurrentTime
++getTimeMilli =
++  fmap (fromInteger . (`mod` 1000000000) . floor . (1000 *) . toRational . utcTimeToPOSIXSeconds)
++       getCurrentTime
+diff --git i/hugs/Text/Read.hs w/hugs/Text/Read.hs
+new file mode 100644
+index 00000000..58be060c
+--- /dev/null
++++ w/hugs/Text/Read.hs
+@@ -0,0 +1,10 @@
++-- Shim: Hugs predates Text.Read.readMaybe (base 4.6).
++module Text.Read(readMaybe, readEither) where
++
++readMaybe :: (Read a) => String -> Maybe a
++readMaybe s = case [ x | (x,t) <- reads s, ("","") <- lex t ] of
++                [x] -> Just x
++                _   -> Nothing
++
++readEither :: (Read a) => String -> Either String a
++readEither s = maybe (Left "Text.Read.readEither: no parse") Right (readMaybe s)

@@ -1,0 +1,85 @@
+GHC 6.2.2 -- mhs: float/double bit casts without castSTUArray
+absCSyn/PprAbsC.lhs obtains the bit pattern of a Float or Double literal
+by writing it into an unboxed ST array and reading it back as Int
+(castSTUArray on GHC >= 504, MutableByteArray before). MicroHs has
+neither; GhcCompat.castFloatToInt / castDoubleToInts do the same bit cast
+through Data.Float/Data.Double. Same as 4.08.2's patch 0017.
+
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -1739,68 +1739,18 @@
+ \begin{code}
+ big_doubles = (getPrimRepSize DoubleRep) /= 1
+ 
+-#if __GLASGOW_HASKELL__ >= 504
+-newFloatArray :: (Int,Int) -> ST s (STUArray s Int Float)
+-newFloatArray = newArray_
+-
+-newDoubleArray :: (Int,Int) -> ST s (STUArray s Int Double)
+-newDoubleArray = newArray_
+-
+-castFloatToIntArray :: STUArray s Int Float -> ST s (STUArray s Int Int)
+-castFloatToIntArray = castSTUArray
+-
+-castDoubleToIntArray :: STUArray s Int Double -> ST s (STUArray s Int Int)
+-castDoubleToIntArray = castSTUArray
+-
+-writeFloatArray :: STUArray s Int Float -> Int -> Float -> ST s ()
+-writeFloatArray = writeArray
+-
+-writeDoubleArray :: STUArray s Int Double -> Int -> Double -> ST s ()
+-writeDoubleArray = writeArray
+-
+-readIntArray :: STUArray s Int Int -> Int -> ST s Int
+-readIntArray = readArray
+-
+-#else
+-
+-castFloatToIntArray :: MutableByteArray s t -> ST s (MutableByteArray s t)
+-castFloatToIntArray = return
+-
+-castDoubleToIntArray :: MutableByteArray s t -> ST s (MutableByteArray s t)
+-castDoubleToIntArray = return
+-
+-#endif
++-- The original wrote the float into an unboxed array and read the bits back
++-- as an Int (through castSTUArray, or GHC 4's MutableByteArray). MicroHs has
++-- neither; GhcCompat.castFloatToInt / castDoubleToInts do the same bit cast
++-- through Data.Float/Data.Double (4.08.2 patch 0017).
+ 
+ -- floats are always 1 word
+ floatToWord :: CAddrMode -> CAddrMode
+ floatToWord (CLit (MachFloat r))
+-  = runST (do
+-	arr <- newFloatArray ((0::Int),0)
+-	writeFloatArray arr 0 (fromRational r)
+-	arr' <- castFloatToIntArray arr
+-	i <- readIntArray arr' 0
+-	return (CLit (MachInt (toInteger i)))
+-    )
++  = CLit (MachInt (toInteger (castFloatToInt (fromRational r))))
+ 
+ doubleToWords :: CAddrMode -> [CAddrMode]
+ doubleToWords (CLit (MachDouble r))
+-  | big_doubles				-- doubles are 2 words
+-  = runST (do
+-	arr <- newDoubleArray ((0::Int),1)
+-	writeDoubleArray arr 0 (fromRational r)
+-	arr' <- castDoubleToIntArray arr
+-	i1 <- readIntArray arr' 0
+-	i2 <- readIntArray arr' 1
+-	return [ CLit (MachInt (toInteger i1))
+-	       , CLit (MachInt (toInteger i2))
+-	       ]
+-    )
+-  | otherwise				-- doubles are 1 word
+-  = runST (do
+-	arr <- newDoubleArray ((0::Int),0)
+-	writeDoubleArray arr 0 (fromRational r)
+-	arr' <- castDoubleToIntArray arr
+-	i <- readIntArray arr' 0
+-	return [ CLit (MachInt (toInteger i)) ]
+-    )
++  = [ CLit (MachInt (toInteger i))
++    | i <- castDoubleToInts big_doubles (fromRational r) ]
+ \end{code}

@@ -1,0 +1,20 @@
+--- src/prelude.h.orig	2026-09-02 01:14:55.499132766 +0800
++++ src/prelude.h	2026-09-02 01:29:31.920016214 +0800
+@@ -752,7 +752,7 @@
+ #define NUM_TEXT           Pick(12000,  20000,      320000)
+ #define NUM_TEXTH	   Pick(1,      10,         10)
+ #define NUM_TYVARS         Pick(800,    2000,       8000)
+-#define NUM_STACK          Pick(1800,   16000,      160000)
++#define NUM_STACK          Pick(1800,   16000,      40000000)
+ #define NUM_ADDRS          Pick(28000,  120000,     1280000)
+ #define MINIMUMHEAP	   Pick(7500,   19000,      19000)
+ #define MAXIMUMHEAP	   Pick(32765,  0,          0)
+@@ -771,7 +771,7 @@
+  * they will overrun the C stack, crashing the interpreter.  To protect
+  * against this, we place a limit on the depth of recursion of eval().
+  */
+-#define MAX_EVAL_DEPTH	   Pick(1024,	4096,	    16384)
++#define MAX_EVAL_DEPTH	   Pick(1024,	4096,	    4000000)
+ 
+ /* Representation of Integer: requires BIGBASE == 10^BIGEXP */
+ #define BIGBASE		   Pick(100,    10000,      10000)

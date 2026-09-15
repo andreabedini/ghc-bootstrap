@@ -1,0 +1,67 @@
+OK	SysTools	
+OK	DriverState	
+OK	BinIface	
+FAIL	DsUtils	error: "/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/compiler/typecheck/TcRnMonad.lhs": line 659, col 3:   found:    =   expected: LQIdent ( UQIdent [ QualString literal (# QSymOper ` -> → => ⇒ :: ∷ ; eof
+OK	MatchLit	
+OK	MkIface	
+FAIL	DsMeta	error: "/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/compiler/deSugar/DsMeta.hs": line 289, col 42: undefined type: M.StrictTypeQ
+OK	PrelInfo	
+FAIL	CgCon	error: "/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/compiler/codeGen/CgHeapery.lhs": line 7, col 9:   found:    ,   expected: module UQIdent ( [ LQIdent pattern type default )
+OK	CgCase	
+OK	CgClosure	
+OK	CgLetNoEscape	
+OK	CgExpr	
+OK	Check	
+OK	CodeGen	
+OK	CodeOutput	
+OK	DriverFlags	
+OK	Finder	
+OK	DriverMkDepend	
+OK	DsGRHSs	
+OK	MatchCon	
+OK	Match	
+OK	DsBinds	
+OK	DsArrows	
+OK	DsListComp	
+OK	DsExpr	
+OK	Desugar	
+FAIL	Linker	error: "/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/compiler/ghci/ByteCodeInstr.lhs": line 20, col 8: Module not found: GHC.Ptr search path=[".","/home/andrea/work/haskell/ghc-bootstrap/MicroHs/bin/../lib","/home/andrea
+OK	RnEnv	
+OK	Simplify	
+OK	SaAbsInt	
+OK	StrictAnal	
+OK	SimplCore	
+FAIL	Inst	error: "/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/compiler/typecheck/TcArrows.lhs": line 152, col 11:   found:    checkTc   expected: }
+OK	RnNames	
+OK	RnTypes	
+OK	RnExpr	
+OK	RnBinds	
+OK	RnSource	
+OK	RnHiFiles	
+OK	RnIfaces	
+OK	TcSimplify	
+OK	TcUnify	
+OK	TcMonoType	
+OK	TcPat	
+OK	TcBinds	
+OK	TcTyDecls	
+OK	TcClassDcl	
+OK	TcDefaults	
+OK	TcMatches	
+OK	TcArrows	
+OK	TcExpr	
+OK	TcForeign	
+OK	TcIfaceSig	
+OK	TcDeriv	
+OK	TcInstDcls	
+OK	TcRules	
+OK	TcTyClsDecls	
+OK	TcRnDriver	
+OK	TidyPgm	
+OK	HscMain	
+OK	DriverPipeline	
+OK	CompManager	
+FAIL	InteractiveUI	error: "/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/compiler/ghci/ByteCodeInstr.lhs": line 20, col 8: Module not found: GHC.Ptr search path=[".","/home/andrea/work/haskell/ghc-bootstrap/MicroHs/bin/../lib","/home/andrea
+OK	Interpreter	
+OK	Main	
+OK	TcSplice	

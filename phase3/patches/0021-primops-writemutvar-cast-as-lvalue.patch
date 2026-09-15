@@ -1,0 +1,11 @@
+--- a/ghc/includes/PrimOps.h
++++ b/ghc/includes/PrimOps.h
+@@ -645,7 +645,7 @@
+ EXTFUN_RTS(newMutVarzh_fast);
+ 
+ #define readMutVarzh(r,a)	 r=(P_)(((StgMutVar *)(a))->var)
+-#define writeMutVarzh(a,v)       (P_)(((StgMutVar *)(a))->var)=(v)
++#define writeMutVarzh(a,v)       ((StgMutVar *)(a))->var=(StgClosure *)(v)
+ #define sameMutVarzh(r,a,b)      r=(I_)((a)==(b))
+ 
+ /* -----------------------------------------------------------------------------

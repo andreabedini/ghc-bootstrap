@@ -1,0 +1,11 @@
+--- a/ghc/includes/StgMacros.h
++++ b/ghc/includes/StgMacros.h
+@@ -60,7 +60,7 @@
+ #define EDC_		extern DLLIMPORT StgClosure
+ #define IC_		static StgClosure
+ #define ECP_(x)		extern const StgClosure *(x)[]
+-#define EDCP_(x)	extern DLLIMPORT StgClosure *(x)[]
++#define EDCP_(x)	extern DLLIMPORT const StgClosure *(x)[]
+ #define ICP_(x)		static const StgClosure *(x)[]
+ 
+ /* -----------------------------------------------------------------------------

@@ -1,0 +1,41 @@
+GHC 6.2.2 -- mhs: switch table indexed with (!) instead of indexArray#
+simplCore/SimplMonad.lhs opened the Array constructor and used
+indexArray# with an unboxed-tuple result to skip bounds checking on the
+simplifier switch table. MicroHs has neither the constructor's GHC-specific
+shape nor the primop; the portable (!) is equivalent. Same as 4.08.2's
+patch 0003.
+
+--- a/ghc/compiler/simplCore/SimplMonad.lhs
++++ b/ghc/compiler/simplCore/SimplMonad.lhs
+@@ -85,13 +85,8 @@
+ import FastString
+ import Maybes		( expectJust )
+ 
+-import GLAEXTS		( indexArray# )
+ 
+-#if __GLASGOW_HASKELL__ < 503
+-import PrelArr  ( Array(..) )
+-#else
+-import GHC.Arr  ( Array(..) )
+-#endif
++import Array		( Array, (!) )
+ 
+ import Array		( array, (//) )
+ 
+@@ -994,11 +989,11 @@
+ 	defined_elems = map mk_assoc_elem tidied_on_switches
+     in
+     -- (avoid some unboxing, bounds checking, and other horrible things:)
+-    case sw_tbl of { Array _ _ stuff ->
+-    \ switch ->
+-	case (indexArray# stuff (tagOf_SimplSwitch switch)) of
+-	  (# v #) -> v
+-    }
++    -- The original opened the Array constructor and used indexArray# with an
++    -- unboxed tuple result, to skip bounds checking. MicroHs has neither the
++    -- constructor's GHC-specific shape nor those primops, and the portable
++    -- (!) is equivalent (4.08.2 patch 0003).
++    \ switch -> sw_tbl ! iBox (tagOf_SimplSwitch switch)
+   where
+     mk_assoc_elem k@(MaxSimplifierIterations lvl)
+ 	= (iBox (tagOf_SimplSwitch k), SwInt lvl)

@@ -1,0 +1,11 @@
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -408,7 +408,7 @@
+ 
+     ppr_payload [] = empty
+     ppr_payload ls = comma <+> 
+-		     braces (hsep (punctuate comma (map ((text "(L_)" <>).ppr_item) ls)))
++		     braces (hsep (punctuate comma (map ((text "(L_)" <>) . ppr_item) ls)))
+ 
+     ppr_item item
+       | rep == VoidRep   = text "0" -- might not even need this...

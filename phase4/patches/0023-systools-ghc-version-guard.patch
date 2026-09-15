@@ -1,0 +1,20 @@
+GHC 6.2.2 -- mhs: `#error GHC >= 5.00 is required` not for __MHS__
+main/SysTools.lhs (new in 6.2.2) has `#if __GLASGOW_HASKELL__ < 500 /
+#error`. We compile with -D__GLASGOW_HASKELL__=408 on purpose: HsVersions.h
+then maps GLAEXTS/DATA_BITS/... to the pre-hierarchical library names the
+shims provide (build/probe-ordered-622.sh). The guard is about real old
+GHCs, so it is disabled when cpphs's __MHS__ is defined.
+
+--- a/ghc/compiler/main/SysTools.lhs
++++ b/ghc/compiler/main/SysTools.lhs
+@@ -88,7 +88,9 @@
+ 
+ -- GHC <= 4.08 didn't have rawSystem, and runs into problems with long command
+ -- lines on mingw32, so we disallow it now.
+-#if __GLASGOW_HASKELL__ < 500
++#if __GLASGOW_HASKELL__ < 500 && !defined(__MHS__)
++/* mhs: we compile with -D__GLASGOW_HASKELL__=408 so HsVersions.h picks the
++   pre-hierarchical library names our shims provide; the guard is not about us. */
+ #error GHC >= 5.00 is required for bootstrapping GHC
+ #endif
+ 

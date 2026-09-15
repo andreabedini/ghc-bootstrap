@@ -1,0 +1,200 @@
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs
+@@ -264,7 +264,7 @@
+ 			pprCLabel lbl, comma,
+ 	       		int (length mask), 
+ 	       rparen ],
+-        hcat (punctuate comma (map (int.intBS) mask)),
++        hcat (punctuate comma (map (int . intBS) mask)),
+ 	ptext SLIT("}};")
+     ]
+ 
+@@ -341,7 +341,7 @@
+        | is_tdef   = tail ccall_arg_tys
+        | otherwise = ccall_arg_tys
+ 
+-     ccall_arg_tys      = map (text.showPrimRep.getAmodeRep) non_void_args
++     ccall_arg_tys      = map (text . showPrimRep.getAmodeRep) non_void_args
+ 
+       -- the first argument will be the "I/O world" token (a VoidRep)
+       -- all others should be non-void
+@@ -813,7 +813,7 @@
+     (local_arg_decls, pp_non_void_args)
+       = unzip [ ppr_casm_arg a i | (a,i) <- non_void_args `zip` [1..] ]
+ 
+-    ccall_arg_tys = map (text.showPrimRep.getAmodeRep) non_void_args
++    ccall_arg_tys = map (text . showPrimRep.getAmodeRep) non_void_args
+ 
+     ccall_res_ty = 
+        case non_void_results of
+--- a/ghc/compiler/coreSyn/CoreSyn.lhs
++++ b/ghc/compiler/coreSyn/CoreSyn.lhs
+--- a/ghc/compiler/cprAnalysis/CprAnalyse.lhs
++++ b/ghc/compiler/cprAnalysis/CprAnalyse.lhs
+@@ -104,7 +104,7 @@
+ -- For pretty debugging
+ instance Outputable AbsVal where
+   ppr Top    	= ptext SLIT("Top")
+-  ppr (Fun r)	= ptext SLIT("Fun->") <> (parens.ppr) r
++  ppr (Fun r)	= ptext SLIT("Fun->") <> (parens . ppr) r
+   ppr Tuple     = ptext SLIT("Tuple ")
+   ppr Bot       = ptext SLIT("Bot")
+ 
+--- a/ghc/compiler/deSugar/Check.lhs
++++ b/ghc/compiler/deSugar/Check.lhs
+@@ -616,7 +616,7 @@
+ simplify_pat (RecPat dc ty ex_tvs dicts idps) 
+   = ConPat dc ty ex_tvs dicts pats
+   where
+-    pats = map (simplify_pat.snd) all_pats
++    pats = map (simplify_pat . snd) all_pats
+ 
+      -- pad out all the missing fields with WildPats.
+     field_pats = map (\ f -> (getName f, WildPat (panic "simplify_pat(RecPat-2)")))
+--- a/ghc/compiler/javaGen/JavaGen.lhs
++++ b/ghc/compiler/javaGen/JavaGen.lhs
+@@ -174,8 +174,8 @@
+ 	final Thunk x = new Thunk( x_inst );
+ 	...ditto for y...
+ 
+-	x_inst.x = x;
+-	x_inst.y = y;
++	x_inst . x = x;
++	x_inst . y = y;
+ 	...ditto for y...
+ -}
+   = (map mk_class prs) ++ (map mk_inst prs) ++ 
+--- a/ghc/compiler/main/Main.lhs
++++ b/ghc/compiler/main/Main.lhs
+@@ -277,7 +277,7 @@
+       | not short   = hcat [text str, int n]
+       | otherwise   = hcat [text (trim str), equals, int n, semi]
+     
+-    trim ls     = takeWhile (not.isSpace) (dropWhile isSpace ls)
++    trim ls     = takeWhile (not . isSpace) (dropWhile isSpace ls)
+ 
+     fixity_ds   = length [() | FixD d <- decls]
+ 		-- NB: this omits fixity decls on local bindings and
+--- a/ghc/compiler/main/MkIface.lhs
++++ b/ghc/compiler/main/MkIface.lhs
+--- a/ghc/compiler/parser/ParseUtil.lhs
++++ b/ghc/compiler/parser/ParseUtil.lhs
+@@ -244,7 +244,7 @@
+ 	HsVar _			  -> returnP e
+ 	HsIPVar _		  -> returnP e
+ 	HsLit _			  -> returnP e
+-	HsLam match		  -> checkMatch match `thenP` (returnP.HsLam)
++	HsLam match		  -> checkMatch match `thenP` (returnP . HsLam)
+ 	HsApp e1 e2		  -> check2Exprs e1 e2 HsApp
+ 	OpApp e1 e2 fix e3	  -> checkExpr e1 `thenP` \e1 ->
+ 				     checkExpr e2 `thenP` \e2 ->
+--- a/ghc/compiler/prelude/PrimOp.lhs
++++ b/ghc/compiler/prelude/PrimOp.lhs
+--- a/ghc/compiler/rename/RnEnv.lhs
++++ b/ghc/compiler/rename/RnEnv.lhs
+@@ -416,7 +416,7 @@
+     mapRn_ (qualNameErr doc_str) quals 	`thenRn_`
+     checkDupNames doc_str rdr_names_w_loc
+   where
+-    quals = filter (isQual.fst) rdr_names_w_loc
++    quals = filter (isQual . fst) rdr_names_w_loc
+     
+ checkDupNames doc_str rdr_names_w_loc
+   = 	-- Check for duplicated names in a binding group
+--- a/ghc/compiler/specialise/Specialise.lhs
++++ b/ghc/compiler/specialise/Specialise.lhs
+--- a/ghc/compiler/stranal/SaAbsInt.lhs
++++ b/ghc/compiler/stranal/SaAbsInt.lhs
+--- a/ghc/compiler/stranal/WwLib.lhs
++++ b/ghc/compiler/stranal/WwLib.lhs
+--- a/ghc/compiler/typecheck/TcClassDcl.lhs
++++ b/ghc/compiler/typecheck/TcClassDcl.lhs
+--- a/ghc/compiler/typecheck/TcGenDeriv.lhs
++++ b/ghc/compiler/typecheck/TcGenDeriv.lhs
+@@ -912,7 +912,7 @@
+ 	   stmts = quals ++ [ReturnStmt result_expr]
+ 		
+ 	    {-
+-	      c.f. Figure 18 in Haskell 1.1 report.
++	      c . f. Figure 18 in Haskell 1.1 report.
+ 	    -}
+ 	   paren_prec_limit
+ 	     | not is_infix  = fromInt maxPrecedence
+@@ -1027,7 +1027,7 @@
+ 	     (con_left_assoc, con_right_assoc) = isLRAssoc fixs_assoc dc_nm
+ 
+ 	      {-
+-	        c.f. Figure 16 and 17 in Haskell 1.1 report
++	        c . f. Figure 16 and 17 in Haskell 1.1 report
+ 	      -}  
+ 	     paren_prec_limit
+ 		| not is_infix = fromInt maxPrecedence + 1
+--- a/ghc/compiler/typecheck/TcInstDcls.lhs
++++ b/ghc/compiler/typecheck/TcInstDcls.lhs
+--- a/ghc/compiler/typecheck/TcTyClsDecls.lhs
++++ b/ghc/compiler/typecheck/TcTyClsDecls.lhs
+@@ -308,7 +308,7 @@
+ get_con_details (VanillaCon btys)    = unionManyUniqSets (map get_bty btys)
+ get_con_details (InfixCon bty1 bty2) = unionUniqSets (get_bty bty1) (get_bty bty2)
+ get_con_details (NewCon ty _)        = get_ty ty
+-get_con_details (RecCon nbtys)       = unionManyUniqSets (map (get_bty.snd) nbtys)
++get_con_details (RecCon nbtys)       = unionManyUniqSets (map (get_bty . snd) nbtys)
+ 
+ ----------------------------------------------------
+ get_bty (Banged ty)   = get_ty ty
+--- a/ghc/compiler/typecheck/TcUnify.lhs
++++ b/ghc/compiler/typecheck/TcUnify.lhs
+--- a/ghc/compiler/types/Type.lhs
++++ b/ghc/compiler/types/Type.lhs
+@@ -837,7 +837,7 @@
+ tyVarsOfType (ForAllTy tyvar ty)	= tyVarsOfType ty `minusVarSet` unitVarSet tyvar
+ 
+ tyVarsOfTypes :: [Type] -> TyVarSet
+-tyVarsOfTypes tys = foldr (unionVarSet.tyVarsOfType) emptyVarSet tys
++tyVarsOfTypes tys = foldr (unionVarSet . tyVarsOfType) emptyVarSet tys
+ 
+ tyVarsOfPred :: PredType -> TyVarSet
+ tyVarsOfPred (Class clas tys) = tyVarsOfTypes tys
+--- a/ghc/compiler/usageSP/UConSet.lhs
++++ b/ghc/compiler/usageSP/UConSet.lhs
+--- a/ghc/compiler/usageSP/UsageSPInf.lhs
++++ b/ghc/compiler/usageSP/UsageSPInf.lhs
+--- a/ghc/compiler/usageSP/UsageSPLint.lhs
++++ b/ghc/compiler/usageSP/UsageSPLint.lhs
+--- a/ghc/compiler/usageSP/UsageSPUtils.lhs
++++ b/ghc/compiler/usageSP/UsageSPUtils.lhs
+--- a/ghc/compiler/utils/Bag.lhs
++++ b/ghc/compiler/utils/Bag.lhs
+@@ -109,7 +109,7 @@
+ foldBag t u e EmptyBag        = e
+ foldBag t u e (UnitBag x)     = u x
+ foldBag t u e (TwoBags b1 b2) = (foldBag t u e b1) `t` (foldBag t u e b2)
+-foldBag t u e (ListBag xs)    = foldr (t.u) e xs
++foldBag t u e (ListBag xs)    = foldr (t . u) e xs
+ foldBag t u e (ListOfBags bs) = foldr (\b r -> foldBag e u t b `t` r) e bs
+ -}
+ 
+@@ -117,7 +117,7 @@
+ foldBag t u e EmptyBag        = e
+ foldBag t u e (UnitBag x)     = u x `t` e
+ foldBag t u e (TwoBags b1 b2) = foldBag t u (foldBag t u e b2) b1
+-foldBag t u e (ListBag xs)    = foldr (t.u) e xs
++foldBag t u e (ListBag xs)    = foldr (t . u) e xs
+ foldBag t u e (ListOfBags bs) = foldr (\b r -> foldBag t u r b) e bs
+ 
+ foldrBag :: (a -> r -> r) -> r
+--- a/ghc/compiler/utils/DirUtils.lhs
++++ b/ghc/compiler/utils/DirUtils.lhs
+@@ -4,7 +4,7 @@
+ \section[DirUtils]{Directory functions}
+ 
+ \begin{code}
+-{-# OPTIONS -#include <dirent.h> #-}
++{-# OPTIONS -#include <dirent . h> #-}
+ module DirUtils
+        (
+ 	getDirectoryContents
+--- a/ghc/compiler/utils/Pretty.lhs
++++ b/ghc/compiler/utils/Pretty.lhs
+--- a/ghc/compiler/utils/Util.lhs
++++ b/ghc/compiler/utils/Util.lhs

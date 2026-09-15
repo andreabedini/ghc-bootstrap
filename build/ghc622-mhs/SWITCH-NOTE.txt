@@ -1,0 +1,8 @@
+2026-09-10: after the FastString intern fix (diag/FINDINGS.md), the canonical
+base tree and objects are the rebuilt ones:
+  libraries/base   <- was libraries/base-rebuild (147/147, zero collisions)
+  hcobj/           <- copy of diag/hcobj-rebuild (147 .o, -fwrapv)
+  lib/             <- rebuilt from hcobj by build-libbase.sh
+The pre-fix artefacts are kept as libraries/base-pre-fs-fix, hcobj-pre-fs-fix,
+hcobj-wrapv-pre-fs-fix (5 corrupt .hi: GHC.List, GHC.Float, GHC.Real,
+Data.Array.Diff, Text.Html). run-base.sh/build-hc.sh/link.sh need no changes.

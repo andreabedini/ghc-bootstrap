@@ -1,0 +1,17 @@
+--- a/ghc/includes/PrimOps.h
++++ b/ghc/includes/PrimOps.h
+@@ -624,6 +624,14 @@
+ #ifndef FLOATS_AS_DOUBLES
+ extern StgFloat  __encodeFloat (I_ size, StgByteArray arr, I_ e);
+ extern StgFloat  __int_encodeFloat (I_ j, I_ e);
++#else
++/* When StgFloat *is* StgDouble (StgTypes.h:99), StgPrimFloat.c compiles only
++   the Double versions -- but the code generator still emits calls to the Float
++   ones. The decode direction is already aliased this way a few lines above
++   (decodeFloatzh_fast -> decodeDoublezh_fast); the encode direction was left
++   out, so the calls had nothing to resolve against. */
++#define __encodeFloat      __encodeDouble
++#define __int_encodeFloat  __int_encodeDouble
+ #endif
+ extern void      __decodeDouble (MP_INT *man, I_ *_exp, StgDouble dbl);
+ extern void      __decodeFloat  (MP_INT *man, I_ *_exp, StgFloat flt);

@@ -1,0 +1,11 @@
+--- a/ghc/includes/PrimOps.h
++++ b/ghc/includes/PrimOps.h
+@@ -173,7 +173,7 @@
+ 
+ #define mulIntCzh(r,c,a,b)			\
+ {						\
+-  if (stg_abs(a) >= HALF_INT			\
++  if (stg_abs(a) >= HALF_INT ||			\
+       stg_abs(b) >= HALF_INT) {			\
+     c = 1;					\
+   } else {					\

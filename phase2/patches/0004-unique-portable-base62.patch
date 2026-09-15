@@ -1,0 +1,61 @@
+--- a/ghc/compiler/basicTypes/Unique.lhs
++++ b/ghc/compiler/basicTypes/Unique.lhs
+@@ -367,47 +367,24 @@
+ The ``62-its'' are \tr{[0-9a-zA-Z]}.  We don't handle negative Ints.
+ Code stolen from Lennart.
+ \begin{code}
+-# define BYTE_ARRAY GlaExts.ByteArray
+-# define RUN_ST	    ST.runST
+-# define AND_THEN   >>=
+-# define AND_THEN_  >>
+-# define RETURN	    return
++-- The original built a 62-entry ByteArray with newCharArray/writeCharArray/
++-- unsafeFreezeByteArray and read it back with indexCharArray#, to avoid a list
++-- index. MicroHs has none of those primops, and for a 62-element constant
++-- table the portable version is equivalent -- see phase2/patches.
+ 
+ iToBase62 :: Int -> SDoc
+ 
+-iToBase62 n@(I# n#)
++iToBase62 n
+   = ASSERT(n >= 0)
+-    let
+-#if __GLASGOW_HASKELL__ < 405
+-	bytes = case chars62 of { BYTE_ARRAY bounds_who_needs_'em bytes -> bytes }
+-#else
+-	bytes = case chars62 of { BYTE_ARRAY _ _ bytes -> bytes }
+-#endif
+-    in
+-    if n# <# 62# then
+-	case (indexCharArray# bytes n#) of { c ->
+-	char (C# c) }
++    if n < 62 then
++        char (chars62 !! n)
+     else
+-	case (quotRem n 62)		of { (q, I# r#) ->
+-	case (indexCharArray# bytes r#) of { c  ->
+-	(<>) (iToBase62 q) (char (C# c)) }}
++        case quotRem n 62 of { (q, r) ->
++        (<>) (iToBase62 q) (char (chars62 !! r)) }
+ 
+ -- keep this at top level! (bug on 94/10/24 WDP)
+-chars62 :: BYTE_ARRAY Int
+-chars62
+-  = RUN_ST (
+-	newCharArray (0, 61)	AND_THEN \ ch_array ->
+-	fill_in ch_array 0 62 "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+-				AND_THEN_
+-	unsafeFreezeByteArray ch_array
+-    )
+-  where
+-    fill_in ch_array i lim str
+-      | i == lim
+-      = RETURN ()
+-      | otherwise
+-      = writeCharArray ch_array i (str !! i)	AND_THEN_
+-	fill_in ch_array (i+1) lim str
++chars62 :: String
++chars62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ \end{code}
+ 
+ %************************************************************************

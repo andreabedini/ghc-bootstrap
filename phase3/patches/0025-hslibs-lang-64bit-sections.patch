@@ -1,0 +1,165 @@
+--- a/hslibs/lang/Int.lhs
++++ b/hslibs/lang/Int.lhs
+@@ -449,8 +449,10 @@
+ pow2# :: Int# -> Int#
+ pow2# x# = iShiftL# 1# x#
+ 
++#if WORD_SIZE_IN_BYTES != 8
+ pow2_64# :: Int# -> Int64#
+ pow2_64# x# = word64ToInt64# (shiftL64# (wordToWord64# (int2Word# 1#)) x#)
++#endif
+ #else
+ 
+ instance Bits Int8 where
+@@ -750,7 +752,7 @@
+   negate i@(I32# x)  = 
+       if x ==# 0#
+        then i
+-       else I32# (intToInt32# (0x100000000# -# x'))
++       else I32# (intToInt32# (0x100000000# -# x))
+ #else
+   negate (I32# x)  = I32# (negateInt# x)
+ #endif
+@@ -948,16 +950,13 @@
+ 
+ int32ToInt64 (I32# i#) = I64# i#
+ 
+-intToInt32# :: Int# -> Int#
+-intToInt32# i# = word2Int# ((int2Word# i#) `and#` (case (maxBound::Word32) of W# x# -> x#))
+-
+-int64ToInt32 (I64# i#) = I32# (intToInt32# w#)
++int64ToInt32 (I64# i#) = I32# (intToInt32# i#)
+ 
+ instance Eq  Int64     where 
+-  (I64# x) == (I64# y) = x `eqInt#` y
+-  (I64# x) /= (I64# y) = x `neInt#` y
++  (I64# x) == (I64# y) = x ==# y
++  (I64# x) /= (I64# y) = x /=# y
+ 
+-instance Ord Int32    where
++instance Ord Int64    where
+   compare (I64# x#) (I64# y#) = compareInt# x# y#
+ 
+ instance Num Int64 where
+@@ -965,7 +964,7 @@
+   (I64# x) - (I64# y) = I64# (x -# y)
+   (I64# x) * (I64# y) = I64# (x *# y)
+   negate w@(I64# x)   = I64# (negateInt# x)
+-  abs x               = absReal
++  abs                 = absReal
+   signum              = signumReal
+   fromInteger (S# i#)    = I64# i#
+   fromInteger (J# s# d#) = I64# (integer2Int# s# d#)
+@@ -1002,7 +1001,7 @@
+   (I64# x) .&. (I64# y)   = I64# (word2Int# ((int2Word# x) `and#` (int2Word# y)))
+   (I64# x) .|. (I64# y)   = I64# (word2Int# ((int2Word# x) `or#`  (int2Word# y)))
+   (I64# x) `xor` (I64# y) = I64# (word2Int# ((int2Word# x) `xor#` (int2Word# y)))
+-  complement (I64# x)     = I64# (negateInt# x)
++  complement (I64# x)     = I64# (word2Int# ((int2Word# x) `xor#` (int2Word# (negateInt# 1#))))
+   shift (I64# x) i@(I# i#)
+ 	| i > 0     = I64# (iShiftL# x  i#)
+ 	| otherwise = I64# (iShiftRA# x (negateInt# i#))
+--- a/hslibs/lang/Word.lhs
++++ b/hslibs/lang/Word.lhs
+@@ -544,8 +544,10 @@
+ word2Integer w = case word2Integer# w of
+ 			(# s, d #) -> J# s d
+ 
++#if WORD_SIZE_IN_BYTES != 8
+ pow2_64# :: Int# -> Int64#
+ pow2_64# x# = word64ToInt64# (shiftL64# (wordToWord64# (int2Word# 1#)) x#)
++#endif
+ 
+ #endif
+ sizeofWord8 :: Word32
+@@ -882,6 +884,7 @@
+ wordToWord32# :: Word# -> Word#
+ 
+ #if WORD_SIZE_IN_BYTES == 8
++wordToWord64# :: Word# -> Word#
+ intToWord32#  i#  = (int2Word# i#) `and#` (int2Word# 0xffffffff#)
+ wordToWord32# w#  = w# `and#` (int2Word# 0xffffffff#)
+ wordToWord64# w#  = w#
+@@ -1111,7 +1114,7 @@
+ #if WORD_SIZE_IN_BYTES == 8
+ --data Word64 = W64# Word#
+ 
+-word32ToWord64 (W32 w#) = W64# w#
++word32ToWord64 (W32# w#) = W64# w#
+ 
+ word8ToWord64 (W8# w#) = W64# w#
+ word64ToWord8 (W64# w#) = W8# (w# `and#` (int2Word# 0xff#))
+@@ -1119,15 +1122,14 @@
+ word16ToWord64 (W16# w#) = W64# w#
+ word64ToWord16 (W64# w#) = W16# (w# `and#` (int2Word# 0xffff#))
+ 
+-wordToWord32# :: Word# -> Word#
+-wordToWord32# w# = w# `and#` (case (maxBound::Word32) of W# x# -> x#)
+-
+-word64ToWord32 :: Word64 -> Word32
+ word64ToWord32 (W64# w#) = W32# (wordToWord32# w#)
+ 
+-wordToWord64# w# = w#
++word64ToWord# :: Word# -> Word#
+ word64ToWord# w# = w#
+ 
++intToWord64# :: Int# -> Word#
++intToWord64# i# = int2Word# i#
++
+ instance Eq  Word64     where 
+   (W64# x) == (W64# y) = x `eqWord#` y
+   (W64# x) /= (W64# y) = x `neWord#` y
+@@ -1150,12 +1152,7 @@
+       W64# (intToWord64# (word2Int# x -# word2Int# y))
+   (W64# x) * (W64# y) = 
+       W64# (intToWord64# (word2Int# x *# word2Int# y))
+-  negate w@(W64# x)  = 
+-     if x' ==# 0# 
+-      then w
+-      else W64# (int2Word# (0x100# -# x'))
+-     where
+-      x' = word2Int# x
++  negate (W64# x)  = W64# (intToWord64# (negateInt# (word2Int# x)))
+   abs x         = x
+   signum        = signumReal
+   fromInteger (S# i#)    = W64# (int2Word# i#)
+@@ -1177,14 +1174,14 @@
+     | y# `neWord#` (int2Word# 0#)  = W64# (x# `remWord#` y#)
+     | otherwise                    = divZeroError "rem{Word64}" x
+ 
+-  mod  (W64# x)  (W64# y)   
+-    | y# `neWord#` (int2Word# 0#)  = W64# (x `remWord#` y)
++  mod  x@(W64# x#)  (W64# y#)
++    | y# `neWord#` (int2Word# 0#)  = W64# (x# `remWord#` y#)
+     | otherwise                    = divZeroError "mod{Word64}" x
+ 
+   quotRem (W64# x) (W64# y) = (W64# (x `quotWord#` y), W64# (x `remWord#` y))
+   divMod  (W64# x) (W64# y) = (W64# (x `quotWord#` y), W64# (x `remWord#` y))
+ 
+-  toInteger (W64# x)        = word2Integer# x
++  toInteger (W64# x)        = word2Integer x
+   toInt x                   = word64ToInt x
+ 
+ 
+@@ -1199,7 +1196,7 @@
+ 
+   w@(W64# x)  `rotate` (I# i)
+         | i ==# 0#    = w
+-	| i ># 0#     = W64# (shiftL# x i') `or#`
++	| i ># 0#     = W64# ((shiftL# x i') `or#`
+ 	                      (shiftRL# (x `and#` 
+ 			                (int2Word# (word2Int# maxBound# -# pow2# i2 +# 1#)))
+ 			             i2))
+@@ -1224,6 +1221,12 @@
+   bitSize  _    = 64
+   isSigned _    = False
+ 
++word64ToInteger (W64# w#) = word2Integer w#
++integerToWord64 = fromInteger
++
++intToWord64 (I# i#) = W64# (intToWord64# i#)
++word64ToInt (W64# w#) = I# (word2Int# w#)
++
+ #else
+ --defined in PrelCCall: data Word64 = W64 Word64# deriving (Eq, Ord, Bounded)
+ 

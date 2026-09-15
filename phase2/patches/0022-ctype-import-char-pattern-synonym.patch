@@ -1,0 +1,11 @@
+--- a/ghc/compiler/parser/Ctype.lhs
++++ b/ghc/compiler/parser/Ctype.lhs
+@@ -15,7 +15,7 @@
+ \begin{code}
+ import Bits	( Bits((.&.)) )
+ import Int	( Int32 )
+-import PrelBase ( Char#, Char(..) )
++import PrelBase ( Char#, Char(..), pattern C# )
+ \end{code}
+ 
+ Bit masks

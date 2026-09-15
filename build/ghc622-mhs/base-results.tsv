@@ -1,0 +1,147 @@
+OK	GHC.Base	(cached)
+OK	Data.Maybe	(cached)
+OK	Data.Tuple	(cached)
+OK	GHC.List	(cached)
+OK	Control.Monad	(cached)
+OK	Data.Bool	(cached)
+OK	Data.Either	(cached)
+OK	GHC.Enum	(cached)
+OK	GHC.Show	(cached)
+OK	GHC.Num	(cached)
+OK	GHC.ST	(cached)
+OK	GHC.Arr	(cached)
+OK	GHC.Real	(cached)
+OK	GHC.Float	(cached)
+OK	Text.ParserCombinators.ReadP	(cached)
+OK	Text.ParserCombinators.ReadPrec	(cached)
+OK	Text.Read.Lex	(cached)
+OK	GHC.Read	(cached)
+OK	Data.Bits	(cached)
+OK	GHC.Word	(cached)
+OK	GHC.Int	(cached)
+OK	GHC.Unicode	(cached)
+OK	Data.Char	(cached)
+OK	Data.List	(cached)
+OK	GHC.STRef	(cached)
+OK	GHC.IOBase	(cached)
+OK	GHC.Exception	(cached)
+OK	GHC.Err	(cached)
+OK	Data.Int	(cached)
+OK	Data.Word	(cached)
+OK	GHC.Ptr	(cached)
+OK	Numeric	(cached)
+OK	Foreign.Ptr	(cached)
+OK	GHC.Stable	(cached)
+OK	GHC.Storable	(cached)
+OK	Foreign.Storable	(cached)
+OK	Data.HashTable	(cached)
+OK	Data.Typeable	(cached)
+OK	GHC.ForeignPtr	13s 1986 lines hc
+OK	Foreign.ForeignPtr	8s 567 lines hc
+OK	Foreign.C.Types	67s 7915 lines hc
+OK	Foreign.Marshal.Alloc	11s 743 lines hc
+OK	Foreign.Marshal.Utils	11s 1064 lines hc
+OK	Foreign.Marshal.Array	10s 2225 lines hc
+OK	Foreign.Marshal.Error	(cached)
+OK	Foreign.Marshal.Pool	10s 1573 lines hc
+OK	Foreign.Marshal	10s 17 lines hc
+OK	Foreign.StablePtr	(cached)
+OK	System.IO.Unsafe	(cached)
+OK	Foreign	11s 25 lines hc
+OK	Foreign.C.String	13s 1150 lines hc
+OK	Foreign.C.Error	13s 2931 lines hc
+OK	Foreign.C	9s 13 lines hc
+OK	GHC.Pack	(cached)
+OK	GHC.Conc	(cached)
+OK	Text.Show	(cached)
+OK	System.IO.Error	(cached)
+OK	System.Posix.Types	31s 5409 lines hc
+OK	System.Posix.Internals	23s 11601 lines hc
+OK	GHC.Handle	85s 20495 lines hc [-fno-strictness]
+OK	GHC.IO	65s 9552 lines hc [-fno-strictness]
+OK	System.IO	14s 1310 lines hc
+OK	Text.Read	(cached)
+OK	Prelude	12s 76 lines hc
+OK	Control.Monad.Fix	3s 383 lines hc
+OK	Control.Arrow	6s 3917 lines hc
+OK	Data.Dynamic	(cached)
+OK	Control.Exception	6s 1984 lines hc
+OK	Control.Concurrent.MVar	4s 660 lines hc
+OK	Control.Concurrent.Chan	5s 1016 lines hc
+OK	Control.Concurrent.QSem	4s 478 lines hc
+OK	Control.Concurrent.QSemN	5s 606 lines hc
+OK	Control.Concurrent.SampleVar	18s 633 lines hc [-fno-strictness]
+OK	GHC.TopHandler	10s 1398 lines hc
+OK	Control.Concurrent	13s 4135 lines hc
+OK	Control.Monad.Trans	3s 153 lines hc
+OK	Control.Monad.Reader	4s 1646 lines hc
+OK	Data.Monoid	2s 403 lines hc
+OK	Control.Monad.Writer	6s 3211 lines hc
+OK	Control.Monad.State	7s 3071 lines hc
+OK	Control.Monad.RWS	7s 3364 lines hc
+OK	Control.Monad.Cont	6s 2514 lines hc
+OK	Control.Monad.Error	7s 4704 lines hc
+OK	Control.Monad.Identity	4s 159 lines hc
+OK	Control.Monad.List	6s 1881 lines hc
+OK	Control.Monad.ST	6s 204 lines hc
+OK	Control.Monad.ST.Lazy	5s 849 lines hc
+OK	Control.Monad.ST.Strict	2s 11 lines hc
+OK	Control.Parallel	2s 11 lines hc
+OK	Data.Ix	3s 11 lines hc
+OK	Data.Array	6s 159 lines hc
+OK	Data.Array.Base	56s 29331 lines hc
+OK	Data.Array.IArray	11s 15 lines hc
+OK	Data.Array.MArray	11s 13 lines hc
+OK	Data.Array.IO.Internals	18s 5647 lines hc
+OK	Data.Array.IO	24s 1832 lines hc
+OK	Data.Array.Diff	31s 9050 lines hc
+OK	Data.Array.ST	11s 15 lines hc
+OK	Data.Array.Storable	19s 1106 lines hc
+OK	Data.Array.Unboxed	13s 13 lines hc
+FAIL	Data.Complex	rc=1 812s  Data/Complex.hs:110: Warning: Pattern match(es) are overlapped 	 In the definition of `signum': signum (z@(x :+ y)) = ... Data/Complex.hs:139: Warning: Pattern match(es) are overlapped 	 In the definition of `sqrt': sqrt (z@(x :+ y)) = ... ERR: heap exhausted 
+OK	Data.FiniteMap	8s 4796 lines hc
+OK	Data.Generics.Basics	26s 13270 lines hc
+OK	Data.Generics.Aliases	12s 1346 lines hc
+OK	Data.Generics.Schemes	9s 944 lines hc
+OK	Data.Generics.Reify	14s 3344 lines hc
+OK	Data.Generics.Text	13s 2973 lines hc
+OK	Data.Generics.Twins	9s 2523 lines hc
+OK	Data.Generics	10s 23 lines hc
+OK	Data.Tree	8s 2446 lines hc
+FAIL	Data.Graph	rc=124 900s 
+OK	GHC.Weak	(cached)
+OK	Data.IORef	3s 123 lines hc
+OK	Data.PackedString	27s 8316 lines hc
+OK	Data.Ratio	6s 876 lines hc
+OK	Data.STRef	4s 193 lines hc
+OK	Data.STRef.Lazy	3s 593 lines hc
+OK	Data.STRef.Strict	2s 11 lines hc
+OK	Data.Set	4s 705 lines hc
+OK	Data.Unique	5s 310 lines hc
+OK	Debug.Trace	5s 290 lines hc
+OK	Foreign.Concurrent	2s 39 lines hc
+OK	GHC.Dotnet	6s 350 lines hc
+OK	GHC.Exts	5s 45 lines hc
+OK	GHC.PArr	44s 10958 lines hc [-fno-strictness]
+OK	GHC.PrimopWrappers	10s 5324 lines hc [regenerated with genprimopcode --make-haskell-wrappers; row corrected by the hsc2hs run]
+OK	System.Exit	3s 264 lines hc
+OK	System.Cmd	11s 547 lines hc
+FAIL	System.Console.GetOpt	rc=124 900s 
+OK	System.Environment	14s 1233 lines hc
+OK	System.Info	1s 53 lines hc
+OK	System.Locale	9s 5083 lines hc
+OK	System.Mem	2s 76 lines hc
+OK	System.Mem.StableName	4s 349 lines hc
+OK	System.Mem.Weak	5s 196 lines hc
+OK	Text.Html.BlockTable	4s 1709 lines hc
+OK	Text.Html	27s 20783 lines hc
+OK	Text.PrettyPrint.HughesPJ	11s 8757 lines hc
+OK	Text.PrettyPrint	5s 11 lines hc
+OK	Text.Show.Functions	1s 151 lines hc
+OK	System.CPUTime	15s 586 lines hc
+OK	System.Time	89s 34848 lines hc
+OK	System.Posix.Signals	21s 6189 lines hc
+OK	Text.Regex.Posix	15s 1195 lines hc
+OK	System.Directory	30s 9225 lines hc
+OK	System.Random	23s 7553 lines hc
+OK	Text.Regex	4s 325 lines hc

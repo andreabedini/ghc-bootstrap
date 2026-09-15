@@ -1,0 +1,292 @@
+--- src/parser.y.orig	2026-09-02 03:35:34.722846586 +0800
++++ src/parser.y	2026-09-02 07:25:59.135640453 +0800
+@@ -49,6 +49,13 @@
+ static List   local checkCtxt	 Args((List));
+ static Cell   local checkPred	 Args((Cell));
+ static Pair   local checkDo	 Args((List));
++static Cell   local guardTest	 Args((List));
++static Cell   local guardSel	 Args((List,Cell,Cell));
++static Cell   local pgTest	 Args((Text,Cell));
++static Cell   local pgBody	 Args((Text,Cell));
++static Cell   local mkGuard	 Args((Cell,List,Cell));
++static Cell   local pgGuarded	 Args((List));
++static Cell   local pgWhere	 Args((List,Cell));
+ static Cell   local checkTyLhs	 Args((Cell));
+ static Cell   local checkConstr	 Args((Cell));
+ 
+@@ -607,16 +614,27 @@
+ 	  | var     apat		{$$ = gc2(ap($1,$2));}
+ 	  | funlhs1 apat		{$$ = gc2(ap($1,$2));}
+ 	  ;
+-rhs	  : rhs1 wherePart		{$$ = gc2(letrec($2,$1));}
++rhs	  : rhs1 wherePart		{$$ = gc2(pgWhere($2,$1));}
+ 	  | error			{syntaxError("declaration");}
+ 	  ;
+ rhs1	  : '=' exp			{$$ = gc2(pair($1,$2));}
+-	  | gdrhs			{$$ = gc1(grded(rev($1)));}
++	  | gdrhs			{$$ = gc1(pgGuarded(rev($1)));}
+ 	  ;
+ gdrhs	  : gdrhs gddef			{$$ = gc2(cons($2,$1));}
+ 	  | gddef			{$$ = gc1(singleton($1));}
+ 	  ;
+-gddef	  : '|' exp0 '=' exp		{$$ = gc4(pair($3,pair($2,$4)));}
++gddef	  : '|' gquals '=' exp		{$$ = gc4(mkGuard($3,rev($2),$4));}
++	  ;
++/* Guard qualifiers (Haskell 2010 pattern guards).  exp0 rather than exp,
++ * matching the boolean guards these replace: a top-level `::' would be
++ * ambiguous with the `->' ending a case alternative's guard.
++ */
++gquals	  : gquals ',' gqual		{$$ = gc3(cons($3,$1));}
++	  | gqual			{$$ = gc1(cons($1,NIL));}
++	  ;
++gqual	  : exp0 FROM exp0		{$$ = gc3(ap(FROMQUAL,pair($1,$3)));}
++	  | exp0			{$$ = gc1(ap(BOOLQUAL,$1));}
++	  | LET ldecls			{$$ = gc2(ap(QWHERE,$2));}
+ 	  ;
+ wherePart : /* empty */			{$$ = gc0(NIL);}
+ 	  | WHERE decls			{$$ = gc2($2);}
+@@ -863,16 +881,16 @@
+           | alts1 ';'                   {$$ = gc2($1);}
+           | alt                         {$$ = gc1(cons($1,NIL));}
+ 	  ;
+-alt	  : pat altRhs wherePart	{$$ = gc3(pair($1,letrec($3,$2)));}
++alt	  : pat altRhs wherePart	{$$ = gc3(pair($1,pgWhere($3,$2)));}
+ 	  ;
+-altRhs	  : guardAlts			{$$ = gc1(grded(rev($1)));}
++altRhs	  : guardAlts			{$$ = gc1(pgGuarded(rev($1)));}
+ 	  | ARROW exp			{$$ = gc2(pair($1,$2));}
+ 	  | error			{syntaxError("case expression");}
+ 	  ;
+ guardAlts : guardAlts guardAlt		{$$ = gc2(cons($2,$1));}
+ 	  | guardAlt			{$$ = gc1(cons($1,NIL));}
+ 	  ;
+-guardAlt  : '|' exp0 ARROW exp		{$$ = gc4(pair($3,pair($2,$4)));}
++guardAlt  : '|' gquals ARROW exp	{$$ = gc4(mkGuard($3,rev($2),$4));}
+ 	  ;
+ 
+ stmts     : stmts1                      {$$ = $1;}
+@@ -1210,6 +1228,224 @@
+     return dqs;
+ }
+ 
++/* --------------------------------------------------------------------------
++ * Pattern guards (Haskell 2010).
++ *
++ * The rest of Hugs represents a guarded right hand side as a list of
++ *   pair(line, pair(<boolean expr>, <body>))
++ * and every phase that walks GUARDED nodes (static.c, type.c, compiler.c,
++ * machine.c, output.c) assumes that first component is a single expression.
++ * Rather than teach all of them about qualifier lists, a guard's qualifiers
++ * are desugared here, at parse time, into constructs that already exist.
++ *
++ * The test and the body of a guarded rhs are two separate expressions, so
++ * nothing typed inside one can constrain the other.  The qualifiers are
++ * therefore matched exactly once, in a binding lifted out into the `where'
++ * part that already wraps the whole guard chain; the guard then only asks
++ * that binding whether it matched, and the body only asks it for its value.
++ *
++ *     | q1, ..., qk = rhs
++ *  ==>
++ *     | case v of { Just _ -> True; _ -> False }
++ *	   = case v of { Just w -> w }
++ *     where v = SEL(q1..qk, rhs)		-- v, w fresh
++ *
++ *     SEL([],          r) = Just r
++ *     SEL(b : qs,      r) = if b then SEL(qs,r) else Nothing
++ *     SEL(let ds : qs, r) = let ds in SEL(qs,r)
++ *     SEL(p <- e : qs, r) = case e of { p -> SEL(qs,r); _ -> Nothing }
++ *
++ * Everything the qualifiers bind, and the body that uses it, now live in one
++ * expression, so type information flows between them as it does in the source
++ * program: `| [(n,"")] <- reads s = Just (n::Int)' resolves `reads' at Int
++ * instead of leaving a `Read a' the guard alone cannot discharge.  Each
++ * qualifier also appears once rather than twice, so a scrutinee is evaluated
++ * once (v is a shared thunk, already in whnf by the time the body looks at
++ * it) and no parse tree is shared between two binding sites -- bindPat and
++ * depExpr in static.c rewrite trees in place, and binding the same pattern
++ * cells twice used to loop.
++ *
++ * Guards that bind nothing keep the tree the old grammar built, so ordinary
++ * boolean guards are bit-for-bit unaffected and cost no extra binding.
++ *
++ * mkGuard therefore returns pair(bindings, guard); pgGuarded collects the
++ * bindings of a whole guard chain and pgWhere merges them into the where
++ * part, giving exactly the LETREC(decls, GUARDED(...)) that a hand written
++ * `where' produces.  The lifted binding is monomorphic (the monomorphism
++ * restriction applies to it, and it is wanted: v must not be generalised
++ * away from the guard that uses it), and it is in scope over the arguments
++ * on the left hand side and over the other bindings of the where part,
++ * exactly like anything else written there.
++ *
++ * Intermediate results are pushed on the Hugs stack because pair() garbage
++ * collects when the free list runs dry and protects only its own arguments;
++ * a subtree held solely in a C local would not survive the next allocation.
++ * That covers the incoming qualifier list too: the grammar hands it over as
++ * rev($2), and rev is destructive, so the parser's own shadow of $2 is left
++ * on what is now the *last* spine cell and protects none of the rest.  Only
++ * $3 and $4 -- the line and the rhs -- stay shadowed by the parser (see
++ * gcShadow), so mkGuard pushes the list itself before it allocates anything.
++ * Pushes are balanced so the parser's own use of sp (see gcShadow) is intact.
++ *
++ * Just and Nothing are Names linked by linkPreludeCM, which runs only once
++ * the Prelude has been through checkDefns -- after it has been parsed.  A
++ * pattern guard in the Prelude itself would therefore build ap(NIL,...) and
++ * fail much later inside depExpr, so mkGuard rejects that case up front.  A
++ * guard that binds nothing takes the early return above and never touches
++ * these names, which is what keeps ordinary guards working while the Prelude
++ * is being parsed.
++ * ------------------------------------------------------------------------*/
++
++static Cell local guardTest(qs)		/* conjunction of boolean guards    */
++List qs; {				/* qs is in source order	    */
++    Cell r = NIL;
++    if (isNull(tl(qs)))
++	return snd(hd(qs));		/* leave plain guards alone	    */
++    push(guardTest(tl(qs)));
++    r = ap(COND,triple(snd(hd(qs)),top(),nameFalse));
++    drop();
++    return r;
++}
++
++static Cell local guardSel(qs,rhs,line)	/* Just rhs if every qualifier	    */
++List qs;				/* matches, Nothing otherwise	    */
++Cell rhs;
++Cell line; {
++    Cell r = NIL;
++    if (isNull(qs))
++	return ap(nameJust,rhs);
++    switch (whatIs(hd(qs))) {
++	case BOOLQUAL : push(guardSel(tl(qs),rhs,line));
++			r = ap(COND,triple(snd(hd(qs)),top(),nameNothing));
++			drop();
++			return r;
++
++	case QWHERE   : push(guardSel(tl(qs),rhs,line));
++			r = letrec(snd(hd(qs)),top());
++			drop();
++			return r;
++
++	case FROMQUAL : push(guardSel(tl(qs),rhs,line));
++			push(cons(pair(WILDCARD,pair(line,nameNothing)),NIL));
++			push(cons(pair(fst(snd(hd(qs))),
++				       pair(line,pushed(1))),
++				  top()));
++			r = ap(CASE,pair(snd(snd(hd(qs))),top()));
++			drop(); drop(); drop();
++			return r;
++    }
++    internal("guardSel");
++    return NIL;/*NOTREACHED*/
++}
++
++static Cell local pgTest(t,line)	/* case v of {Just _ -> True;	    */
++Text t;					/*	      _	     -> False}    */
++Cell line; {
++    Cell r = NIL;
++    push(cons(pair(WILDCARD,pair(line,nameFalse)),NIL));
++    push(pair(line,nameTrue));
++    push(pair(ap(nameJust,WILDCARD),top()));
++    push(cons(top(),pushed(2)));
++    r = ap(CASE,pair(mkVar(t),top()));
++    drop(); drop(); drop(); drop();
++    return r;
++}
++
++static Cell local pgBody(t,line)	/* case v of {Just w -> w}	    */
++Text t;
++Cell line; {
++    Cell r = NIL;
++    Text w = inventText();		/* a fresh cell per occurrence: the */
++					/* pattern and the body must not    */
++    push(pair(line,mkVar(w)));		/* share cells (see above)	    */
++    push(pair(ap(nameJust,mkVar(w)),top()));
++    push(singleton(top()));
++    r = ap(CASE,pair(mkVar(t),top()));
++    drop(); drop(); drop();
++    return r;
++}
++
++static Cell local mkGuard(line,qs,rhs)	/* one guarded rhs from qualifiers, */
++Cell line;				/* as pair(bindings,guard)	    */
++List qs;
++Cell rhs; {
++    Cell r    = NIL;
++    Bool bind = FALSE;			/* does any qualifier bind names?   */
++    Text t;
++    List q;
++
++    for (q=qs; nonNull(q); q=tl(q))
++	if (whatIs(hd(q))!=BOOLQUAL)
++	    bind = TRUE;
++
++    if (!bind && isNull(tl(qs)))	/* | e = rhs : precisely the tree    */
++	return pair(NIL,pair(line,pair(snd(hd(qs)),rhs)));/* the old grammar */
++					                  /* built	    */
++    h98DoesntSupport(intOf(line),	/* two distinct things are missing  */
++		     bind ? "pattern guards"		     /* from H98,   */
++			  : "guards with more than one qualifier");
++					/* syntaxError would have blamed    */
++					/* the lookahead token instead	    */
++
++    if (isNull(nameJust) || isNull(nameFalse)) {
++	ERRMSG(row) "Pattern guards cannot be used before the Prelude is loaded"
++	EEND;				/* linkPreludeCM has not run, so    */
++    }					/* the names below are still NIL    */
++
++    push(qs);				/* rev() left the parser's shadow   */
++					/* of the qualifiers on the last    */
++					/* spine cell, so everything before  */
++					/* it -- the wrappers, the patterns, */
++					/* the scrutinees -- is reachable    */
++					/* only from here.  ($3 and $4, the  */
++					/* line and the rhs, are shadowed    */
++					/* by the parser itself; see	    */
++					/* gcShadow.)			    */
++    if (!bind) {			/* only boolean qualifiers, so the  */
++	push(guardTest(top()));		/* body needs nothing bound for it  */
++	r = pair(NIL,pair(line,pair(top(),rhs)));
++	drop(); drop();
++	return r;
++    }
++
++    t = inventText();
++    push(guardSel(top(),rhs,line));			     /* [qs,sel]    */
++    push(pair(line,top()));				     /* [..,srhs]   */
++    push(singleton(ap(PATBIND,pair(mkVar(t),top()))));	     /* [..,binds]  */
++    push(pgTest(t,line));				     /* [..,test]   */
++    push(pgBody(t,line));				     /* [..,body]   */
++    r = pair(pushed(2),pair(line,pair(pushed(1),top())));
++    drop(); drop(); drop(); drop(); drop(); drop();
++    return r;
++}
++
++static Cell local pgGuarded(gs)		/* guarded rhs from a list of	    */
++List gs; {				/* pair(bindings,guard)		    */
++    Cell r  = NIL;
++    List bs = NIL;
++    List g;
++
++    for (g=gs; nonNull(g); g=tl(g)) {	/* appendOnto does not allocate, so */
++	bs    = appendOnto(bs,fst(hd(g)));/* nothing can collect in here    */
++	hd(g) = snd(hd(g));
++    }
++    push(bs);				/* the bindings are unreachable from*/
++    push(gs);				/* gs now, and gs from the parser   */
++    r = letrec(pushed(1),grded(top()));
++    drop(); drop();
++    return r;
++}
++
++static Cell local pgWhere(bs,r)		/* attach a where part to a rhs,    */
++List bs;				/* merging in whatever pgGuarded    */
++Cell r; {				/* lifted out of its guards	    */
++    if (whatIs(r)==LETREC) {
++	fst(snd(r)) = appendOnto(fst(snd(r)),bs);
++	return r;
++    }
++    return letrec(bs,r);
++}
++
+ #if MUDO
+ static Pair local checkMDo(dqs)		/* convert reversed list of dquals */
+ List dqs; {				/* to an (expr,quals) pair         */

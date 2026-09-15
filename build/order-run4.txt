@@ -1,0 +1,7 @@
+MkExternalCore
+TcSplice
+HscMain
+DriverPipeline
+CompManager
+InteractiveUI
+Main

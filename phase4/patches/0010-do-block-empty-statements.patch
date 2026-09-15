@@ -1,0 +1,101 @@
+GHC 6.2.2 -- mhs: no empty statement after `do {`
+GHC accepts `do { ; stmt ; ... }` -- an empty statement after the opening
+brace -- which Haskell 98 does not, and MicroHs rejects it. The leading
+semicolon is removed in HscMain, DsMeta, SimplCore, SysTools and the new
+TcArrows. Same class as 4.08.2's edits in HscMain.
+
+--- a/ghc/compiler/deSugar/DsMeta.hs
++++ b/ghc/compiler/deSugar/DsMeta.hs
+@@ -544,10 +544,10 @@
+ repMatchTup (Match [p] ty (GRHSs guards wheres ty2)) = 
+   do { ss1 <- mkGenSyms (collectPatBinders p) 
+      ; addBinds ss1 $ do {
+-     ; p1 <- repP p
++      p1 <- repP p
+      ; (ss2,ds) <- repBinds wheres
+      ; addBinds ss2 $ do {
+-     ; gs    <- repGuards guards
++      gs    <- repGuards guards
+      ; match <- repMatch p1 gs ds
+      ; wrapGenSyns (ss1++ss2) match }}}
+ 
+@@ -615,7 +615,7 @@
+    do { e2 <- repE e 
+       ; ss1 <- mkGenSyms (collectPatBinders p) 
+       ; addBinds ss1 $ do {
+-      ; p1 <- repP p; 
++       p1 <- repP p; 
+       ; (ss2,zs) <- repSts ss
+       ; z <- repBindSt p1 e2
+       ; return (ss1++ss2, z : zs) }}
+--- a/ghc/compiler/main/HscMain.lhs
++++ b/ghc/compiler/main/HscMain.lhs
+@@ -166,7 +166,7 @@
+ 	  mod location maybe_checked_iface
+  = do	{
+       	  -- what target are we shooting for?
+-	; let one_shot  = hsc_mode hsc_env == OneShot
++	 let one_shot  = hsc_mode hsc_env == OneShot
+       	; let dflags    = hsc_dflags hsc_env
+ 	; let toInterp  = dopt_HscLang dflags == HscInterpreted
+ 	; let toCore    = isJust (ml_hs_file location) &&
+@@ -282,7 +282,7 @@
+  	    -------------------
+  	    -- PARSE
+  	    -------------------
+-	; inp <- readFile (expectJust "hscCoreFrontEnd:hspp" (ml_hspp_file location))
++	 inp <- readFile (expectJust "hscCoreFrontEnd:hspp" (ml_hspp_file location))
+ 	; case parseCore inp 1 of
+ 	    FailP s        -> hPutStrLn stderr s >> return (Left (HscFail pcs_ch));
+ 	    OkP rdr_module -> do {
+@@ -303,7 +303,7 @@
+  	    -------------------
+  	    -- PARSE
+  	    -------------------
+-	; maybe_parsed <- myParseModule (hsc_dflags hsc_env) 
++	 maybe_parsed <- myParseModule (hsc_dflags hsc_env) 
+                              (expectJust "hscFrontEnd:hspp" (ml_hspp_file location))
+ 
+ 	; case maybe_parsed of {
+@@ -475,7 +475,7 @@
+ 		Just (new_ic, bound_names, tc_expr) -> do {
+ 
+ 		-- Then desugar, code gen, and link it
+-	; hval <- compileExpr hsc_env pcs1 iNTERACTIVE 
++	 hval <- compileExpr hsc_env pcs1 iNTERACTIVE 
+ 			      (ic_rn_gbl_env new_ic) 
+ 			      (ic_type_env new_ic)
+ 			      tc_expr
+--- a/ghc/compiler/main/SysTools.lhs
++++ b/ghc/compiler/main/SysTools.lhs
+@@ -767,7 +767,7 @@
+ 	; unless n $ do {
+ 
+ 	   -- And run it!
+-	; action `IO.catch` handle_exn verb
++	 action `IO.catch` handle_exn verb
+ 	}}
+   where
+     handle_exn verb exn = do { when (verb >= 2) (hPutStr   stderr "\n")
+--- a/ghc/compiler/simplCore/SimplCore.lhs
++++ b/ghc/compiler/simplCore/SimplCore.lhs
+@@ -113,7 +113,7 @@
+ -- expression typed in at the interactive prompt
+ simplifyExpr dflags expr
+   = do	{
+-	; showPass dflags "Simplify"
++	 showPass dflags "Simplify"
+ 
+ 	; us <-  mkSplitUniqSupply 's'
+ 
+--- a/ghc/compiler/typecheck/TcArrows.lhs
++++ b/ghc/compiler/typecheck/TcArrows.lhs
+@@ -169,7 +169,7 @@
+     addErrCtxt (matchCtxt match_ctxt match)	$
+ 
+     do	{ 	-- Check the cmd stack is big enough
+-	; checkTc (lengthAtLeast cmd_stk n_pats)
++	  checkTc (lengthAtLeast cmd_stk n_pats)	-- mhs: no empty statement after "do {"
+ 		  (kappaUnderflow cmd)
+ 	; let pats_w_tys = zip pats (map Check cmd_stk)
+ 

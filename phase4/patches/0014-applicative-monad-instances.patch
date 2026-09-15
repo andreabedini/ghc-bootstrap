@@ -1,0 +1,156 @@
+GHC 6.2.2 -- mhs: Functor/Applicative/MonadFail instances
+Modern base makes Applicative a superclass of Monad and moves fail to
+MonadFail; MicroHs implements the modern hierarchy. Every monad the
+compiler defines with `instance Monad` (CgMonad FCode, DsMonad DsM,
+TcRnTypes TcRn, FlattenMonad Flatten, JavaGen LifterM, ByteCodeItbls
+State, the ilxGen test IIO) gets the two superclass instances, and its
+`fail` moves to MonadFail. In ByteCodeItbls the tuple pattern under >>=
+is taken apart with case, because mhs asks for MonadFail for a refutable
+lambda pattern. Same as 4.08.2's patch 0012.
+
+--- a/ghc/compiler/codeGen/CgMonad.lhs
++++ b/ghc/compiler/codeGen/CgMonad.lhs
+@@ -257,6 +257,12 @@
+ newtype FCode a = FCode (CgInfoDownwards -> CgState -> (a, CgState))
+ type Code    = FCode ()
+ 
++-- Modern base makes Applicative a superclass of Monad (4.08.2 patch 0012).
++instance Functor FCode where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative FCode where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad FCode where
+ 	(>>=) = thenFC
+ 	return = returnFC
+--- a/ghc/compiler/deSugar/DsMonad.lhs
++++ b/ghc/compiler/deSugar/DsMonad.lhs
+@@ -80,6 +80,12 @@
+    | Splice TypecheckedHsExpr	-- These bindings are introduced by
+ 				-- the PendingSplices on a HsBracketOut
+ 
++-- Modern base makes Applicative a superclass of Monad (4.08.2 patch 0012).
++instance Functor DsM where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative DsM where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad DsM where
+   return = returnDs
+   (>>=)  = thenDs
+--- a/ghc/compiler/ghci/ByteCodeItbls.lhs
++++ b/ghc/compiler/ghci/ByteCodeItbls.lhs
+@@ -294,11 +294,26 @@
+ 
+ newtype State s m a = State (s -> m (s, a))
+ 
++-- mhs has the modern class hierarchy: Monad needs Functor and Applicative
++-- above it.
++-- (mhs wants MonadFail m for a tuple pattern in a lambda under >>=, so the
++-- pairs are taken apart with case instead.)
++instance Monad m => Functor (State s m) where
++  fmap f (State m) = State (\s -> m s >>= \p -> case p of (s', a) -> return (s', f a))
++
++instance Monad m => Applicative (State s m) where
++  pure a            = State (\s -> return (s, a))
++  State f <*> State x = State (\s -> f s >>= \p -> case p of
++                          (s', g) -> x s' >>= \q -> case q of
++                            (s'', a) -> return (s'', g a))
++
+ instance Monad m => Monad (State s m) where
+   return a      = State (\s -> return (s, a))
+-  State m >>= k = State (\s -> m s >>= \(s', a) -> case k a of State n -> n s')
+-  fail str      = State (\s -> fail str)
++  State m >>= k = State (\s -> m s >>= \p -> case p of (s', a) -> case k a of State n -> n s')
+ 
++-- fail moved out of Monad in modern base.
++instance MonadFail m => MonadFail (State s m) where
++  fail str      = State (\s -> fail str)
+ class (Monad m, Monad (t m)) => MonadT t m where
+   lift :: m a -> t m a
+ 
+--- a/ghc/compiler/ilxGen/tests/test19.hs
++++ b/ghc/compiler/ilxGen/tests/test19.hs
+@@ -16,7 +16,7 @@
+ instance  Functor IIO where
+    fmap f x = x >>= (return . f)
+ 
+-instance  Monad IIO  where
++instance  Monad IIO where
+     {-# INLINE return #-}
+     {-# INLINE (>>)   #-}
+     {-# INLINE (>>=)  #-}
+@@ -24,9 +24,11 @@
+     return x	= returnIIO x
+ 
+     m >>= k     = bindIIO m k
+-    fail s	= error s -- not ioError?
+ 
+ 
++-- fail moved out of Monad in modern base.
++instance  MonadFail IIO where
++    fail s	= error s -- not ioError?
+ bindIIO :: IIO a -> (a -> IIO b) -> IIO b
+ bindIIO (IIO m) k = IIO ( \ s ->
+   case m s of 
+--- a/ghc/compiler/javaGen/JavaGen.lhs
++++ b/ghc/compiler/javaGen/JavaGen.lhs
+@@ -898,6 +898,12 @@
+ 			    )
+ 		}
+ 
++-- Modern base makes Applicative a superclass of Monad (4.08.2 patch 0012).
++instance Functor LifterM where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative LifterM where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad LifterM where
+ 	return a = LifterM (\ n s -> (a,[],[],s))
+ 	(LifterM m) >>= fn = LifterM (\ n s ->
+--- a/ghc/compiler/ndpFlatten/FlattenMonad.hs
++++ b/ghc/compiler/ndpFlatten/FlattenMonad.hs
+@@ -154,12 +154,22 @@
+ 		      unFlatten :: (FlattenState -> (a, FlattenState))
+ 		    }
+ 
++-- Modern base makes Applicative a superclass of Monad (4.08.2 patch 0012).
++instance Functor Flatten where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative Flatten where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad Flatten where
+   return x = Flatten $ \s -> (x, s)
+   m >>= n  = Flatten $ \s -> let 
+ 			       (r, s') = unFlatten m s
+ 			     in
+ 			     unFlatten (n r) s'
++-- Refutable patterns in do blocks need MonadFail in modern base; GHC's
++-- Monad fail defaulted to error, which is what this monad did.
++instance MonadFail Flatten where
++  fail = error
+ 
+ -- execute the given flattening computation (EXPORTED)
+ --
+--- a/ghc/compiler/typecheck/TcRnTypes.lhs
++++ b/ghc/compiler/typecheck/TcRnTypes.lhs
+@@ -122,10 +122,18 @@
+ failM :: TcRn m a
+ failM = TcRn (\ env -> ioError (userError "TcRn failure"))
+ 
++-- Modern base makes Applicative a superclass of Monad (4.08.2 patch 0012).
++instance Functor (TcRn m) where
++  fmap f m = m >>= \ a -> return (f a)
++instance Applicative (TcRn m) where
++  pure = return
++  mf <*> ma = mf >>= \ f -> ma >>= \ a -> return (f a)
+ instance Monad (TcRn m) where
+   (>>=)  = thenM
+   (>>)   = thenM_
+   return = returnM
++-- fail moved out of Monad in modern base.
++instance MonadFail (TcRn m) where
+   fail s = failM	-- Ignore the string
+ \end{code}
+ 

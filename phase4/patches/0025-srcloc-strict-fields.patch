@@ -1,0 +1,25 @@
+GHC 6.2.2 -- mhs: strict line/column in SrcLoc
+advanceSrcLoc does `c +# 1#` per character. In GHC FastInt is Int#, so the
+field is strict for free; under the FastTypes shim it is a lazy Int, and
+alexGetChar's `seq` forces only the constructor, so one (+1) thunk per
+character accumulates in the column until something forces it. Lines past
+~50K columns overflowed the mhs stack. Bang annotations restore the
+strictness the original relied on (build/lexer622/FINDINGS.md "Overlay").
+
+--- a/ghc/compiler/basicTypes/SrcLoc.lhs
++++ b/ghc/compiler/basicTypes/SrcLoc.lhs
+@@ -52,8 +52,12 @@
+ 			-- isWiredInName
+ 
+   | SrcLoc	FastString	-- A precise location (file name)
+-		FastInt		-- line
+-		FastInt		-- column
++		!FastInt	-- line
++		!FastInt	-- column
++		-- mhs: FastInt is a boxed Int here, not Int#, so without the bangs
++		-- advanceSrcLoc leaves one (c +# 1#) thunk per character and the
++		-- column of a token at the end of a long line overflows the
++		-- stack when it is finally forced (seen at ~50K columns).
+ 
+   | UnhelpfulSrcLoc FastString	-- Just a general indication
+ 

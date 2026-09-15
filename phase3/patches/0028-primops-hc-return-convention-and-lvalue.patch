@@ -1,0 +1,43 @@
+--- a/ghc/rts/PrimOps.hc
++++ b/ghc/rts/PrimOps.hc
+@@ -54,8 +54,30 @@
+  * track down.
+  */
+ 
++/* On a platform with no machine-register mapping in MachRegs.h -- x86-64 is
++ * one, since 4.08.2 predates it -- MAX_REAL_VANILLA_REG still takes its
++ * default of 8 (MachRegs.h:473), so the compiler returns unboxed-tuple fields
++ * in R1..R8. Those registers exist perfectly well as fields of the register
++ * table; what is missing is only their pinning to machine registers.
++ *
++ * The tests below ask the second question while the code generator has already
++ * answered the first, so on such a platform every REG_Rn test fails, the
++ * "0 Regs available" branch is selected, and RET_P pushes to the stack while
++ * the caller reads R1. The result is a primop return that silently goes to the
++ * wrong place -- mkForeignObj hands back the pointer it was given rather than
++ * the object it allocated.
++ *
++ * Select the register-based convention when there is no mapping at all, which
++ * is what MAX_REAL_VANILLA_REG's own default implies.
++ */
++#if !defined(REG_R1) && !defined(REG_R2) && !defined(REG_R3) && \
++    !defined(REG_R4) && !defined(REG_R5) && !defined(REG_R6) && \
++    !defined(REG_R7) && !defined(REG_R8)
++# define REG_RETURN_IN_VIRTUAL_REGS 1
++#endif
++
+ /*------ All Regs available */
+-#if defined(REG_R8)
++#if defined(REG_R8) || defined(REG_RETURN_IN_VIRTUAL_REGS)
+ # define RET_P(a)     R1.w = (W_)(a); JMP_(ENTRY_CODE(Sp[0]));
+ # define RET_N(a)     RET_P(a)
+ 
+@@ -1007,7 +1029,7 @@
+     sn_obj->sn = index;
+     stable_ptr_table[index].sn_obj = (StgClosure *)sn_obj;
+   } else {
+-    (StgClosure *)sn_obj = stable_ptr_table[index].sn_obj;
++    *(StgClosure **)&(sn_obj) = stable_ptr_table[index].sn_obj;
+   }
+ 
+   TICK_RET_UNBOXED_TUP(1);

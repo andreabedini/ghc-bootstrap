@@ -1,0 +1,453 @@
+--- a/ghc/rts/BlockAlloc.c
++++ b/ghc/rts/BlockAlloc.c
+@@ -264,7 +264,7 @@
+   nat n;
+ 
+   n = p->blocks * BLOCK_SIZE / MBLOCK_SIZE + 1;
+-  for (; n > 0; (W_)p += MBLOCK_SIZE, n--) {
++  for (; n > 0; *(W_*)&(p) += MBLOCK_SIZE, n--) {
+     initMBlock(MBLOCK_ROUND_DOWN(p));
+     initGroup(BLOCKS_PER_MBLOCK, p);
+     freeGroup(p);
+@@ -296,7 +296,7 @@
+ 
+   /* Initialise the start field of each block descriptor
+    */
+-  for (; block <= LAST_BLOCK(mblock); bd += 1, (lnat)block += BLOCK_SIZE) {
++  for (; block <= LAST_BLOCK(mblock); bd += 1, *(lnat*)&(block) += BLOCK_SIZE) {
+     bd->start = block;
+   }
+ }
+--- a/ghc/rts/GC.c
++++ b/ghc/rts/GC.c
+@@ -1249,7 +1249,7 @@
+ 	  prev = &old_all_threads;
+ 	  for (t = old_all_threads; t != END_TSO_QUEUE; t = next) {
+ 	      
+-	      (StgClosure *)tmp = isAlive((StgClosure *)t);
++	      *(StgClosure **)&(tmp) = isAlive((StgClosure *)t);
+ 	      
+ 	      if (tmp != NULL) {
+ 		  t = tmp;
+@@ -1296,7 +1296,7 @@
+ 	  StgTSO *t, *tmp, *next;
+ 	  for (t = old_all_threads; t != END_TSO_QUEUE; t = next) {
+ 	      next = t->global_link;
+-	      (StgClosure *)tmp = evacuate((StgClosure *)t);
++	      *(StgClosure **)&(tmp) = evacuate((StgClosure *)t);
+ 	      tmp->global_link = resurrected_threads;
+ 	      resurrected_threads = tmp;
+ 	  }
+@@ -1334,7 +1334,7 @@
+       // w might be WEAK, EVACUATED, or DEAD_WEAK (actually CON_STATIC) here
+       ASSERT(w->header.info == &stg_DEAD_WEAK_info 
+ 	     || get_itbl(w)->type == WEAK || get_itbl(w)->type == EVACUATED);
+-      (StgClosure *)w = evacuate((StgClosure *)w);
++      *(StgClosure **)&(w) = evacuate((StgClosure *)w);
+       *last_w = w;
+       last_w = &(w->link);
+   }
+@@ -2344,7 +2344,7 @@
+ scavengeTSO (StgTSO *tso)
+ {
+     // chase the link field for any TSOs on the same queue 
+-    (StgClosure *)tso->link = evacuate((StgClosure *)tso->link);
++    *(StgClosure **)&(tso->link) = evacuate((StgClosure *)tso->link);
+     if (   tso->why_blocked == BlockedOnMVar
+ 	|| tso->why_blocked == BlockedOnBlackHole
+ 	|| tso->why_blocked == BlockedOnException
+@@ -2393,7 +2393,7 @@
+     small_bitmap:
+ 	while (size > 0) {
+ 	    if ((bitmap & 1) == 0) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	    }
+ 	    p++;
+ 	    bitmap = bitmap >> 1;
+@@ -2436,7 +2436,7 @@
+ 	size = pap->n_args;
+ 	while (size > 0) {
+ 	    if ((bitmap & 1) == 0) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	    }
+ 	    p++;
+ 	    bitmap = bitmap >> 1;
+@@ -2501,9 +2501,9 @@
+     { 
+ 	StgMVar *mvar = ((StgMVar *)p);
+ 	evac_gen = 0;
+-	(StgClosure *)mvar->head = evacuate((StgClosure *)mvar->head);
+-	(StgClosure *)mvar->tail = evacuate((StgClosure *)mvar->tail);
+-	(StgClosure *)mvar->value = evacuate((StgClosure *)mvar->value);
++	*(StgClosure **)&(mvar->head) = evacuate((StgClosure *)mvar->head);
++	*(StgClosure **)&(mvar->tail) = evacuate((StgClosure *)mvar->tail);
++	*(StgClosure **)&(mvar->value) = evacuate((StgClosure *)mvar->value);
+ 	evac_gen = saved_evac_gen;
+ 	recordMutable((StgMutClosure *)mvar);
+ 	failed_to_evac = rtsFalse; // mutable.
+@@ -2592,7 +2592,7 @@
+ 
+ 	end = (P_)((StgClosure *)p)->payload + info->layout.payload.ptrs;
+ 	for (p = (P_)((StgClosure *)p)->payload; p < end; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	}
+ 	p += info->layout.payload.nptrs;
+ 	break;
+@@ -2600,10 +2600,10 @@
+ 
+     case BCO: {
+ 	StgBCO *bco = (StgBCO *)p;
+-	(StgClosure *)bco->instrs = evacuate((StgClosure *)bco->instrs);
+-	(StgClosure *)bco->literals = evacuate((StgClosure *)bco->literals);
+-	(StgClosure *)bco->ptrs = evacuate((StgClosure *)bco->ptrs);
+-	(StgClosure *)bco->itbls = evacuate((StgClosure *)bco->itbls);
++	*(StgClosure **)&(bco->instrs) = evacuate((StgClosure *)bco->instrs);
++	*(StgClosure **)&(bco->literals) = evacuate((StgClosure *)bco->literals);
++	*(StgClosure **)&(bco->ptrs) = evacuate((StgClosure *)bco->ptrs);
++	*(StgClosure **)&(bco->itbls) = evacuate((StgClosure *)bco->itbls);
+ 	p += bco_sizeW(bco);
+ 	break;
+     }
+@@ -2662,7 +2662,7 @@
+     case BLACKHOLE_BQ:
+     { 
+ 	StgBlockingQueue *bh = (StgBlockingQueue *)p;
+-	(StgClosure *)bh->blocking_queue = 
++	*(StgClosure **)&(bh->blocking_queue) = 
+ 	    evacuate((StgClosure *)bh->blocking_queue);
+ 	recordMutable((StgMutClosure *)bh);
+ 	failed_to_evac = rtsFalse;
+@@ -2707,7 +2707,7 @@
+ 	evac_gen = 0;		// repeatedly mutable 
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	}
+ 	evac_gen = saved_evac_gen;
+ 	recordMutable((StgMutClosure *)q);
+@@ -2727,7 +2727,7 @@
+ 
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	}
+ 	// it's tempting to recordMutable() if failed_to_evac is
+ 	// false, but that breaks some assumptions (eg. every
+@@ -2868,9 +2868,9 @@
+ 	{
+ 	    StgMVar *mvar = ((StgMVar *)p);
+ 	    evac_gen = 0;
+-	    (StgClosure *)mvar->head = evacuate((StgClosure *)mvar->head);
+-	    (StgClosure *)mvar->tail = evacuate((StgClosure *)mvar->tail);
+-	    (StgClosure *)mvar->value = evacuate((StgClosure *)mvar->value);
++	    *(StgClosure **)&(mvar->head) = evacuate((StgClosure *)mvar->head);
++	    *(StgClosure **)&(mvar->tail) = evacuate((StgClosure *)mvar->tail);
++	    *(StgClosure **)&(mvar->value) = evacuate((StgClosure *)mvar->value);
+ 	    evac_gen = saved_evac_gen;
+ 	    failed_to_evac = rtsFalse; // mutable.
+ 	    break;
+@@ -2935,17 +2935,17 @@
+ 	    
+ 	    end = (P_)((StgClosure *)p)->payload + info->layout.payload.ptrs;
+ 	    for (p = (P_)((StgClosure *)p)->payload; p < end; p++) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	    }
+ 	    break;
+ 	}
+ 
+ 	case BCO: {
+ 	    StgBCO *bco = (StgBCO *)p;
+-	    (StgClosure *)bco->instrs = evacuate((StgClosure *)bco->instrs);
+-	    (StgClosure *)bco->literals = evacuate((StgClosure *)bco->literals);
+-	    (StgClosure *)bco->ptrs = evacuate((StgClosure *)bco->ptrs);
+-	    (StgClosure *)bco->itbls = evacuate((StgClosure *)bco->itbls);
++	    *(StgClosure **)&(bco->instrs) = evacuate((StgClosure *)bco->instrs);
++	    *(StgClosure **)&(bco->literals) = evacuate((StgClosure *)bco->literals);
++	    *(StgClosure **)&(bco->ptrs) = evacuate((StgClosure *)bco->ptrs);
++	    *(StgClosure **)&(bco->itbls) = evacuate((StgClosure *)bco->itbls);
+ 	    break;
+ 	}
+ 
+@@ -2987,7 +2987,7 @@
+ 	case BLACKHOLE_BQ:
+ 	{ 
+ 	    StgBlockingQueue *bh = (StgBlockingQueue *)p;
+-	    (StgClosure *)bh->blocking_queue = 
++	    *(StgClosure **)&(bh->blocking_queue) = 
+ 		evacuate((StgClosure *)bh->blocking_queue);
+ 	    failed_to_evac = rtsFalse;
+ 	    break;
+@@ -3023,7 +3023,7 @@
+ 	    evac_gen = 0;		// repeatedly mutable 
+ 	    next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	    for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	    }
+ 	    evac_gen = saved_evac_gen;
+ 	    failed_to_evac = rtsFalse; // mutable anyhow.
+@@ -3042,7 +3042,7 @@
+ 
+ 	    next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	    for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	    }
+ 	    break;
+ 	}
+@@ -3219,7 +3219,7 @@
+ 	
+ 	end = (StgPtr)((StgClosure *)p)->payload + info->layout.payload.ptrs;
+ 	for (q = (StgPtr)((StgClosure *)p)->payload; q < end; q++) {
+-	    (StgClosure *)*q = evacuate((StgClosure *)*q);
++	    *(StgClosure **)&(*q) = evacuate((StgClosure *)*q);
+ 	}
+ 	break;
+     }
+@@ -3250,7 +3250,7 @@
+ 	recordMutable((StgMutClosure *)p);
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	}
+ 	evac_gen = saved_evac_gen;
+ 	failed_to_evac = rtsFalse;
+@@ -3269,7 +3269,7 @@
+ 
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	}
+ 	break;
+     }
+@@ -3459,7 +3459,7 @@
+ 	
+ 	end = (P_)p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (q = (P_)((StgMutArrPtrs *)p)->payload; q < end; q++) {
+-	  (StgClosure *)*q = evacuate((StgClosure *)*q);
++	  *(StgClosure **)&(*q) = evacuate((StgClosure *)*q);
+ 	}
+ 	continue;
+       }
+@@ -3472,7 +3472,7 @@
+ 	evac_gen = gen->no;
+ 	end = (P_)p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (q = (P_)((StgMutArrPtrs *)p)->payload; q < end; q++) {
+-	  (StgClosure *)*q = evacuate((StgClosure *)*q);
++	  *(StgClosure **)&(*q) = evacuate((StgClosure *)*q);
+ 	}
+ 	evac_gen = 0;
+ 	// Set the mut_link field to NULL, so that we will put this
+@@ -3495,9 +3495,9 @@
+     case MVAR:
+       {
+ 	StgMVar *mvar = (StgMVar *)p;
+-	(StgClosure *)mvar->head = evacuate((StgClosure *)mvar->head);
+-	(StgClosure *)mvar->tail = evacuate((StgClosure *)mvar->tail);
+-	(StgClosure *)mvar->value = evacuate((StgClosure *)mvar->value);
++	*(StgClosure **)&(mvar->head) = evacuate((StgClosure *)mvar->head);
++	*(StgClosure **)&(mvar->tail) = evacuate((StgClosure *)mvar->tail);
++	*(StgClosure **)&(mvar->value) = evacuate((StgClosure *)mvar->value);
+ 	p->mut_link = gen->mut_list;
+ 	gen->mut_list = p;
+ 	continue;
+@@ -3521,7 +3521,7 @@
+     case BLACKHOLE_BQ:
+       { 
+ 	StgBlockingQueue *bh = (StgBlockingQueue *)p;
+-	(StgClosure *)bh->blocking_queue = 
++	*(StgClosure **)&(bh->blocking_queue) = 
+ 	  evacuate((StgClosure *)bh->blocking_queue);
+ 	p->mut_link = gen->mut_list;
+ 	gen->mut_list = p;
+@@ -3681,7 +3681,7 @@
+ 	next = (P_)p->payload + info->layout.payload.ptrs;
+ 	// evacuate the pointers 
+ 	for (q = (P_)p->payload; q < next; q++) {
+-	  (StgClosure *)*q = evacuate((StgClosure *)*q);
++	  *(StgClosure **)&(*q) = evacuate((StgClosure *)*q);
+ 	}
+ 	break;
+       }
+@@ -3714,7 +3714,7 @@
+     bitmap = large_bitmap->bitmap[b];
+     for (i = 0; i < size; ) {
+ 	if ((bitmap & 1) == 0) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	}
+ 	i++;
+ 	p++;
+@@ -3732,7 +3732,7 @@
+ {
+     while (size > 0) {
+ 	if ((bitmap & 1) == 0) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	}
+ 	p++;
+ 	bitmap = bitmap >> 1;
+@@ -3794,7 +3794,7 @@
+ 	nat size;
+ 
+ 	p++;
+-	(StgClosure *)*p = evacuate((StgClosure *)*p);
++	*(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	bco = (StgBCO *)*p;
+ 	p++;
+ 	size = BCO_BITMAP_SIZE(bco);
+@@ -3837,7 +3837,7 @@
+ 	
+ 	// follow the ptr words
+ 	for (size = GET_PTRS(dyn); size > 0; size--) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *(StgClosure **)&(*p) = evacuate((StgClosure *)*p);
+ 	    p++;
+ 	}
+ 	continue;
+@@ -4083,7 +4083,7 @@
+ 	    
+ 	    // normal stack frames; do nothing except advance the pointer
+ 	default:
+-	    (StgPtr)frame += stack_frame_sizeW(frame);
++	    *(StgPtr*)&(frame) += stack_frame_sizeW(frame);
+ 	}
+     }
+ }
+--- a/ghc/rts/GCCompact.c
++++ b/ghc/rts/GCCompact.c
+@@ -77,7 +77,7 @@
+     StgPtr q = (StgPtr)*p, r;
+     
+     while (((StgWord)q & 1) != 0) {
+-	(StgWord)q -= 1;	// unset the low bit again
++	*(StgWord*)&(q) -= 1;	// unset the low bit again
+ 	r = (StgPtr)*q;
+ 	*q = (StgWord)free;
+ 	q = r;
+--- a/ghc/rts/Interpreter.c
++++ b/ghc/rts/Interpreter.c
+@@ -1061,7 +1061,7 @@
+ 	    int failto  = BCO_NEXT;
+ 	    StgDouble stackDbl, discrDbl;
+ 	    stackDbl = PK_DBL( & Sp[1] );
+-	    discrDbl = PK_DBL( & BCO_LIT(discr) );
++	    discrDbl = PK_DBL( (W_ *)&literals[discr] );
+ 	    if (stackDbl >= discrDbl) {
+ 		bciPtr = failto;
+ 	    }
+@@ -1074,7 +1074,7 @@
+ 	    int failto  = BCO_NEXT;
+ 	    StgDouble stackDbl, discrDbl;
+ 	    stackDbl = PK_DBL( & Sp[1] );
+-	    discrDbl = PK_DBL( & BCO_LIT(discr) );
++	    discrDbl = PK_DBL( (W_ *)&literals[discr] );
+ 	    if (stackDbl != discrDbl) {
+ 		bciPtr = failto;
+ 	    }
+@@ -1087,7 +1087,7 @@
+ 	    int failto  = BCO_NEXT;
+ 	    StgFloat stackFlt, discrFlt;
+ 	    stackFlt = PK_FLT( & Sp[1] );
+-	    discrFlt = PK_FLT( & BCO_LIT(discr) );
++	    discrFlt = PK_FLT( (W_ *)&literals[discr] );
+ 	    if (stackFlt >= discrFlt) {
+ 		bciPtr = failto;
+ 	    }
+@@ -1100,7 +1100,7 @@
+ 	    int failto  = BCO_NEXT;
+ 	    StgFloat stackFlt, discrFlt;
+ 	    stackFlt = PK_FLT( & Sp[1] );
+-	    discrFlt = PK_FLT( & BCO_LIT(discr) );
++	    discrFlt = PK_FLT( (W_ *)&literals[discr] );
+ 	    if (stackFlt != discrFlt) {
+ 		bciPtr = failto;
+ 	    }
+--- a/ghc/rts/Linker.c
++++ b/ghc/rts/Linker.c
+@@ -2821,7 +2821,7 @@
+ 	 } else {
+             /* No, so look up the name in our global table. */
+             symbol = strtab + sym.st_name;
+-            (void*)S = lookupSymbol( symbol );
++            *(void**)&(S) = lookupSymbol( symbol );
+ 	 }
+          if (!S) {
+             belch("%s: unknown symbol `%s'", oc->fileName, symbol);
+@@ -2917,7 +2917,7 @@
+ 	 } else {
+             /* No, so look up the name in our global table. */
+             symbol = strtab + sym.st_name;
+-            (void*)S = lookupSymbol( symbol );
++            *(void**)&(S) = lookupSymbol( symbol );
+ 
+ #ifdef ELF_FUNCTION_DESC
+ 	    /* If a function, already a function descriptor - we would
+--- a/ghc/rts/Schedule.c
++++ b/ghc/rts/Schedule.c
+@@ -3265,7 +3265,7 @@
+ 
+ 		// normal stack frames; do nothing except advance the pointer
+ 	    default:
+-		(StgPtr)frame += stack_frame_sizeW(frame);
++		*(StgPtr*)&(frame) += stack_frame_sizeW(frame);
+ 	    }
+ 	}   
+ 	done: ;
+--- a/ghc/rts/Stable.c
++++ b/ghc/rts/Stable.c
+@@ -175,7 +175,7 @@
+    */
+   p = (StgPtr)removeIndirections((StgClosure*)p);
+ 
+-  (void *)sn = lookupHashTable(addrToStableHash,(W_)p);
++  *(void **)&(sn) = lookupHashTable(addrToStableHash,(W_)p);
+   
+   if (sn != 0) {
+     ASSERT(stable_ptr_table[sn].addr == p);
+@@ -183,7 +183,7 @@
+     return sn;
+   } else {
+     sn = stable_ptr_free - stable_ptr_table;
+-    (P_)stable_ptr_free  = stable_ptr_free->addr;
++    *(P_*)&(stable_ptr_free) = stable_ptr_free->addr;
+     stable_ptr_table[sn].ref = 0;
+     stable_ptr_table[sn].addr = p;
+     stable_ptr_table[sn].sn_obj = NULL;
+@@ -378,7 +378,7 @@
+ 		    continue;
+ 		    
+ 		} else {
+-		    (StgClosure *)p->addr = isAlive((StgClosure *)p->addr);
++		    *(StgClosure **)&(p->addr) = isAlive((StgClosure *)p->addr);
+ 		    IF_DEBUG(stable, fprintf(stderr,"Stable name %d still alive at %p, ref %d\n", p - stable_ptr_table, p->addr, p->ref));
+ 		}
+ 	    }
+--- a/ghc/rts/PrimOps.hc
++++ b/ghc/rts/PrimOps.hc
+@@ -261,7 +261,7 @@
+      // have to push the object forward one word so that the goods
+      // fall on an 8-byte boundary.
+      if ((sizeof(StgArrWords) & 7) != 0) {
+-	 ((StgPtr)p)++;
++	 (*(StgPtr*)&(p))++;
+      }
+ 
+      SET_HDR(p, &stg_ARR_WORDS_info, CCCS);
+@@ -1492,7 +1492,7 @@
+     sn_obj->sn = index;
+     stable_ptr_table[index].sn_obj = (StgClosure *)sn_obj;
+   } else {
+-    (StgClosure *)sn_obj = stable_ptr_table[index].sn_obj;
++    *(StgClosure **)&(sn_obj) = stable_ptr_table[index].sn_obj;
+   }
+ 
+   TICK_RET_UNBOXED_TUP(1);

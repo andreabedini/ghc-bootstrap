@@ -1,0 +1,34 @@
+GHC 6.2.2 -- mhs: TcSplice without GHCI: guard the import, stub tcBracket
+With GHCI undefined, typecheck/TcSplice.lhs is its #ifndef GHCI stubs, yet
+it still imports HscMain's compileExpr (not exported in that
+configuration) and exports tcBracket (named in TcSplice.hi-boot) with no
+non-GHCI definition. GHC tolerated the dangling import and the undefined
+export; MicroHs reports both. The import is put under #ifdef GHCI and
+tcBracket gets a panic stub, as 6.0-run2 did.
+
+--- a/ghc/compiler/typecheck/TcSplice.lhs
++++ b/ghc/compiler/typecheck/TcSplice.lhs
+@@ -8,7 +8,12 @@
+ 
+ #include "HsVersions.h"
+ 
++-- With GHCI off HscMain does not export compileExpr and the rest of this
++-- module is the #ifndef GHCI stubs, which never call it. GHC tolerated the
++-- dangling import item; mhs reports it as "not exported" (D22).
++#ifdef GHCI
+ import HscMain		( compileExpr )
++#endif
+ import TcRnDriver	( importSupportingDecls, tcTopSrcDecls )
+ 	-- These imports are the reason that TcSplice 
+ 	-- is very high up the module hierarchy
+@@ -60,6 +65,10 @@
+ #ifndef GHCI
+ tcSpliceExpr n e ty = pprPanic "Cant do tcSpliceExpr without GHCi" (ppr e)
+ tcSpliceDecls e     = pprPanic "Cant do tcSpliceDecls without GHCi" (ppr e)
++-- tcBracket is exported (and named in TcSplice.hi-boot) but 6.0 gives it no
++-- non-GHCI stub; GHC let the undefined export through, mhs does not.
++tcBracket :: HsBracket Name -> Expected TcType -> TcM TcExpr
++tcBracket brack res_ty = pprPanic "Cant do tcBracket without GHCi" (ppr brack)
+ #else
+ \end{code}
+ 

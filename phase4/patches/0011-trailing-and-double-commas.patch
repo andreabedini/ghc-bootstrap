@@ -1,0 +1,154 @@
+GHC 6.2.2 -- mhs: trailing and doubled commas in lists
+MicroHs rejects a doubled comma (`, x, , y`, produced in 6.2.2 by
+CgHeapery's ",fetchAndReschedule" after a trailing comma and RnSource's
+dotnet names) and a trailing comma in a record declaration (HscTypes
+imp_home_names); the trailing commas in export lists (Literal, Module,
+HsTypes, HscMain, RdrHsSyn) were removed with the same edit. Two of the
+sites are inside comments (CprAnalyse, HscTypes) -- the substitution was
+made textually and the results are kept for byte fidelity.
+
+--- a/ghc/compiler/basicTypes/Literal.lhs
++++ b/ghc/compiler/basicTypes/Literal.lhs
+@@ -14,7 +14,7 @@
+ 	, hashLiteral
+ 
+ 	, inIntRange, inWordRange, tARGET_MAX_INT, inCharRange
+-	, isZeroLit,
++	, isZeroLit
+ 
+ 	, word2IntLit, int2WordLit
+ 	, narrow8IntLit, narrow16IntLit, narrow32IntLit
+--- a/ghc/compiler/basicTypes/Module.lhs
++++ b/ghc/compiler/basicTypes/Module.lhs
+@@ -39,9 +39,9 @@
+ \begin{code}
+ module Module 
+     (
+-      Module, 		   	-- Abstract, instance of Eq, Ord, Outputable
++      Module 		   	-- Abstract, instance of Eq, Ord, Outputable
+ 
+-    , ModLocation(..),
++    , ModLocation(..)
+     , showModMsg
+ 
+     , ModuleName
+@@ -66,9 +66,9 @@
+     , mkModuleNameFS		-- :: UserFS    -> ModuleName
+     , mkSysModuleNameFS		-- :: EncodedFS -> ModuleName
+ 
+-    , pprModule,
++    , pprModule
+  
+-    , ModuleEnv,
++    , ModuleEnv
+     , elemModuleEnv, extendModuleEnv, extendModuleEnvList, plusModuleEnv_C
+     , delModuleEnvList, delModuleEnv, plusModuleEnv, lookupModuleEnv
+     , lookupWithDefaultModuleEnv, mapModuleEnv, mkModuleEnv, emptyModuleEnv
+--- a/ghc/compiler/codeGen/CgHeapery.lhs
++++ b/ghc/compiler/codeGen/CgHeapery.lhs
+@@ -11,7 +11,7 @@
+ 	allocDynClosure,
+ 
+         -- new functions, basically inserting macro calls into Code -- HWL
+-        ,fetchAndReschedule, yield
++        fetchAndReschedule, yield	-- mhs: was ",fetchAndReschedule" after a trailing comma (double comma)
+     ) where
+ 
+ #include "HsVersions.h"
+--- a/ghc/compiler/cprAnalysis/CprAnalyse.lhs
++++ b/ghc/compiler/cprAnalysis/CprAnalyse.lhs
+@@ -70,7 +70,7 @@
+ 
+ Abstract domains consist of a `no information' value (Top), a function
+ value (Fun) which when applied to an argument returns a new AbsVal
+-(note the argument is not used in any way), , for product types, a
++(note the argument is not used in any way),  for product types, a
+ corresponding length tuple (Tuple) of abstract values.  And finally,
+ Bot.  Bot is not a proper abstract value but a generic bottom is
+ useful for calculating fixpoints and representing divergent
+--- a/ghc/compiler/hsSyn/HsTypes.lhs
++++ b/ghc/compiler/hsSyn/HsTypes.lhs
+@@ -5,25 +5,25 @@
+ 
+ \begin{code}
+ module HsTypes (
+-	  HsType(..), HsTyVarBndr(..), HsTyOp(..),
++	  HsType(..), HsTyVarBndr(..), HsTyOp(..)
+ 	, HsContext, HsPred(..)
+-	, HsTupCon(..), hsTupParens, mkHsTupCon,
++	, HsTupCon(..), hsTupParens, mkHsTupCon
+ 
+ 	, mkHsForAllTy, mkHsDictTy, mkHsIParamTy
+ 	, hsTyVarName, hsTyVarNames, replaceTyVarName
+ 	, splitHsInstDeclTy
+ 	
+ 	-- Type place holder
+-	, PostTcType, placeHolderType,
++	, PostTcType, placeHolderType
+ 
+ 	-- Name place holder
+-	, SyntaxName, placeHolderName,
++	, SyntaxName, placeHolderName
+ 
+ 	-- Printing
+ 	, pprParendHsType, pprHsForAll, pprHsContext, ppr_hs_context, pprHsTyVarBndr
+ 
+ 	-- Equality over Hs things
+-	, EqHsEnv, emptyEqHsEnv, extendEqHsEnv,
++	, EqHsEnv, emptyEqHsEnv, extendEqHsEnv
+ 	, eqWithHsTyVars, eq_hsVar, eq_hsVars, eq_hsTyVars, eq_hsType, eq_hsContext, eqListBy
+ 
+ 	-- Converting from Type to HsType
+@@ -43,7 +43,7 @@
+ import OccName		( NameSpace, mkVarOcc, tvName )
+ import Var		( TyVar, tyVarKind )
+ import Subst		( substTyWith )
+-import PprType		( {- instance Outputable Kind -}, pprParendKind, pprKind )
++import PprType		( {- instance Outputable Kind -} pprParendKind, pprKind )
+ import BasicTypes	( Boxity(..), Arity, IPName, tupleParens )
+ import PrelNames	( listTyConKey, parrTyConKey,
+ 			  hasKey, unboundKey )
+--- a/ghc/compiler/main/HscMain.lhs
++++ b/ghc/compiler/main/HscMain.lhs
+@@ -8,7 +8,7 @@
+ module HscMain ( 
+ 	HscResult(..), hscMain, initPersistentCompilerState
+ #ifdef GHCI
+-	, hscStmt, hscTcExpr, hscThing, 
++	, hscStmt, hscTcExpr, hscThing 
+ 	, compileExpr
+ #endif
+ 	) where
+--- a/ghc/compiler/main/HscTypes.lhs
++++ b/ghc/compiler/main/HscTypes.lhs
+@@ -290,7 +290,7 @@
+ 						--	module (apart, perhaps, from hiding some)
+ 	imp_pkg_mods   :: !ModuleSet,		-- Non-home-package modules on which we depend,
+ 						--	directly or indirectly
+-	imp_home_names :: !NameSet		-- Home package things on which we depend,
++	imp_home_names :: !NameSet		-- Home package things on which we depend
+ 						--	directly or indirectly
+     }
+ 
+--- a/ghc/compiler/parser/RdrHsSyn.lhs
++++ b/ghc/compiler/parser/RdrHsSyn.lhs
+@@ -60,7 +60,7 @@
+ 	cvBinds,
+ 	cvMonoBindsAndSigs,
+ 	cvTopDecls,
+-	findSplice, addImpDecls, emptyGroup, mkGroup,
++	findSplice, addImpDecls, emptyGroup, mkGroup
+ 
+ 	-- Stuff to do with Foreign declarations
+ 	, CallConv(..)
+--- a/ghc/compiler/rename/RnSource.lhs
++++ b/ghc/compiler/rename/RnSource.lhs
+@@ -49,7 +49,7 @@
+ import ErrUtils		( dumpIfSet )
+ import PrelNames	( newStablePtrName, bindIOName, returnIOName
+ 			  -- dotnet interop
+-		 	, objectTyConName, 
++		 	, objectTyConName	-- mhs: trailing comma before the next ", ..." line (double comma)
+ 			, unmarshalObjectName, marshalObjectName
+ 			, unmarshalStringName, marshalStringName
+ 			, checkDotnetResName

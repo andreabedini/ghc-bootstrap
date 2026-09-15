@@ -1,0 +1,31 @@
+GHC 6.2.2 -- mhs: import Prelude hiding ((<>)) where HsVersions.h is not included
+Modern base's Prelude exports Semigroup's (<>). Modules that include
+HsVersions.h get the hiding import from patch 0002; coreSyn/
+PprExternalCore.lhs and javaGen/PrintJava.lhs use Pretty's (<>) without
+including it, so they hide the Prelude's themselves. Same as 4.08.2's
+patch 0018.
+
+--- a/ghc/compiler/coreSyn/PprExternalCore.lhs
++++ b/ghc/compiler/coreSyn/PprExternalCore.lhs
+@@ -4,6 +4,9 @@
+ \begin{code}
+ 
+ module PprExternalCore where
++-- Modern base's Prelude exports Semigroup's (<>); this module uses Pretty's and
++-- does not include HsVersions.h, which hides it for the rest of the compiler.
++import Prelude hiding ((<>))
+ 
+ import Pretty
+ import ExternalCore
+--- a/ghc/compiler/javaGen/PrintJava.lhs
++++ b/ghc/compiler/javaGen/PrintJava.lhs
+@@ -5,6 +5,9 @@
+ 
+ \begin{code}
+ module PrintJava( compilationUnit ) where
++-- Modern base's Prelude exports Semigroup's (<>); this module uses Pretty's and
++-- does not include HsVersions.h, which hides it for the rest of the compiler.
++import Prelude hiding ((<>))
+ 
+ import Java
+ import Outputable

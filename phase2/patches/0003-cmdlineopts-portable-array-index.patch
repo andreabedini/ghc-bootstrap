@@ -1,0 +1,52 @@
+--- a/ghc/compiler/main/CmdLineOpts.lhs
++++ b/ghc/compiler/main/CmdLineOpts.lhs
+@@ -156,7 +156,7 @@
+ 
+ #include "HsVersions.h"
+ 
+-import Array	( array, (//) )
++import Array	( array, (//), (!) )
+ import GlaExts
+ import Argv
+ import Constants	-- Default values for some flags
+@@ -165,11 +165,7 @@
+ import Maybes		( assocMaybe, firstJust, maybeToBool )
+ import Panic		( panic, panic# )
+ 
+-#if __GLASGOW_HASKELL__ < 301
+-import ArrBase	( Array(..) )
+-#else
+-import PrelArr  ( Array(..) )
+-#endif
++import Array	( Array )
+ \end{code}
+ 
+ A command-line {\em switch} is (generally) either on or off; e.g., the
+@@ -613,22 +609,11 @@
+ 
+ 	defined_elems = map mk_assoc_elem tidied_on_switches
+     in
+-    -- (avoid some unboxing, bounds checking, and other horrible things:)
+-#if __GLASGOW_HASKELL__ < 405
+-    case sw_tbl of { Array bounds_who_needs_'em stuff ->
+-#else
+-    case sw_tbl of { Array _ _ stuff ->
+-#endif
+-    \ switch ->
+-	case (indexArray# stuff (tagOf_SimplSwitch switch)) of
+-#if __GLASGOW_HASKELL__ < 400
+-	  Lift v -> v
+-#elif __GLASGOW_HASKELL__ < 403
+-	  (# _, v #) -> v
+-#else
+-	  (# v #) -> v
+-#endif
+-    }
++    -- The original code opened the Array constructor and used indexArray#
++    -- with an unboxed tuple result, to skip bounds checking. MicroHs has
++    -- neither the constructor's GHC-specific shape nor those primops, and the
++    -- portable (!) is equivalent -- see phase2/patches.
++    \ switch -> sw_tbl ! tagOf_SimplSwitch switch
+   where
+     mk_assoc_elem k@(MaxSimplifierIterations lvl) = (IBOX(tagOf_SimplSwitch k), SwInt lvl)
+     mk_assoc_elem k@(SimplInlinePhase n)          = (IBOX(tagOf_SimplSwitch k), SwInt n)

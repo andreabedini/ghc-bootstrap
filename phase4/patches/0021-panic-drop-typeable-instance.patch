@@ -1,0 +1,20 @@
+GHC 6.2.2 -- mhs: hand-written Typeable GhcException removed
+utils/Panic.lhs writes a Typeable instance by hand with the hslibs-era
+mkTyCon/mkAppTy. MicroHs derives Typeable for every data type, so the
+instance would be a duplicate; it goes.
+
+--- a/ghc/compiler/utils/Panic.lhs
++++ b/ghc/compiler/utils/Panic.lhs
+@@ -121,10 +121,8 @@
+ 	         ++ "to glasgow-haskell-bugs@haskell.org,\n"
+ 		 ++ "or http://sourceforge.net/projects/ghc/.\n\n")
+ 
+-ghcExceptionTc = mkTyCon "GhcException"
+-{-# NOINLINE ghcExceptionTc #-}
+-instance Typeable GhcException where
+-  typeOf _ = mkAppTy ghcExceptionTc []
++-- MicroHs generates a Typeable instance for every data type, so the
++-- hand-written hslibs-era instance (mkTyCon/mkAppTy) would be a duplicate.
+ \end{code}
+ 
+ Panics and asserts.

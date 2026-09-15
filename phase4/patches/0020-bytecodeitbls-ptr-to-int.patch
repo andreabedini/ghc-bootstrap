@@ -1,0 +1,34 @@
+GHC 6.2.2 -- mhs: ptrToInt via Foreign.Ptr.ptrToIntPtr
+ghci/ByteCodeItbls.lhs took a pointer's address by matching Ptr's
+constructor and applying addr2Int#. MicroHs's Ptr is abstract;
+Foreign.Ptr's ptrToIntPtr yields the same Int. (GHCi is not built; the
+module still has to compile in dependency order.)
+
+--- a/ghc/compiler/ghci/ByteCodeItbls.lhs
++++ b/ghc/compiler/ghci/ByteCodeItbls.lhs
+@@ -25,12 +25,9 @@
+ 			  malloc, castPtr, plusPtr )
+ import DATA_BITS	( Bits(..), shiftR )
+ 
+-import GHC.Exts		( Int(I#), addr2Int# )
+-#if __GLASGOW_HASKELL__ < 503
+-import Ptr		( Ptr(..) )
+-#else
+-import GHC.Ptr		( Ptr(..) )
+-#endif
++-- mhs's Ptr is abstract, so the I#/addr2Int# route to a pointer's address
++-- is not available; Foreign.Ptr's ptrToIntPtr yields the same Int.
++import Foreign.Ptr	( Ptr, ptrToIntPtr )
+ \end{code}
+ 
+ %************************************************************************
+@@ -125,7 +122,8 @@
+ 
+ mkJumpToAddr :: Ptr () -> [ItblCode]
+ 
+-ptrToInt (Ptr a#) = I# (addr2Int# a#)
++ptrToInt :: Ptr a -> Int
++ptrToInt p = fromIntegral (ptrToIntPtr p)
+ 
+ #if sparc_TARGET_ARCH
+ -- After some consideration, we'll try this, where

@@ -1,0 +1,2 @@
+[env]
+HINDSIGHT_BANK_ID = "coding-agent::{{config_root|basename}}"
