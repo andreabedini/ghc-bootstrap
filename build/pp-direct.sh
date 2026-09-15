@@ -2,7 +2,7 @@
 # Feed the kept preprocessed files to mhs directly (no CPP) so the reported
 # line/col refer exactly to build/ppkeep/<M>.pp.hs, then print that spot.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap; T=${TREE:-$R/build/ghc-6.0-slit/ghc/compiler}
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"; T=${TREE:-$R/build/ghc-6.0-slit/ghc/compiler}
 INC="-i$R/build/ppkeep -i${HSBOOT:-$R/phase2/hsboot-6.0b} -i${SHIMS:-$R/build/shims-6.0} -i$R/phase1/shims -i$R/phase1/shims-ghc -i$R/phase1/shims-h98 -i$R/phase2/gen-6.0"
 for d in "$T"/*/; do INC="$INC -i${d%/}"; done
 INC="$INC -i$T -I$T -I${INCDIR:-$R/build/ghc-6.0-slit/ghc/includes}"

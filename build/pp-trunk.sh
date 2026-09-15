@@ -3,7 +3,7 @@
 # (build/ppwrap) so the preprocessed text is kept, then show the construct at
 # each reported failure line. Usage: sh build/pp-trunk.sh <tree> <label> mod...
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 T=$(cd "$1" && pwd); LABEL=$2; shift 2
 # HSBOOT / SHIMS / INCDIR override the defaults, so a second tree copy can be probed.
 INC="-i${HSBOOT:-$R/phase2/hsboot-6.0b} -i${SHIMS:-$R/build/shims-6.0} -i$R/phase1/shims -i$R/phase1/shims-ghc -i$R/phase1/shims-h98 -i$R/phase2/gen-6.0"

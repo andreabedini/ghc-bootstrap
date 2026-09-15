@@ -6,7 +6,7 @@
 # Flags from ghc/lib/std/cbits/Makefile:
 #     SRC_CC_OPTS += -O -I$(GHC_INCLUDE_DIR) -I$(GHC_RUNTIME_DIR) -Wall
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 G="$R/build/ghc-4.08.2"
 OUT="$R/build/ghc-mhs/cbits"
 

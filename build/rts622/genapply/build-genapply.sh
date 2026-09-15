@@ -9,7 +9,7 @@
 # MachRegs.h report MAX_REAL_VANILLA_REG 0 -- the same view the RTS gets.
 # mhs shells out to cpphs (in MicroHs/bin) and needs a writable TMPDIR.
 set -eu
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 G="$R/build/rts622/ghc-6.2.2"
 D="$R/build/rts622/genapply"

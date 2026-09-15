@@ -12,7 +12,7 @@ and saw this; the mhs probe's shims hid it).
     python3 make-order.py <compiler-src-dir> > order.txt     (module<TAB>path)
 """
 import importlib.util, sys, re, os
-R = "/home/andrea/work/haskell/ghc-bootstrap"; tree = sys.argv[1]
+R = os.environ["GHC_BOOTSTRAP_ROOT"]; tree = sys.argv[1]
 spec = importlib.util.spec_from_file_location("bo", R + "/phase2/build-order.py")
 bo = importlib.util.module_from_spec(spec); spec.loader.exec_module(bo)
 deps, defined = bo.scan(tree, skip_dirs=("nativeGen", "ilxGen", "javaGen", "ghci"))

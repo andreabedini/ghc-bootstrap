@@ -18,7 +18,7 @@
 # adds --template, --cc/--ld=gcc, --cflag=-std=gnu89, --cflag=-D__GLASGOW_HASKELL__=622
 # and -I<ghc/includes>; it is hand-written, not generated here.
 set -eu
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 H="$R/build/hsc2hs-mhs"
 export TMPDIR="$H/tmp"; mkdir -p "$TMPDIR"
 export PATH="$R/MicroHs/bin:$PATH"          # mhs and its cpphs

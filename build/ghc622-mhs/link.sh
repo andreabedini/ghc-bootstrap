@@ -21,7 +21,7 @@
 # The .hs -> .hc step is the driver (-C, -O, -package base; the driver adds
 # unregFlags itself), the .hc -> .o step is build-hc.sh's recipe.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 INC="$R/build/ghc-6.2.2-run1/ghc/includes"
 CC=${CC:-gcc}

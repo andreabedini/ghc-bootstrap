@@ -10,7 +10,7 @@
 # (libraries/base/Makefile lists it in STUBOBJS).
 # Objects go to build/ghc622-mhs/cbitsobj; build-libbase.sh archives them.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 INC="$R/build/ghc-6.2.2-run1/ghc/includes"
 RTS="$R/build/rts622/ghc-6.2.2/ghc/rts"

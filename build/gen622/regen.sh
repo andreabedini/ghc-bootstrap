@@ -10,7 +10,7 @@
 # Recipe validated on 6.0 (byte-identical to build/ghc-6.0-run2): VALIDATE60=1 sh regen.sh
 # SKIP_GENPOC=1 reuses an already built genprimopcode/genprimopcode.
 set -eu
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 B=$R/build
 G=$B/gen622                                   # this directory: all output lands here
 SRC=$B/rebase622/ghc-6.2.2/ghc/compiler       # pristine 6.2.2 inputs (read-only)

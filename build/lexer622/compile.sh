@@ -11,7 +11,7 @@
 # Run under sh (the script word-splits $INC).  Uses its own -C cache in
 # build/lexer622/work so it never touches another run's cache.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 L="$R/build/lexer622"
 TREE="$R/build/rebase622/try622"

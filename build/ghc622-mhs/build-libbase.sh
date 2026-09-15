@@ -6,7 +6,7 @@
 # Rerun after build-hc.sh adds modules; nothing is recompiled here.
 # Output: build/ghc622-mhs/lib/.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 LIB="$W/lib"
 OBJ="${HCOBJ:-$W/hcobj}"

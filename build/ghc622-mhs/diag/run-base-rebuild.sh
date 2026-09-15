@@ -20,7 +20,7 @@
 # whose .hc is newer than the source, STOP=1 to stop at the first failure,
 # VERB (default -v1).
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 export TMPDIR="$W/diag/tmp"
 BASE="${BASE:-$W/libraries/base-rebuild}"; TOPDIR="${TOPDIR:-$W/diag/topdir-rebuild}"; LOGS="${LOGS:-$W/diag/base-rebuild-logs}"

@@ -7,7 +7,7 @@
 # (r<uniq>, s<uniq>, a<uniq>, ...) before diffing.
 #   GHC=<compiler> TAG=<name> sh compare-base.sh
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 GHC="${GHC:-$S/ghc}"; TAG="${TAG:-stage2}"
 BASE="$R/build/ghc622-mhs/libraries/base"

@@ -9,7 +9,7 @@
 # import graph is reported against every module that reaches it. Read the
 # summary at the end, not the per-module lines.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 TREE="${1:-$R/build/ghc-4.08.2/ghc/compiler}"
 export PATH="$M/bin:$PATH"

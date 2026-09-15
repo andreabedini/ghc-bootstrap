@@ -3,7 +3,7 @@
 #   sh compile-one.sh <source path (abs or rel to compiler root)> <module> <dir> [extra flags...]
 # Output: $OUTDIR/<dir>/<module>.{hc,hi}; log on stdout/stderr.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 GHC="${GHC:-$R/build/ghc622-mhs/ghc}"
 SRC="$S/src/ghc-6.2.2/ghc/compiler"

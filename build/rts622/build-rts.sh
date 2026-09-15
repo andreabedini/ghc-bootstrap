@@ -9,7 +9,7 @@
 # -DUSE_MINIINTERPRETER, the driver adds -D__GLASGOW_HASKELL__=622.
 # -std=gnu89 -O: Stable.h uses GNU89 `extern inline' (see DECISIONS.md D41).
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap/build/rts622
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"/build/rts622
 G="$R/ghc-6.2.2"
 OUT="$R/obj"
 CC=${CC:-gcc}

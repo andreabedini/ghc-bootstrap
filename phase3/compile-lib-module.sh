@@ -14,7 +14,7 @@
 #
 #   phase3/compile-lib-module.sh <module.lhs> [extra hsc flags...]
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 B="$R/build/ghc-mhs"
 G="$R/build/ghc-4.08.2"

@@ -15,7 +15,7 @@
 #
 # Run under sh (word-splitting of $INC), with ulimit -s unlimited.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 W="$R/build/ghc622-mhs"
 TREE="$R/build/ghc-6.2.2-run1/ghc/compiler"

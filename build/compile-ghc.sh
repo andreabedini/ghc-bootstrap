@@ -1,7 +1,7 @@
 #!/bin/sh
 # First contact: ask mhs to compile GHC 4.08.2's compiler, top module first.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 T="$R/build/ghc-4.08.2/ghc/compiler"
 export PATH="$M/bin:$PATH"

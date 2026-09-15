@@ -2,7 +2,7 @@
 # scan-hi.sh [base-dir] [iface-dump-dir]: for every .hi under base-dir, --show-iface it and list top-level
 # signature names that appear more than once (FastString unique collisions).
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 export TMPDIR="$W/diag/tmp"
 ulimit -s unlimited 2>/dev/null

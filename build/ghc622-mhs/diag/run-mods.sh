@@ -5,7 +5,7 @@
 # appending rows to <results-file> instead of the shared base-results.tsv.
 # Env: OPT (-O), MODTIMEOUT (900), MEMKB (6000000), GHCBIN.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 export TMPDIR="$W/diag/tmp"
 mkdir -p "$TMPDIR" "$W/diag/logs"

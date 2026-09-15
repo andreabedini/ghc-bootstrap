@@ -4,7 +4,7 @@
 # build-hc.sh itself walks every .hc under libraries/base and would rewrite the 137
 # objects another run owns; this touches only the listed modules' objects.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 INC="$R/build/ghc-6.2.2-run1/ghc/includes"
 CC=${CC:-gcc}

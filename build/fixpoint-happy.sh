@@ -11,7 +11,7 @@
 # gen2 == gen3 means the parsers are reproducible from happy's own .ly grammars
 # by a compiler derived from the Hugs seed, and happy-ghc leaves the trusted base.
 set -eu
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"; B="$R/build/happy-mhs"; S="$R/build/happy-1.19.5/src"
 export PATH="$M/bin:$PATH"
 export HAPPY_DATADIR="$B/datadir"

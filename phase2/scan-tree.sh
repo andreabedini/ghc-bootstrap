@@ -12,7 +12,7 @@
 # would actually follow; leaving it undefined would make #ifdef __GLASGOW_HASKELL__
 # modules compile as empty and score a spurious OK.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 LABEL="$1"
 # absolutise: the script cd's into its work dir before scanning

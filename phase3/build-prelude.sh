@@ -12,7 +12,7 @@
 #
 #   phase3/build-prelude.sh [start-module]
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 G="$R/build/ghc-4.08.2"
 B="$R/build/ghc-mhs"
 SRC="$G/ghc/lib/std"

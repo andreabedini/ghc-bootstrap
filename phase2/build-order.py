@@ -18,7 +18,7 @@ for -- which is what makes the remaining graph acyclic.
 """
 import re, sys, os, importlib.util
 
-R = "/home/andrea/work/haskell/ghc-bootstrap"
+R = os.environ["GHC_BOOTSTRAP_ROOT"]
 spec = importlib.util.spec_from_file_location("fs", R + "/phase0/feature-scan.py")
 fs = importlib.util.module_from_spec(spec); spec.loader.exec_module(fs)
 

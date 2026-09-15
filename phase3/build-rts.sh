@@ -17,7 +17,7 @@
 # library. The system GMP is fine (verified by compiling a real mpz_fdiv_qr
 # call), so this takes the HaveLibGmp=YES path and links -lgmp.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 G="$R/build/ghc-4.08.2"
 OUT="$R/build/ghc-mhs/rts"
 

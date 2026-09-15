@@ -26,7 +26,7 @@
 # not the driver), GHC (the compiler to use; default the stage-1 one),
 # OUTDIR (default stage2; the stage-3 run uses stage3), OUT (tsv path).
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 GHC="${GHC:-$R/build/ghc622-mhs/ghc}"
 TOPDIR="$S/topdir"

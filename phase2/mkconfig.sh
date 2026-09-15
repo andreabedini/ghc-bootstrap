@@ -19,7 +19,7 @@
 #   - configure's happy version test compares versions as strings, so the
 #     result is pre-seeded into the cache
 set -eu
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 G="$R/build/ghc-4.08.2"
 HAPPY="$R/build/happy-mhs/happy-mhs"
 

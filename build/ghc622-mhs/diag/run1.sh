@@ -1,7 +1,7 @@
 #!/bin/sh
 # diag/run1.sh <log-name> <timeout-s> <ghc flags...> -- runs in libraries/base copy, outputs to diag/out
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 export TMPDIR="$W/diag/tmp"
 mkdir -p "$TMPDIR" "$W/diag/out" "$W/diag/logs"

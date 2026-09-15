@@ -13,7 +13,7 @@
 # show (minBound::Int) printed "-0". Later GHCs pass -fwrapv to gcc for
 # exactly this reason (SysTools/DriverPipeline, from 6.8 on).
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 INC="$R/build/ghc-6.2.2-run1/ghc/includes"
 CC=${CC:-gcc}

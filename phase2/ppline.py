@@ -9,7 +9,7 @@ mhs does (Compile.hs: unlit, then cpphs) and prints the neighbourhood.
 """
 import sys, os, subprocess, tempfile
 
-R = "/home/andrea/work/haskell/ghc-bootstrap"
+R = os.environ["GHC_BOOTSTRAP_ROOT"]
 T = R + "/build/ghc-4.08.2/ghc/compiler"
 
 

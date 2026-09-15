@@ -4,7 +4,7 @@
 # appear more than once (FastString unique collisions, diag/FINDINGS.md).
 #   GHC=<compiler> sh scan-hi-stage2.sh <dir-with-.hi> <dump-dir>
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 GHC="${GHC:-$S/ghc}"
 export TMPDIR="$S/tmp"

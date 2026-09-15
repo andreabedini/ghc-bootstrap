@@ -16,7 +16,7 @@ set -u
 # diag copy of build-hc.sh: BASE (default libraries/base-rebuild) and HCOBJ
 # (default diag/hcobj-rebuild) are parameters, so the rebuilt objects land
 # beside hcobj/, which a link agent is archiving.
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 W="$R/build/ghc622-mhs"
 INC="$R/build/ghc-6.2.2-run1/ghc/includes"
 CC=${CC:-gcc}

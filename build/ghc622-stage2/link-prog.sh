@@ -7,7 +7,7 @@
 # When the compiler is a native one no +RTS -K is passed (the 6.2.2 RTS has
 # its own defaults via hschooks.c); MHSRTS overrides.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 GHC="${GHC:-$S/ghc}"
 INC="$S/src/ghc-6.2.2/ghc/includes"

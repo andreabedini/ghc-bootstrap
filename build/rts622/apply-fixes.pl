@@ -3,9 +3,10 @@
 # using the meaning-preserving spelling  (T)lv OP v  ==>  *(T*)&(lv) OP v
 # (see DECISIONS.md D40). Sites come from obj/*.log; nothing else is touched.
 use strict; use warnings;
-my $rts = "/home/andrea/work/haskell/ghc-bootstrap/build/rts622/ghc-6.2.2/ghc/rts";
+my $R = $ENV{GHC_BOOTSTRAP_ROOT} // die "GHC_BOOTSTRAP_ROOT not set: run under mise from the repo (see mise.toml)\n";
+my $rts = "$R/build/rts622/ghc-6.2.2/ghc/rts";
 my %sites;
-for my $log (glob "/home/andrea/work/haskell/ghc-bootstrap/build/rts622/obj/*.log") {
+for my $log (glob "$R/build/rts622/obj/*.log") {
   open my $fh, '<', $log or die; 
   while (<$fh>) { $sites{$1}{$2} = 1 if m{ghc/rts/([\w.]+):(\d+):\d+: error:}; }
 }

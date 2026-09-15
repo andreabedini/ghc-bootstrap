@@ -13,7 +13,7 @@
 #
 #   build/build-ghc.sh [start-module]     resume from a module in the order
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 T="$R/build/ghc-4.08.2/ghc/compiler"
 ORDER="$R/phase2/build-order.txt"

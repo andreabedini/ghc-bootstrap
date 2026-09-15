@@ -1,7 +1,7 @@
 #!/bin/sh
 # Fast iteration: one mhs invocation that pulls in the whole import graph.
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"; S="$R/build/happy-1.19.5/src"
 export PATH="$M/bin:$PATH"
 mkdir -p "$R/build/happy-mhs" && cd "$R/build/happy-mhs" || exit 1

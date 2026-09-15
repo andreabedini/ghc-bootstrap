@@ -7,7 +7,7 @@
 # (-O; -Rghc-timing dropped, its RTS hook is a no-op under the MicroHs runtime).
 # .hc -> .o: build/ghc622-mhs/build-hc.sh's recipe (-fwrapv mandatory).
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 GHC="${GHC:-$R/build/ghc622-mhs/ghc}"
 TOPDIR="$S/topdir"

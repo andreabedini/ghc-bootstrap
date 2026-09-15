@@ -63,6 +63,12 @@ setup for `stdout` and dies on a 64-bit assumption in the 1999 runtime
 Sources are pristine tarballs plus patches — nothing is edited in place, and the
 invariant is checked, not assumed.
 
+The scripts under `build/` and `phase0`–`phase3` find the checkout through
+`GHC_BOOTSTRAP_ROOT`, which `mise.toml` sets to the repository root. Run them
+under mise (`mise activate` in the shell, or `mise exec -- sh build/...`);
+without it they stop at once with `GHC_BOOTSTRAP_ROOT: not set`. The
+`phase4` scripts are relative to the working directory and need nothing.
+
 ### GHC 6.2.2, the current entry point (D45–D48)
 
 The compiler tree, from the pristine `ghc-6.2.2-src.tar.bz2`:

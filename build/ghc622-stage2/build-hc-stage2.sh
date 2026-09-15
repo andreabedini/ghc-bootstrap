@@ -9,7 +9,7 @@
 # -D__GLASGOW_HASKELL__=602 -I<includes> (-Iparser -I. -O per SRC_CC_OPTS).
 #   OUTDIR=stage3 sh build-hc-stage2.sh   -> obj-stage3/   (for stage 3)
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 SRC="$S/src/ghc-6.2.2/ghc/compiler"
 INC="$S/src/ghc-6.2.2/ghc/includes"

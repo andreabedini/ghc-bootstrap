@@ -7,10 +7,11 @@
 # HSC2HS_CFLAGS (ours, not the Makefile's; default --cflag=-std=gnu89): gcc >= 14 rejects the
 # K&R definitions in libraries/base/include/HsBase.h (__hscore_s_isblk(m) ...) as C99 errors;
 # build-hc.sh compiles the .hc files in the same gnu89 mode.  See FINDINGS.md.
-HSC2HS_BINDIR=/home/andrea/work/haskell/ghc-bootstrap/build/hsc2hs-mhs
-HSC2HS_DIR=/home/andrea/work/haskell/ghc-bootstrap/build/hsc2hs-mhs
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
+HSC2HS_BINDIR=$R/build/hsc2hs-mhs
+HSC2HS_DIR=$R/build/hsc2hs-mhs
 HS_PROG=hsc2hs-bin
-HSC2HS_EXTRA="--cc=gcc --ld=gcc ${HSC2HS_CFLAGS:---cflag=-std=gnu89} --cflag=-D__GLASGOW_HASKELL__=622 -I/home/andrea/work/haskell/ghc-bootstrap/build/ghc-6.2.2-run1/ghc/includes"
+HSC2HS_EXTRA="--cc=gcc --ld=gcc ${HSC2HS_CFLAGS:---cflag=-std=gnu89} --cflag=-D__GLASGOW_HASKELL__=622 -I$R/build/ghc-6.2.2-run1/ghc/includes"
 
 tflag="--template=$HSC2HS_DIR/template-hsc.h"
 for arg do

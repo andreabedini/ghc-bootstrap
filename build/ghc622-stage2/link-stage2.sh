@@ -8,7 +8,7 @@
 # member, so the explicit object wins without -u).
 #   OUTDIR=stage3 sh link-stage2.sh   -> ghc-stage3  from obj-stage3/
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 ODIR="${OUTDIR:-stage2}"
 if [ "$ODIR" = stage2 ]; then OBJ="$S/obj"; BIN="$S/ghc"; else OBJ="$S/obj${ODIR#stage2}"; BIN="$S/ghc-${ODIR}"; fi

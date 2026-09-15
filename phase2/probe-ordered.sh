@@ -7,7 +7,7 @@
 #
 # Writes build/probe-<label>.tsv  (STATUS \t module \t message)
 set -u
-R=/home/andrea/work/haskell/ghc-bootstrap
+R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 LABEL="$1"
 TREE=$(cd "$2" && pwd)   || exit 1
