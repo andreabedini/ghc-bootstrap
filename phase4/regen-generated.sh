@@ -59,5 +59,6 @@ done
 for y in main/ParsePkgConf parser/ParserCore parser/Parser; do
   printf '== happy %s.y\n' "$y"
   "$HAPPY" "$C/$y.y" -o "$C/$y.hs"
+  sh "$P4/fix-generated-parsers.sh" "$C/$y.hs"
 done
 echo "== regenerated: primops.txt, 10 primop-*.hs-incl, 3 parsers"

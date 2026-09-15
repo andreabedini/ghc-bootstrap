@@ -21,7 +21,10 @@
 #   4  make -C ghc/includes config.h      (GHC's own $(H_CONFIG) rule)
 #   5  ghc/includes/DerivedConstants.h from mkDerivedConstants.c, compiled with
 #      the unregisterised flags -DNO_REGS -DUSE_MINIINTERPRETER (STD_ITBL_SIZE 3)
+#  5b  ghc/includes/NativeDefs.h from mkNativeHdr.c, same flags (TcForeign.lhs
+#      reaches it through nativeGen/NCG.h even without a native code generator)
 #   6  phase4/regen-generated.sh: primops.txt, 10 primop-*.hs-incl, 3 parsers
+#      (post-processed by phase4/fix-generated-parsers.sh)
 #   7  phase4/convert-lexer.py on the shipped alex output parser/Lexer.hs
 #   8  ln -s ../../utils/ghc-pkg ghc/compiler/utils/ghc-pkg
 #      (main/Packages.lhs #includes ../utils/ghc-pkg/Package.hs)
@@ -101,6 +104,20 @@ gcc -O2 -w -include stdio.h -DNO_REGS -DUSE_MINIINTERPRETER -Ighc/includes \
     -o "$D/tmp/mkDerivedConstants" > "$D/log/derived-constants.log" 2>&1
 "$D/tmp/mkDerivedConstants" > ghc/includes/DerivedConstants.h
 grep -Eq 'STD_ITBL_SIZE +3' ghc/includes/DerivedConstants.h || { echo "unexpected STD_ITBL_SIZE"; exit 1; }
+
+# 5b --------------------------------------------------------------------------
+step "ghc/includes/NativeDefs.h"
+# ghc/includes/Makefile: `all :: NativeDefs.h`, built from mkNativeHdr.c with
+# the same flags, unconditionally (not only with a native code generator).
+# The compiler needs it even without the NCG: typecheck/TcForeign.lhs
+# includes nativeGen/NCG.h for the *_TARGET_ARCH macros, and NCG.h includes
+# ../includes/NativeDefs.h (found by the stage-2 build on 2026-09-15; the mhs
+# probe's cpphs had let the missing include pass).
+gcc -O2 -w -include stdio.h -DNO_REGS -DUSE_MINIINTERPRETER -Ighc/includes \
+    -Wl,--unresolved-symbols=ignore-all ghc/includes/mkNativeHdr.c \
+    -o "$D/tmp/mkNativeHdr" > "$D/log/native-defs.log" 2>&1
+"$D/tmp/mkNativeHdr" > ghc/includes/NativeDefs.h
+grep -q 'OFFSET_R1' ghc/includes/NativeDefs.h || { echo "NativeDefs.h looks wrong"; exit 1; }
 
 step "regenerate parsers and primop tables (happy-mhs2, cpphs, genprimopcode)"
 sh "$P4/regen-generated.sh" "$S" "$D/tools" > "$D/log/regen.log" 2>&1 \

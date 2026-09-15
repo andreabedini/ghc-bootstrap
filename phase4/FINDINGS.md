@@ -44,7 +44,8 @@ of which configure is ~50 s and the mhs build of genprimopcode ~50 s):
 | 3 | `./configure --enable-hc-boot --enable-hc-boot-unregisterised --host/--build/--target=x86_64-unknown-linux` with `PATH=/usr/bin:/bin` | `build/rts622/FINDINGS.md` section 1 |
 | 4 | `make -C ghc/includes config.h` -- GHC's own `$(H_CONFIG)` rule (platform defines + `mk/config.h`) | section 3 |
 | 5 | `gcc -O2 -w -include stdio.h -DNO_REGS -DUSE_MINIINTERPRETER -Ighc/includes -Wl,--unresolved-symbols=ignore-all mkDerivedConstants.c`, run -> `DerivedConstants.h` | `build/ghc-6.2.2-run1/LOG.md`, `build/lexer622/FINDINGS.md` |
-| 6 | `regen-generated.sh`: `primops.txt` (cpphs), 10 `primop-*.hs-incl` (genprimopcode), `Parser.hs` `ParserCore.hs` `ParsePkgConf.hs` (happy-mhs2) | `build/gen622/FINDINGS.md` |
+| 5b | same recipe on `mkNativeHdr.c`, run -> `NativeDefs.h` (the Makefile builds it unconditionally; `TcForeign.lhs` reaches it through `nativeGen/NCG.h`; cpphs had silently passed the missing include during the probes) | `build/ghc622-stage2/LOG.md` 2026-09-15 |
+| 6 | `regen-generated.sh`: `primops.txt` (cpphs), 10 `primop-*.hs-incl` (genprimopcode), `Parser.hs` `ParserCore.hs` `ParsePkgConf.hs` (happy-mhs2, then `fix-generated-parsers.sh`) | `build/gen622/FINDINGS.md` |
 | 7 | `convert-lexer.py` on the tarball's `parser/Lexer.hs` | `build/lexer622/FINDINGS.md` |
 | 8 | `ln -s ../../utils/ghc-pkg ghc/compiler/utils/ghc-pkg` | `build/ghc-6.2.2-run1/FINDINGS.md` section 1 |
 | 9 | assemble `dest/ghc/{compiler,includes,utils/ghc-pkg}`; regenerate `dest/order-6.2.2.txt` with `phase2/build-order.py` minus `ilxGen/tests` | section 5 |
@@ -94,7 +95,14 @@ Also checked:
   has).
 - **Generated sources regenerate.** The 14 happy/genprimopcode outputs and the
   converted `Lexer.hs` are byte-identical to run1's (they are outside the
-  patch series, so the `diff -r` is the check).
+  patch series, so the `diff -r` is the check). Since 2026-09-15 the three
+  happy outputs pass through `fix-generated-parsers.sh` first: three rewrites
+  of happy 1.19.5 template habits that GHC 6.2.2 rejects (`OPTIONS_GHC`, the
+  `Control.Applicative`/`Control.Monad (ap)` imports, and the parenthesised
+  monad `(P) HappyAbsSyn` in the signature block, which 6.2.2 cannot unify
+  when `P` is a function-type synonym, as in ParserCore). The run1 copies
+  carry the same rewrites, so the check still holds; the script's header has
+  the details (`build/ghc622-stage2/LOG.md`, 2026-09-15).
 - **Series self-check.** `make-patch.sh` applies the freshly written series to
   a clean copy and diffs it against the tree: 25 patches, 249 hunks, 101
   files, no fuzz, no offset, identical.

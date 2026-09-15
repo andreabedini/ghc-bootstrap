@@ -111,3 +111,148 @@ Outstanding before or at the resume:
   compiles from `fixups/` until the stage-1 binary carries fix (a).
 - Then `build-hc-stage2.sh` over the rest, `link-stage2.sh` (untested),
   `compare-base.sh` and `scan-hi-stage2.sh` for the stage-1/stage-2 check.
+
+## Resume (2026-09-15, 20:42)
+
+- The repository moved from `~/work/haskell/ghc-bootstrap` to
+  `~/code/haskell/ghc-bootstrap` between the two sessions. Every script had
+  the old root as a literal `R=...`; all of them (here, `build/ghc622-mhs`,
+  the other `build/` probes, phase0-3) now read `GHC_BOOTSTRAP_ROOT`, set by
+  `mise.toml` at the repo root, and stop with `GHC_BOOTSTRAP_ROOT: not set`
+  otherwise. The seven absolute symlinks the pipeline uses (`topdir/includes`,
+  `topdir/rts`, `libraries/base`, `libraries/base-lib`, the stage-1
+  `topdir/{rts,includes}`, `hsc2hs-mhs/ghc/includes`) were re-pointed; the
+  `.hi-boot` links under `stage2/` are recreated by run-compiler.sh. The
+  stage-1 binary carries the old path only in 631 source-location strings of
+  its error messages, so it runs unchanged. The `.tsv` records keep the old
+  path as history.
+- The loop runs as `pueue-agent` task 7 (label `stage2-resume`, default
+  group, one task at a time), command
+  `FRESH=0 sh build/ghc622-stage2/run-compiler.sh > run-stage2.log 2>&1`,
+  so it survives the session. Future runs: `mise exec -- sh ...`, or set
+  `GHC_BOOTSTRAP_ROOT` in the command string.
+- 20:42 `Ctype` taken as cached (the hand-compiled fixups output). 20:48
+  `Lexer` OK at `-O -fno-strictness` after `-O` died, 318 s, 36078-line .hc.
+  Relink of stage 1 with the `GetImports` fix and the `series.conf` hunk
+  still deferred until the loop is done.
+- 21:10-21:40 **The `-O` deaths are unbounded memory growth, not a small
+  heap.** Every first attempt that failed so far (Lexer, OccurAnal, BinIface,
+  CgStackery, CgBindery) ended with the MicroHs runtime's `ERR: heap
+  exhausted` (default heap 50M cells, `HEAP_CELLS` in eval.c; tunable with
+  `+RTS -H<cells>`). Test (`tmp/htest/run.sh`, CgStackery at plain `-O`,
+  run beside the loop as pueue-agent tasks 9/10): with `-H200M` under the
+  loop's 8 GB `ulimit -v` the process reached 7.7 GB RSS and died with
+  SIGSEGV at 63 s; with a 16 GB limit it reached 15.9 GB RSS and died with
+  SIGSEGV at 154 s. Resident memory grows well past the cell heap, so more
+  heap only buys time. Two consequences: (a) the `-O -fno-strictness` rung
+  is the right outcome for these modules, not a tuning failure, and the
+  compiled code differs only in optimisation; (b) the runtime segfaults
+  rather than reporting the failed allocation when `ulimit -v` bites, which
+  the ladder happens to treat as retryable (rc 139). Whether the growth is
+  the strictness analyser proper or a D47-style semantic difference feeding
+  it is not established.
+- 22:33 **`ParserCore` FAIL, rc=1, a type error in the generated parser** --
+  the first real failure of the resume, and the third generator fault (after
+  fixes 2 and 3 above). `parser/ParserCore.hs:347: Couldn't match "String ->
+  Int -> ParseResult a" against "P HappyAbsSyn"`, in `action_0 (42) =
+  happyShift action_2`, for every action_*. ParserCore's monad is a synonym
+  for a function type (`ParserCoreUtils`: `type P a = String -> Int ->
+  ParseResult a`); Parser and ParsePkgConf use Lexer's newtype `P` and were
+  fine. The happy 1.19.5 template writes the monad parenthesised in the
+  action_*/happyReduce_* signature block, `(P) HappyAbsSyn`, and 6.2.2's
+  `tcHsType` applies the parenthesised head without saturating the synonym:
+  the result is a bare `TyConApp P [HappyAbsSyn]`, which `uTys`
+  (TcUnify.lhs:620-672) strips no `NoteTy` from and cannot unify with a
+  `FunTy`. Later GHCs expand synonyms in the unifier, which is why happy
+  never saw it. Experiments (tmp/pctest, pueue-agent tasks 11-14, `-O0`
+  against the stage2 interfaces): as generated FAIL; `() =>` removed FAIL;
+  signature block removed OK (748 KB .hc); **parentheses removed OK** (494
+  KB .hc). ParserCore is on Main's path (HscMain imports it).
+  Fix, permanent and in the generator, not a fixups/ workaround: new
+  `phase4/fix-generated-parsers.sh` applies all three rewrites (OPTIONS_GHC,
+  the two imports, the parentheses) and is called by
+  `phase4/regen-generated.sh` and `build/gen622/regen.sh` after each happy
+  run; applied to the three parsers in this tree and in
+  `build/ghc-6.2.2-run1` (the reproduce script's reference), which are now
+  identical again -- the run1 copies had never received fixes 2 and 3
+  either. `build/repro-622` is a reproduce output and will pick it up on the
+  next run. ParserCore then compiled by hand into stage2/parser
+  (compile-one.sh, -O, pueue-agent task 15) so HscMain (row 215) finds it;
+  the FAIL row stays in results.tsv as history, an OK row appended after.
+- 23:30 **`TcForeign` FAIL, rc=1: `nativeGen/NCG.h:52: fatal error:
+  ../includes/NativeDefs.h: No such file`** (gcc -E, via the driver's cpp
+  phase). TcForeign.lhs:180 includes NCG.h for the `*_TARGET_ARCH` macros
+  (the Alpha argument-size check); NCG.h unconditionally includes
+  `../includes/NativeDefs.h`, which `ghc/includes/Makefile` generates
+  (`all :: NativeDefs.h`, from `mkNativeHdr.c`, whatever the NCG setting)
+  and which no tree of ours had: the mhs probe used cpphs, which on a missing
+  `#include` writes `#line 1 "missing file: ..."` and exits 0 (verified on a
+  two-line file), so 226/235 never noticed. TcForeign is on Main's path
+  (TcRnDriver imports it). Generated it as the Makefile does, with the
+  mkDerivedConstants recipe of phase4/reproduce-6.2.2.sh (gcc -include
+  stdio.h -DNO_REGS -DUSE_MINIINTERPRETER, unresolved symbols ignored): 43
+  lines of OFFSET_*/TSO_*/BDESCR_* defines, installed in this tree's
+  ghc/includes and in build/ghc-6.2.2-run1/ghc/includes; step 5b added to
+  reproduce-6.2.2.sh. TcForeign then compiled by hand into stage2/typecheck
+  (compile-one.sh, -O, pueue-agent task 16) ahead of TcRnDriver, seven
+  rows on. With this and ParserCore, the loop's two FAILs today were both
+  inputs the probe could not have checked, not compiler behaviour.
+
+## Loop complete (2026-09-16, 00:31)
+
+- pueue-agent task 7 ended `Success`: `stage2: 218 OK, 2 FAIL` from the
+  loop's own count, plus the two hand rows for ParserCore and TcForeign:
+  **220 of 220 modules have `.hc` and `.hi` under stage2/**. 25 modules
+  needed `-O -fno-strictness` (all `ERR: heap exhausted` at `-O`, see the
+  21:10 entry), none needed `-O0`; Parser at `-Onot` as the Makefile says.
+  results.tsv has 226 rows: the 6 FAIL rows (September's four, ParserCore,
+  TcForeign) are history, each followed by its OK.
+- Wall time for today's 140 modules: 20:42 to 00:31 (3 h 49 min), of which
+  the 25 doomed `-O` attempts cost about 4 min each, roughly 1 h 40 min.
+- Next: build-hc-stage2.sh (FRESH=0, pueue-agent task 17) for the 202
+  remaining `.o`, then link-stage2.sh (untested), then compare-base.sh /
+  scan-hi-stage2.sh against stage 1.
+
+## Native compiler links; does not yet run (2026-09-16, 00:55)
+
+- **Link OK.** build-hc-stage2.sh (task 17): 220/220 `.hc` -> `.o`, plus the
+  two C files, 222 objects. link-stage2.sh (untested until now) linked on the
+  first try: a 37 MB `build/ghc622-stage2/ghc`. `./ghc -Btopdir --version`
+  prints "The Glorious Glasgow Haskell Compilation System, version 6.2.2" and
+  `--numeric-version` prints 6.2.2. This is a native GHC 6.2.2 binary built by
+  the mhs-built GHC 6.2.2.
+- **It cannot compile yet.** `./ghc -Btopdir -C -O Hello.hs` (Main = putStrLn
+  "hello") dies `ghc: out of memory (requested 1343225856 bytes)` in the
+  Renamer/typechecker phase, after Parser, i.e. while loading Prelude's
+  interface. Deterministic (same number every run), and the same with
+  `ulimit -v unlimited`, so not the vmem cap.
+- **Not hFileSize.** `readBinMem` (Binary.hs:255) sizes its buffer from
+  `hFileSize`; a direct test (build/ghc622-mhs/test/FSize.hs, built by the
+  stage-1 ghc, run on rts622: fsize-probe task 19) returns the correct size,
+  and strace shows the kernel reporting Prelude.hi's st_size = 79232 correctly
+  three times just before the crash.
+- **Root cause: the megablock allocator's 64-bit arithmetic (RTS).** strace:
+  right after fstat(Prelude.hi)=79232, the RTS issues
+  `mmap(0x7fee50100000, 72057595381153792, ...) = ENOMEM`. That size is
+  2^56 + 1343225856; the printed "1343225856" is 0x50100000, the low 32 bits
+  of a megablock address (blocks were just placed at 0x7fee503/502/501/500..
+  00000). getMBlocks(n) computes `size = MBLOCK_SIZE * n` (MBlock.c:196), so
+  n = size/2^20 ~= 2^36 + 1281 ~= 68e9 megablocks: the block allocator handed
+  getMBlocks a garbage count on ~the 5th megablock request, and it tried to
+  mmap 64 PB. Only ~5 MB of megablocks had been allocated, so this is NOT the
+  4 GB HEAP_ALLOCED false-positive the MBlock.h hack warns about; it is the
+  garbage-n bug. This reproduces, on unregisterised x86-64, the 2004 symptom
+  build/research-6.2-x86_64.md records ("`getMBlock: mmap: Invalid argument`
+  with garbage sizes at the third mblock request; root cause not recorded")
+  and matches its note that the real 64-bit mblock map / storage rework landed
+  in 6.4 (61ccfec, 2004-11-10). FINDINGS-link.md had flagged this area ("still
+  dies after 4 GB of address space; the 6.4 backport is not needed yet") --
+  it is needed now, though the trigger is garbage n, not the 4 GB wrap.
+- **Open.** Which computation in BlockAlloc.c/Storage.c overflows to produce
+  the garbage megablock count is not yet pinned down. The fix is very likely
+  the 6.4 RTS megablock/storage backport; that is a new phase (edit rts622,
+  rebuild libHSrts.a, relink both stage-1's programs and stage-2), a scope
+  decision for AB. Everything up to and including a linked native ghc stands.
+- Scratch (all under gitignored tmp/ or build/ghc622-mhs/test): tmp/pctest
+  (ParserCore variants), tmp/htest (heap tests), test/FSize.hs (hFileSize
+  probe, kept -- it is a clean regression check for the storage fix).

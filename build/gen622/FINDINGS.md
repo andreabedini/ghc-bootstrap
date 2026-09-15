@@ -28,6 +28,17 @@ How this was established:
   through into the `.hs` and is resolved when the `.hs` is compiled with CPP.
   This is exactly how the 6.0 files in `build/ghc-6.0-run2` were made (they
   still contain the `#include`).
+  **Post-processing (added 2026-09-15).** happy 1.19.5's template writes
+  three things a 2004 GHC rejects, invisible while mhs was the only consumer:
+  `{-# OPTIONS_GHC -w #-}` (6.2.2's matchOptions reads `_GHC` as a flag),
+  `import Control.Applicative(Applicative(..))` and `import Control.Monad (ap)`
+  (no such module in 6.2.2's base; unused under `%monad`), and `(P)
+  HappyAbsSyn` in the action_*/happyReduce_* signature block (with
+  ParserCore's `type P a = String -> Int -> ParseResult a`, 6.2.2 leaves the
+  parenthesised synonym head unexpanded and cannot unify it with a function
+  type). `phase4/fix-generated-parsers.sh` rewrites all three; `regen.sh`
+  and `phase4/regen-generated.sh` call it after each happy run. Details and
+  the experiments in `build/ghc622-stage2/LOG.md` (2026-09-15).
 - **cpp for primops.** The Makefile's `% : %.pp` rule is
   `$(CPP) -undef -traditional -P -I$(GHC_INCLUDE_DIR) -x c ... | grep -v '^#pragma GCC'`.
   gcc's cpp does *not* reproduce the 6.0 `primops.txt` (tabs collapsed, comment

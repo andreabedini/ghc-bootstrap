@@ -56,6 +56,7 @@ gen_parsers() {   # $1 = compiler src dir, $2 = output dir
   for y in main/ParsePkgConf parser/ParserCore parser/Parser; do
     printf '== happy %s.y\n' "$y"
     "$HAPPY" "$1/$y.y" -o "$2/$y.hs"
+    sh "$R/phase4/fix-generated-parsers.sh" "$2/$y.hs"
   done
 }
 
