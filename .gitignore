@@ -34,6 +34,7 @@
 !/build/**/*.err
 !/build/hsc2hs-mhs/hsc2hs
 !/build/happy-mhs/datadir/HappyTemplate
+!/build/ppwrap/cpphs
 
 # ...except inside tarball extractions and patched copies of them
 /build/downloads/
@@ -50,7 +51,6 @@
 /build/repro-622/
 /build/happy-1.16/
 /build/happy-1.19.5/
-/build/x62/
 /build/ghc622-mhs/libraries/
 /build/ghc622-stage2/src/
 /build/ghc622-stage2/libraries/
@@ -61,14 +61,11 @@
 /build/hello/
 /build/rts622/obj/
 /build/ghc622-mhs/hcobj/
-/build/ghc622-mhs/hcobj-pre-fs-fix/
-/build/ghc622-mhs/hcobj-wrapv-pre-fs-fix/
 /build/ghc622-mhs/cbitsobj/
 /build/ghc622-mhs/lib/
 /build/ghc622-mhs/base-logs/
 /build/ghc622-mhs/ghc.c
 /build/ghc622-mhs/ghc-data.c
-/build/ghc622-mhs/diag/hcobj-rebuild/
 /build/ghc622-mhs/diag/ifaces/
 /build/ghc622-mhs/diag/ifaces-rebuild/
 /build/ghc622-mhs/diag/logs/
@@ -97,24 +94,12 @@
 /build/genprimopcode/
 
 # ...nor probe caches, scratch experiments and superseded duplicates
-/build/probe*/
+/build/probe-*/
 /build/scan-*/
-/build/pp-6.0/
 /build/ppkeep/
-/build/ppwrap/
-/build/cpp-test/
-/build/iorder-test/
-/build/mkdc/
-/build/sd-test/
-/build/tools/
-/build/tools119/
 /build/tools-ghc/
-/build/ghc622-mhs/t/
-/build/ghc622-mhs/t2/
 /build/*.out
-/build/6.0-run2.patch
-/build/rebase622/6.0-current-p1.patch
-/build/rebase622/small-p1.patch
+/build/.stale-*/
 
 # ---- caches, scratch and tool state, anywhere ----
 .mhscache

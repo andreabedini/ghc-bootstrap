@@ -6,3 +6,9 @@ base tree and objects are the rebuilt ones:
 The pre-fix artefacts are kept as libraries/base-pre-fs-fix, hcobj-pre-fs-fix,
 hcobj-wrapv-pre-fs-fix (5 corrupt .hi: GHC.List, GHC.Float, GHC.Real,
 Data.Array.Diff, Text.Html). run-base.sh/build-hc.sh/link.sh need no changes.
+
+2026-09-15: the pre-fix artefacts (libraries/base-pre-fs-fix, hcobj-pre-fs-fix,
+hcobj-wrapv-pre-fs-fix, diag/ghc.pre-fs-fix, diag/ghc.comb.pre-fs-fix) and the
+duplicate diag/hcobj-rebuild (identical objects to hcobj/) were moved to
+build/.stale-2026-09-15/ for deletion. The evidence of the collision survives
+as diag/scan-hi.txt (the five damaged interfaces) and diag/FINDINGS.md.

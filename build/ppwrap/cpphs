@@ -1,0 +1,11 @@
+#!/bin/sh
+# Intercept mhs's cpphs call: run the real cpphs, then keep a copy of the
+# preprocessed output named by its module, so error line numbers can be read.
+keep=/home/andrea/work/haskell/ghc-bootstrap/build/ppkeep
+for a in "$@"; do case "$a" in -O*) out=${a#-O};; esac; done
+/home/andrea/work/haskell/ghc-bootstrap/MicroHs/bin/cpphs "$@" 2>"$keep/.err"; rc=$?
+cat "$keep/.err" >&2
+[ "$rc" != 0 ] && { printf 'rc=%s\n' "$rc"; cat "$keep/.err"; printf 'args: %s\n' "$*"; } >> "$keep/cpphs-failures.log"
+m=$(grep -m1 -oE '^module[[:space:]]+[A-Za-z0-9_.]+' "$out" 2>/dev/null | awk '{print $2}')
+[ -n "$m" ] && cp "$out" "$keep/$m.pp.hs"
+exit $rc
