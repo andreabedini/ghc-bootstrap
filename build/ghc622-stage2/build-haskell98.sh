@@ -17,7 +17,9 @@ ulimit -s unlimited 2>/dev/null
 OUT="$S/results-haskell98.tsv"; : > "$OUT"
 cd "$S/libraries/haskell98" || exit 1
 ok=0; fail=0
-for src in *.hs; do
+# Array imports Ix, and the alphabetical order would compile it first (the
+# first run had to redo Array by hand); everything else is order-independent.
+for src in Ix.hs $(ls *.hs | grep -v '^Ix\.hs$'); do
   m=${src%.hs}
   start=$(date +%s)
   (ulimit -v 8000000; timeout 1800 "$GHC" ${MHSRTS:-+RTS -K20M -RTS} "-B$TOPDIR" -v1 -C -O \

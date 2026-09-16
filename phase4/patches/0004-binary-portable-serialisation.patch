@@ -1,14 +1,21 @@
-GHC 6.2.2 -- mhs: utils/Binary.hs without ByteArray#, S#/J# and :%
+GHC 6.2.2 -- mhs: utils/Binary.hs without ByteArray#, S#/J# and :%, same bytes
 Binary (interface-file serialisation) was written against hslibs'
 MutableByteArray primitives (newCharArray, readWord8Array, hPutBufBAFull),
 GHC's Integer constructors S#/J# (a ByteArray# of limbs), the open Ratio
 constructor :% and the old closed IOError type. MicroHs has none of these.
-Data.Array.Byte in ST is the same abstraction; Integer is serialised as
-sign plus base-256 limbs; Ratio through numerator/denominator; the
-FastString dictionary entry is the interned String (the shim FastString
-has no ByteArray). Re-implemented rather than emulated (DECISIONS.md D20).
-Interface files written this way are read back by the same code, so the
-format only has to be self-consistent.
+Data.Array.Byte in ST is the same abstraction; Ratio goes through
+numerator/denominator (the same two fields). Re-implemented rather than
+emulated (DECISIONS.md D20), but the wire format is the pristine one: the
+interface files this compiler writes are read by a pristine-source stage 2
+as well as by itself. So a FastString dictionary entry is the Int length
+followed by the Latin-1 bytes (the shim FastString is an interned String),
+and an Integer is tag 0 + Int when it fits a machine Int, else tag 1 +
+GMP's signed limb count + size in bytes + the little-endian 64-bit limbs,
+computed by arithmetic from MicroHs's Integer. An earlier version of this
+patch wrote the String's list encoding and a sign byte + base-256 limb
+list, on the grounds that only the same code read them back; a pristine
+stage 2 read the list's tag bytes as a length and asked the RTS for 2^56
+bytes (build/ghc622-stage2/LOG.md, 2026-09-16).
 
 --- a/ghc/compiler/utils/Binary.hs
 +++ b/ghc/compiler/utils/Binary.hs
@@ -96,12 +103,19 @@ format only has to be self-consistent.
  
  #ifndef SIZEOF_HSINT
  #define SIZEOF_HSINT  INT_SIZE_IN_BYTES
-@@ -497,81 +499,25 @@
+@@ -497,81 +499,48 @@
                               _ -> do b <- get bh ; return (Right b)
  
  #ifdef __GLASGOW_HASKELL__
-+-- The original serialised GHC's S#/J# representation (a ByteArray# of limbs).
-+-- MicroHs's Integer is not that type; sign plus base-256 limbs is portable.
++-- GHC's Integer is S# Int# when the value fits a machine Int, else J# Int#
++-- ByteArray#: GMP's signed limb count and the limbs, least significant first,
++-- each a machine word in host byte order. MicroHs's Integer is a different
++-- type, but a pristine-source stage 2 reads the interface files this compiler
++-- writes, so the bytes must be the ones the pristine reader expects: tag 0 +
++-- Int, or tag 1 + limb count (negative for a negative value) + size in bytes
++-- + that many limb bytes, little-endian words of SIZEOF_HSWORD bytes (x86-64;
++-- a big-endian host would need each word reversed). Reading accepts both
++-- forms, as the original does.
  instance Binary Integer where
 -    put_ bh (S# i#) = do putByte bh 0; put_ bh (I# i#)
 -    put_ bh (J# s# a#) = do
@@ -173,16 +187,32 @@ format only has to be self-consistent.
 -#else
 -indexByteArray a# n# = W8# (indexWord8Array# a# n#)
 -#endif
-+    put_ bh i = do
-+	put_ bh (fromIntegral (signum i) :: Int8)
-+	put_ bh (limbs (abs i))
-+      where limbs 0 = [] :: [Word8]
-+	    limbs n = fromIntegral (n `mod` 256) : limbs (n `div` 256)
++    put_ bh i
++      | i >= toInteger (minBound :: Int) && i <= toInteger (maxBound :: Int)
++      = do putByte bh 0; put_ bh (fromInteger i :: Int)
++      | otherwise
++      = do putByte bh 1
++           let bs = limbBytes (abs i)
++               n  = length bs `div` SIZEOF_HSWORD
++           put_ bh (if i < 0 then negate n else n)
++           put_ bh (length bs)
++           mapM_ (putByte bh) bs
++      where limbBytes m = let bs  = bytes m
++                              pad = (SIZEOF_HSWORD - length bs `mod` SIZEOF_HSWORD) `mod` SIZEOF_HSWORD
++                          in bs ++ replicate pad 0
++            bytes 0 = [] :: [Word8]
++            bytes m = fromIntegral (m `mod` 256) : bytes (m `div` 256)
 +    get bh = do
-+	s <- get bh
-+	ls <- get bh
-+	let n = foldr (\w acc -> acc * 256 + toInteger (w :: Word8)) 0 ls
-+	return $! (if (s :: Int8) < 0 then negate n else n)
++        b <- getByte bh
++        case b of
++          0 -> do i <- get bh
++                  return $! toInteger (i :: Int)
++          _ -> do s  <- get bh
++                  sz <- get bh
++                  bs <- sequence (take sz (repeat (getByte bh)))
++                  let used = abs (s :: Int) * SIZEOF_HSWORD
++                      n = foldr (\w acc -> acc * 256 + toInteger (w :: Word8)) 0 (take used bs)
++                  return $! (if s < 0 then negate n else n)
  
 +-- MicroHs's Data.Ratio keeps :% abstract; numerator/denominator are the same
 +-- two fields, and (%) reconstructs the (already canonical) ratio.
@@ -194,7 +224,7 @@ format only has to be self-consistent.
  #endif
  
  instance Binary (Bin a) where
-@@ -674,10 +620,9 @@
+@@ -674,10 +643,16 @@
  constructDictionary :: Int -> UniqFM (Int,FastString) -> Dictionary
  constructDictionary j fm = array (0,j-1) (eltsUFM fm)
  
@@ -202,21 +232,29 @@ format only has to be self-consistent.
 -  put_ bh (I# l)
 -  putByteArray bh ba l
 -putFS bh s = error ("Binary.put_(FastString): " ++ unpackFS s)
-+-- The shim FastString is an interned String (no ByteArray), so a dictionary
-+-- entry is just the String.
-+putFS bh s = put_ bh (unpackFS s)
++-- The shim FastString is an interned String (no ByteArray). The pristine
++-- format -- the length as an Int, then the Latin-1 bytes -- is what a
++-- pristine-source stage 2 reads, so write exactly that. As in the original,
++-- a character outside Latin-1 (the UnicodeStr case) is an error.
++putFS bh s = do
++  put_ bh (length str)
++  mapM_ putLatin1 str
++  where str = unpackFS s
++        putLatin1 c | ord c < 256 = putByte bh (fromIntegral (ord c))
++                    | otherwise   = error ("Binary.put_(FastString): " ++ str)
  	-- Note: the length of the FastString is *not* the same as
  	-- the size of the ByteArray: the latter is rounded up to a
  	-- multiple of the word size.
-@@ -690,12 +635,11 @@
+@@ -690,12 +665,12 @@
    return $! (mkFastSubStringBA# arr off l)
  -}
  getFS bh = do
 -  (I# l) <- get bh
 -  (BA ba) <- getByteArray bh (I# l)
 -  return $! (mkFastSubStringBA# ba 0# l)
-+  s <- get bh
-+  return $! (mkFastString s)
++  l <- get bh
++  bs <- sequence (take (l :: Int) (repeat (getByte bh)))
++  return $! (mkFastString (map (chr . fromIntegral) bs))
  
  instance Binary FastString where
 -  put_ bh f@(FastString id l ba) =
@@ -224,7 +262,7 @@ format only has to be self-consistent.
      case getUserData bh of { (_, j_r, out_r, dict) -> do
      out <- readIORef out_r
      let uniq = getUnique f
-@@ -707,7 +651,6 @@
+@@ -707,7 +682,6 @@
  	   writeIORef j_r (j+1)
  	   writeIORef out_r (addToUFM out uniq (j,f))
      }

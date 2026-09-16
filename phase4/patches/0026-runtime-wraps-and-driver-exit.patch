@@ -8,7 +8,11 @@ file size and MicroHs handles have no hFileSize, so it reads the file
 whole by path. main/DriverUtil.hs: with __GLASGOW_HASKELL__=408 the driver
 takes its pre-5.01 catch-all branch, which swallows the ExitException
 that every clean exit throws; the >= 501 branch is taken under __MHS__ too.
-All under #if defined(__MHS__) or commented -- mhs.
+main/GetImports.hs: a text-mode handle decodes UTF-8 under the MicroHs
+runtime and dies ("ERR: getb_utf8") on the Latin-1 parser/Ctype.lhs, so
+getImportsFromFile reads the bytes with readBinaryFile, as readBinMem does
+(DECISIONS.md, the 220-module stage-2 loop). All under #if defined(__MHS__)
+or commented -- mhs.
 
 --- a/ghc/compiler/basicTypes/Literal.lhs
 +++ b/ghc/compiler/basicTypes/Literal.lhs
@@ -80,6 +84,34 @@ All under #if defined(__MHS__) or commented -- mhs.
  handle = flip Exception.catchAllIO
  #else
  handle h f = f `Exception.catch` \e -> case e of
+--- a/ghc/compiler/main/GetImports.hs
++++ b/ghc/compiler/main/GetImports.hs
+@@ -19,6 +19,17 @@
+ -- we can end up with a large number of open handles before the garbage
+ -- collector gets around to closing them.
+ getImportsFromFile :: String -> IO ([ModuleName], [ModuleName], ModuleName)
++#if defined(__MHS__)
++-- mhs: a text-mode handle decodes UTF-8 under MicroHs and dies with
++-- "ERR: getb_utf8" on a Latin-1 source (parser/Ctype.lhs has bytes 0xa1-0xff
++-- in comments); GHC's own Handle is byte-transparent here. Read the bytes,
++-- as readBinMem in utils/Binary.hs does.
++getImportsFromFile filename
++  = do  modsrc <- readBinaryFile filename
++        let (srcimps,imps,mod_name) = getImports modsrc
++	length srcimps `seq` length imps `seq` return ()
++	return (srcimps,imps,mod_name)
++#else
+ getImportsFromFile filename
+   = do  hdl <- openFile filename ReadMode
+         modsrc <- hGetContents hdl
+@@ -26,6 +37,7 @@
+ 	length srcimps `seq` length imps `seq` return ()
+ 	hClose hdl
+ 	return (srcimps,imps,mod_name)
++#endif
+ 
+ getImports :: String -> ([ModuleName], [ModuleName], ModuleName)
+ getImports s
 --- a/ghc/compiler/utils/Binary.hs
 +++ b/ghc/compiler/utils/Binary.hs
 @@ -255,6 +255,18 @@
@@ -118,7 +150,7 @@ All under #if defined(__MHS__) or commented -- mhs.
 +-- (Data/Int/Int8.hs:32 `i8` -> `_overflowError`, likewise Int16/Int32), where
 +-- Haskell 98 and GHC wrap modulo 2^n. These three instances read a word back
 +-- as the signed value with the same bit pattern, so every 0x80..0xff byte --
-+-- in particular the 0xff sign byte that `Binary Integer` below writes for
++-- in particular the 0xff sign byte that an earlier `Binary Integer` wrote for
 +-- every negative literal -- raised "arithmetic overflow" instead. Do the
 +-- two's-complement fold by hand, in Integer, before narrowing.
 +-- Int64 needs no such care: it is the machine word here and converts fine.

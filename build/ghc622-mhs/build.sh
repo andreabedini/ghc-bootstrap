@@ -1,7 +1,7 @@
 #!/bin/sh
 # Link GHC 6.2.2's compiler proper (build/ghc-6.2.2-run1) into a binary with mhs.
 #
-#   sh build/ghc622-mhs/build.sh [hs|cc|all]     (default: all)
+#   sh build/ghc622-mhs/build.sh [comb|c|cc|hs|all]     (default: all = comb + c + cc)
 #
 #  hs  : mhs -o ghc.c   whole-program C emission of Main, reusing the probe's
 #        -C cache (copied to build/ghc622-mhs/.mhscache; a cold cache costs ~1h).
@@ -40,7 +40,7 @@ INC="$INC -i$TREE -I$TREE -I$INCDIR"
 step=${1:-all}
 cd "$W" || exit 1
 
-if [ "$step" = comb ]; then
+if [ "$step" = comb ] || [ "$step" = all ]; then
   # Combinator file instead of C: same compile, a quarter of the output text.
   # The MicroHs runtime can load it at startup (+RTS -r<file> -RTS), see the
   # `eval` step; this is the fallback when the C emission does not fit the
@@ -50,13 +50,16 @@ if [ "$step" = comb ]; then
   echo "== ghc.comb: $(wc -c < "$W/ghc.comb") bytes  ($(date))"
 fi
 
-if [ "$step" = hs ] || [ "$step" = all ]; then
+if [ "$step" = hs ]; then
   echo "== mhs -o ghc.c  ($(date))"
   "$M/bin/mhs" ${MHSRTS:-+RTS -K64M -RTS} -C -XCPP $HSCPP -DOMIT_NATIVE_CODEGEN $INC Main -o"$W/ghc.c" || exit 1
   echo "== ghc.c: $(wc -c < "$W/ghc.c") bytes  ($(date))"
+  # Note: this ghc.c embeds mhs's own ffi table and is NOT what the cc step
+  # links (ghc-data.c + ffi.c, the comb route). `all` used to run hs + cc and
+  # so relinked a stale ghc-data.c (found 2026-09-16, build/ghc622-stage2/LOG.md).
 fi
 
-if [ "$step" = c ]; then
+if [ "$step" = c ] || [ "$step" = all ]; then
   # .comb -> the same C array `mhs -o ghc.c` would emit (see comb2c.py).
   echo "== comb2c  ($(date))"
   python3 "$W/comb2c.py" "$W/ghc.comb" "$W/ghc-data.c" || exit 1

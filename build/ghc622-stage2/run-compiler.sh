@@ -24,7 +24,8 @@
 # default 3600), STOP=1 to stop at the first failure, VERB (default -v1),
 # MHSRTS (default "+RTS -K50M -RTS": MicroHs stack; consumed by the runtime,
 # not the driver), GHC (the compiler to use; default the stage-1 one),
-# OUTDIR (default stage2; the stage-3 run uses stage3), OUT (tsv path).
+# OUTDIR (default stage2; the stage-3 run uses stage3), OUT (tsv path),
+# PREV (an earlier results tsv whose per-module flags seed the retry ladder).
 set -u
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
@@ -108,6 +109,16 @@ while IFS="$(printf '\t')" read -r m path; do
   }
   start=$(date +%s)
   opt=$(first_opt "$path"); ladder="$opt"
+  # PREV=<old results.tsv>: start at the rung a previous run ended on for this
+  # module (column 4 = the flags that produced it), so a rebuild does not
+  # repeat the doomed -O attempts (25 modules, ~4 min each, on 2026-09-15).
+  if [ -n "${PREV:-}" ] && [ -f "$PREV" ]; then
+    prev=$(awk -F'\t' -v m="$m" '$1=="OK" && $2==m {f=$4} END {print f}' "$PREV")
+    case "$prev" in
+      *-fno-strictness*) opt="-O -fno-strictness"; ladder="$opt [PREV]" ;;
+      -O0*)              opt="-O0";               ladder="$opt [PREV]" ;;
+    esac
+  fi
   attempt "$opt"; rc=$?
   if [ $rc != 0 ] && retryable $rc; then
     cp "$log" "$log.1"

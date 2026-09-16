@@ -256,3 +256,238 @@ Outstanding before or at the resume:
 - Scratch (all under gitignored tmp/ or build/ghc622-mhs/test): tmp/pctest
   (ParserCore variants), tmp/htest (heap tests), test/FSize.hs (hFileSize
   probe, kept -- it is a clean regression check for the storage fix).
+
+## Correction: the crash is a .hi wire-format mismatch, not the RTS (2026-09-16)
+
+- **The 00:55 root cause above is wrong.** Traced with gdb (breakpoints on
+  newByteArrayzh_fast, allocate, allocGroup, getMBlocks; R1 read from
+  MainCapability+16). readBinMem loads Prelude.hi correctly (allocate 0x26b2
+  words = the 79232-byte file, then the two 8-byte FastMutInt refs). The
+  next newByteArray# is the first `getFS` of `getDictionary`, and its R1 is
+  0x0100000050010000: the first eight bytes at the dictionary offset 0x6688
+  (after the 8-byte count 0x46f = 1135 entries) read as the Int64 length the
+  pristine `getFS` expects. allocate then gets 0x2000000a002002 words,
+  allocGroup 0x100000050011 blocks, getMBlocks 0x1000000501 megablocks, mmap
+  fails ENOMEM, and my_mmap prints the lnat size with `%d`: 1343225856 is
+  the low 32 bits. The RTS allocated exactly what the misparsed length asked
+  for; the 6.4 megablock/storage backport is not needed for this.
+- **Why the bytes are what they are.** Those bytes are
+  `01 00 00 00 50 01 00 00 00 72 01 ... 00`: the `Binary [a]` list encoding
+  (tag 0x01, 4-byte Word32 char, ..., terminator 0x00) of "Prelude", then
+  "base", "GHCziS...". Stage-1 (build/rebase622/try622/utils/Binary.hs) has
+  phase4/patches/0004: `putFS bh s = put_ bh (unpackFS s)` and a matching
+  `getFS` via `mkFastString`, because the mhs FastString shim has no
+  ByteArray#. Every .hi stage-2 can see -- the libraries (built by
+  build/ghc622-mhs/ghc on 2026-09-10) and the 220 stage2/ modules -- is in
+  that format; stage-2's Binary is the pristine one (src/, D11) and reads
+  length + raw bytes. Patch 0004 changes two wire formats: FastString (above)
+  and Integer (pristine: tag byte + S#/J# limbs; 0004: Int8 sign + [Word8]
+  base-256 limbs). Ratio is unchanged (two fields either way).
+- **The 2^56 in the strace size** is a red herring: getMBlocks(nat n) is
+  compiled as `shl $0x14,%rbx` on the full 64-bit %rdi, and the upper bits
+  leaking through allocate/allocGroup (all `nat` parameters fed W_ values)
+  reach the shift. With clean 32-bit truncation the request would still have
+  been 1281 megablocks of garbage.
+- **Patch 0004's premise was wrong, not its content.** Its header says
+  "Interface files written this way are read back by the same code, so the
+  format only has to be self-consistent"; a pristine-source stage-2 also
+  reads them. Fix options: (a) make 0004 format-preserving (putFS = Int
+  length + Latin-1 bytes; Integer = tag 0 + Int64 when it fits, else tag 1 +
+  GMP-style limb count/size/limbs) and rebuild stage-1, the libraries and
+  the 220 modules; (b) compile stage-2's Binary.hs with the two 0004 wire
+  hunks and relink (one module) -- cheapest, but stage-2 then writes the 0004
+  format too and a later pristine stage hits the same wall; (c) a stage-2
+  Binary that reads the 0004 format but writes the pristine one, used to
+  rebuild the libraries, converting the format at this stage. Decision for AB.
+  compare-base.sh / scan-hi-stage2.sh read stage-1-written .hi and need
+  whichever reader is chosen.
+- test/FSize.hs is no longer relevant to this bug (hFileSize was never
+  wrong); a Binary round-trip of a FastString and an Integer between a
+  stage-1-built writer and a stage-2 reader is the right regression check.
+
+## Patch 0004 made format-preserving (2026-09-16)
+
+- Chosen fix: option (a) of the entry above. The tree the series is
+  generated from, build/ghc-6.2.2-run1/ghc/compiler/utils/Binary.hs, now
+  writes the pristine wire format and phase4/patches/0004 was regenerated
+  from it with phase4/make-patch.sh (series applies exactly, reproduces the
+  tree; 259 hunks, 26 patches). FastString: `putFS` writes the Int length
+  then the Latin-1 bytes, erroring on a char > 255 as the original's
+  UnicodeStr case does; `getFS` reads length + bytes into mkFastString.
+  Integer: tag 0 + Int when the value fits a machine Int, else tag 1 + GMP
+  signed limb count + size in bytes + little-endian SIZEOF_HSWORD-byte limbs,
+  computed by arithmetic; `get` accepts both forms (a pristine writer may
+  emit a small value as J#). Ratio was already the same two fields. The
+  series.conf header for 0004 now states why the format must match.
+- Also folded in: the main/GetImports.hs `__MHS__` readBinaryFile edit that
+  DECISIONS.md (the 220-module loop entry) recorded as "tree edit, not yet
+  in the patch series"; make-patch.sh refuses an unclaimed hunk, so it is now
+  two RUNTIME manifest lines and a sentence in patch 0026's header.
+- Checks: `mhs -C -c` of Binary against a scratch copy of the .mhscache
+  (MicroHs/bin on PATH for cpphs) compiles, 24 s; a runghc harness
+  (scratch FormatCheck.hs) shows the patch's Integer bytes equal an
+  independent Data.Bits encoding of S#/J# for 19 values across the Int
+  boundary, 2^64 and 2^128, round-trip, and that a J#-form small value is
+  read back; "Prelude" encodes as 00..07 + 7 bytes.
+- **Not done, and needed before stage 2 can run:** relink stage-1
+  (build/ghc622-mhs/build.sh, ~1 h cold; the cache makes Binary + GetImports
+  the only recompiles), then rebuild the libraries (build-haskell98.sh) and
+  the 220 modules (results.tsv must be cleared: every .hi under stage2/ and
+  libraries/ is in the old format), then link-stage2.sh again. The existing
+  stage-2 binary reads the new format as is.
+
+## Rebuild with the new format started (2026-09-16, 03:00-03:20)
+
+- **build.sh `all` relinked the old program.** The first relink (pueue-agent
+  task 20, `build.sh all`, 9 min) produced a binary that still wrote the list
+  encoding: `test/FmtCheck.hs` compiled by it and decoded with
+  `test/hidict.py` (a Python reader of the pristine dictionary format) had
+  the same bad first length as before, and so did the `GHC/Base.hi` the base
+  rebuild (task 22, killed) had just written. Cause: `all` was `hs` + `cc`,
+  but `cc` links `ghc-data.c` + `ffi.c` (the comb route, which is what every
+  working binary came from: `mhs -o ghc.comb`, comb2c.py, hand ffi table),
+  and `hs` writes `ghc.c` -- so `cc` relinked the ghc-data.c of 2026-09-10.
+  Linking ghc.c itself fails: it embeds mhs's own `xffi_table`, duplicate
+  with ffi.c. build.sh now runs `all` = comb + c + cc; `hs` is a standalone
+  step with a note. The mhs -C cache was not the problem: with -v -v it
+  prints `invalidate cached Binary` on every run, because validateCache looks
+  for `<Module>.hs` only and every .lhs module (Unique, Panic, UniqFM,
+  FastMutInt, Module...) fails that lookup and invalidates its importers.
+- Chain re-queued as pueue-agent tasks 30-39, each `--after` the previous:
+  30 relink (comb route), 31 `test/fmtcheck.sh` (gate: dictionary decodes),
+  32 run-base.sh over diag/base-rebuild-order.txt (147 modules, FRESH=1;
+  gate: no FAIL row), 33 build-hc.sh, 34 build-libbase.sh, 35
+  build-haskell98.sh (now compiles Ix before Array), 36 run-compiler.sh
+  FRESH=1 with PREV=results-oldformat.tsv (new: seeds the retry ladder from
+  the previous run's flags, so the 25 `-fno-strictness` modules skip the
+  4-min doomed -O attempt; gate: 220 OK, no FAIL), 37 build-hc-stage2.sh,
+  38 link-stage2.sh, 39 `ghc -B../topdir -C -O Hello.hs` in test/.
+  Before that, clean-old-format.sh (task 21) removed the 147 + 30 + 220
+  old-format .hi (and .hc/.o) and kept the tsvs as *-oldformat.tsv, because
+  6.2.2's recompilation checker reads an existing .hi before recompiling.
+  The pre-fix stage-1 binary is kept as build/ghc622-mhs/ghc.pre-0004fix,
+  the old stage-2 binary as ghc.oldformat.
+
+## build/Makefile replaces the hand-chained scripts (2026-09-16, 03:20-03:40)
+
+- AB's observation: the hurdle was keeping track of the builds, and pueue is
+  a scheduler, not a build system. `build/Makefile` now encodes the whole
+  chain as one dependency graph: stage 1 (`build.sh comb` / `c` / `cc` with
+  the mhs inputs as prerequisites), the 147 base modules, the 30 haskell98
+  modules, the 220 stage-2 modules, their objects, the archives, the link,
+  and `test/Hello.hc`. `build/mk/gen-deps.py` writes `build/mk/deps.mk` with
+  the real import edges (base-order.py's cpp'd scan for base; build-order.py
+  + the HsVersions.h FastString edge for the compiler), so a changed module
+  rebuilds exactly its importers. Per-module recipes are
+  `build/mk/compile-{base,h98,stage2}.sh`, the loop bodies of run-base.sh,
+  build-haskell98.sh and run-compiler.sh: each removes the .hi/.hc first
+  (the recompilation checker), keeps the retry ladders, and runs
+  `build/mk/check-hi.sh` (hidict.py) on every .hi it produces, so a format
+  regression stops the build at the first module. `flags.tsv` seeds the
+  stage-2 ladder from the 2026-09-15 run. `make -f build/Makefile status`
+  prints what is stale per phase. Run it under pueue-agent; make is the
+  record. -j2 is the ceiling for the GHC steps (ulimit -v 8 GB each).
+- Checked: `status` after task 30 says stage1 0 steps stale (ghc.comb,
+  ghc-data.c and ghc all newer than every input), base/haskell98/stage2 all
+  stale. `make .../GHC/Base.hi` compiled GHC.Base in 9 s and hidict.py
+  decodes its dictionary: 673 entries, 'GHCziBase', 'base', 'GHCziPrim'...,
+  all lengths sane; the file is 72734 bytes against 95965 in the list
+  encoding. The relinked stage 1 writes the pristine format.
+- pueue-agent task 31 `make-stage2-test`: `make -f build/Makefile -j1 test`,
+  log build/make-newformat.log; results also accrue in base-results.tsv,
+  results-haskell98.tsv and results.tsv as before. The old drivers
+  (run-base.sh, build-hc.sh, build-haskell98.sh, run-compiler.sh,
+  build-hc-stage2.sh) still work but are no longer the entry point.
+
+## -j4, and the temp-file collision it exposed (2026-09-16, 03:30-03:50)
+
+- AB: -j1 wastes the machine (16 cores, 30 GB). Restarted as pueue-agent task
+  33 with -j4 (memory, not CPU, sets the ceiling: a compile that goes down
+  the "heap exhausted" path can reach its 8 GB ulimit -v).
+- It failed within minutes: Data.Char "Variable not in scope: isDigit",
+  serially too. GHC/Unicode.hi (241 lines of .hc where the 09-10 rebuild had
+  1138) decoded as GHC.STRef's interface: dictionary entry 0 'GHCziSTRef',
+  --show-iface exports GHC.STRef. Two concurrent compiles had shared a
+  preprocessed temp file. SysTools.newTempName names them
+  $TMPDIR/ghc<pid>.<ext> and, if the name exists, tries pid+1 -- and the
+  shared tmp/ held ghc14.hscpp, ghc15.hscpp... left by the killed runs (each
+  pueue task is a fresh PID namespace, so pids repeat), so a compiler
+  stepped onto its running neighbour's name. getpid itself is right (two
+  compilers printed distinct pids). Serial runs could never hit this.
+- Fixes: every compile-*.sh now runs in its own TMPDIR
+  ($W/tmp/<Module>.<pid>, removed on exit); check-hi.sh takes the module
+  name and hidict.py fails unless dictionary entry 0 is its z-encoding, so
+  a swapped interface can no longer pass as OK. Audit of the 31 .hi written
+  so far: only GHC/Unicode.hi was wrong; removed and recompiled (1138
+  lines). Leftover tmp/ghc* files deleted.
+
+## Stage 2 runs (2026-09-16, 04:39)
+
+- pueue-agent task 34, `make -f build/Makefile -j4 test`: 03:41 -> 04:39,
+  **58 min wall** for 125 base modules, 30 haskell98, all 220 compiler
+  modules, 399 objects, two archives, the link and the test (the 2026-09-15
+  serial loop alone took about 6 h for the 220). Sum of compile times: base
+  1992 s, stage 2 7617 s; 23 stage-2 modules at `-O -fno-strictness` (from
+  flags.tsv, no doomed -O attempts), 9 `-fno-cse`, Parser `-Onot`; 11 base
+  modules took the -fno-strictness retry. No FAIL rows from this run (the
+  three FAIL rows in the tsvs are the PrimPacked/Data.Char failures of the
+  two aborted runs, each followed by its OK). `make status`: nothing stale.
+- **`build/ghc622-stage2/ghc` (37 MB, native, unregisterised) compiles
+  `test/Hello.hs`** (`-B../topdir -C -O`): Hello.hc 120 lines, Hello.hi
+  decodes (31 dictionary entries). The megablock crash is gone: the
+  libraries' .hi files are now in the format the pristine Binary reads.
+- compare-base.sh (acceptance test 3): stage 2 compiles GHC/Base.lhs in
+  0.6 s (stage 1: 9 s), 7837 lines of .hc against stage 1's 7835. The
+  script's normaliser does not catch the differences, which are unique
+  numbering (s2Nl vs s2Q6) and the emission order of definitions (dmmax
+  before dmcompare on one side, after on the other), both expected between
+  two compilers with different unique supplies. Named symbols
+  (`GHCziBase_*`) are the same set on both sides; see cmp-base/stage2/.
+- Not yet done: scan-hi-stage2.sh (FastString unique collisions) over
+  stage2/ and libraries/ with the native compiler; a stage 3 (stage 2
+  compiling the compiler: `OUTDIR=stage3` in the scripts, not yet a target
+  in build/Makefile); committing today's changes (phase4 patches 0004/0026,
+  series.conf, build/Makefile, build/mk/, build.sh, the stage-2 scripts).
+
+## The mblock map under ASLR: RTS patch 0003 (2026-09-16, 09:00-09:45)
+
+- scan-hi-stage2.sh with the native compiler over stage2/ (220), base (147)
+  and haskell98 (30): **no duplicated name in any interface** (the D47
+  FastString collision is gone from the whole set). But `--show-iface
+  parser/ParserCore.hi` segfaulted once in the 397 runs and then passed 160
+  repeats; a gdb pass over all 397 saw nothing. Intermittent, ~1 in 400.
+- Cause: ghc/rts/MBlock.h's 64-bit HEAP_ALLOCED indexes a 4096-entry map by
+  the low 32 bits of the address, and on Linux HEAP_BASE is 0, so the first
+  megablock comes from mmap(NULL) and inherits ASLR's random low 32 bits.
+  Our ghc is non-PIE: .rodata and .data (static closures, info tables) sit
+  at 0x12fa0e0-0x1d00640, map entries 18-29. When the heap's low 32 bits
+  land there (26/4096 = 0.6%), the GC takes static closures for heap objects
+  and evacuate() dies. Made deterministic with an LD_PRELOAD shim that pins
+  the first mmap's hint (build/rts622/alias-test/mmap-alias.c): entries 19
+  or 23 -> 6/6 segfaults in evacuate <- GarbageCollect; entries 4 or 2049 ->
+  6/6 passes. Full write-up: build/rts622/FINDINGS.md section 9.
+- Fix: build/rts622/patches/0003-mblock-map-window.patch -- HEAP_BASE
+  0x500000000 on x86-64 (6.4's choice) and the map keyed on (p - HEAP_BASE)
+  with 65536 entries, a 64 GB window; getMBlocks barfs on memory outside it.
+  Rebuilt libHSrts.a (78/78); `make -f build/Makefile test` relinked the
+  stage-2 ghc (libHSrts.a is a prerequisite of the link) and recompiled
+  Hello. `make status`: nothing stale.
+- Checks with the relinked compiler: strace shows megablocks at 0x500000000,
+  0x500100000, ...; the shim's aliasing hints 0/9 failures; ParserCore
+  --show-iface 100/100; the three scans 397/397, still no DUP;
+  compare-base.sh unchanged (736 symbols both sides). First stage-3-style
+  compiles, by hand with the stage-2 -i dirs and outputs in stage3-probe/:
+  **PrelNames 3 s** (stage 1: 64 s), 1.32 GB allocated, 4676 collections,
+  27 MB residency, 38530 lines of .hc -- stage 1's count exactly;
+  **DriverFlags -fno-cse 2 s** (54 s), 21957 lines, also stage 1's count.
+- Gotcha for the stage-3 target: 6.2.2's Finder tries every suffix in one
+  -i directory before moving to the next, and compile-stage2.sh symlinks the
+  .hi-boot files into $ODIR up front, so an empty stage3/ first on -i makes
+  `Module.hi-boot-5` resolve Module to stage3/basicTypes/Module.hi, which
+  does not exist ("Bad interface file"). Harmless when the importers are
+  built in dependency order into the same dir (what the Makefile edges
+  guarantee); the by-hand probe put the stage-2 dirs on -i instead.
+- Not relinked: the twelve stage-1 test programs in build/ghc622-mhs/test
+  (old archive; each ran once and was lucky). Still open: the stage-3
+  Makefile target; committing today's changes (this patch, alias-test/,
+  FINDINGS.md section 9, DECISIONS.md D50, plus yesterday's list).

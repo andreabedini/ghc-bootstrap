@@ -32,6 +32,7 @@
 !/build/**/*.h
 !/build/**/*.out
 !/build/**/*.err
+!/build/Makefile
 !/build/hsc2hs-mhs/hsc2hs
 !/build/happy-mhs/datadir/HappyTemplate
 !/build/ppwrap/cpphs
