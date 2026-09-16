@@ -10,12 +10,15 @@
 #   stage3     build/ghc622-stage2/ghc-stage3   the same 220 modules compiled by the native
 #                                          stage 2 from the pristine source (stage3/, obj-stage3/)
 #   test3      test/stage3/Hello.hc        compiled by stage 3, and diffed against stage 2's
-#   stage4     stage4/*.hc                 the 220 modules compiled by ghc-stage3 (no objects, no link)
+#   stage4     build/ghc622-stage2/ghc-stage4   the 220 modules compiled by ghc-stage3, linked
+#   stage5     stage5/*.hc                 the 220 modules compiled by ghc-stage4 (no objects, no link)
 #   compare3   stage3/*.hc against stage2/*.hc: stage 2 as a compiler against stage 1 (the
 #              mhs-built one runs on shims whose FastString uniques differ, so local names
 #              and emission order differ; only the smallest modules come out identical)
 #   compare4   stage4/*.hc against stage3/*.hc: stage 3 against stage 2, both native, both
 #              from the same source -- the fixed point; every file should be identical
+#   compare5   stage5/*.hc against stage4/*.hc: stage 4 against stage 3, and the two
+#              compiler binaries ghc-stage3 and ghc-stage4 against each other
 #   deps       build/mk/deps.mk            regenerate the per-module rules from the sources
 #   status     what is stale, in one line per phase
 #
@@ -54,12 +57,15 @@ STAGE3_ENV := GHC=$(S2)/ghc OUTDIR=$(ODIR3) OUT=$(S2)/results-stage3.tsv LOGS=$(
 ODIR4 := $(S2)/stage4
 STAGE4_ENV := GHC=$(S2)/ghc-stage3 OUTDIR=$(ODIR4) OUT=$(S2)/results-stage4.tsv LOGS=$(S2)/logs/stage4 \
               USE_FIXUPS=0 FLAGS=/dev/null MODTIMEOUT=1800
+ODIR5 := $(S2)/stage5
+STAGE5_ENV := GHC=$(S2)/ghc-stage4 OUTDIR=$(ODIR5) OUT=$(S2)/results-stage5.tsv LOGS=$(S2)/logs/stage5 \
+              USE_FIXUPS=0 FLAGS=/dev/null MODTIMEOUT=1800
 RTS   := $(R)/build/rts622
 CC    ?= gcc
 
 .DEFAULT_GOAL := stage2
 .DELETE_ON_ERROR:
-.PHONY: stage1 base haskell98 stage2 test stage3 test3 stage4 compare3 compare4 deps status
+.PHONY: stage1 base haskell98 stage2 test stage3 test3 stage4 stage5 compare3 compare4 compare5 deps status
 
 # ---------------------------------------------------------------- stage 1
 # Everything mhs reads: the patched tree, the shims, the hs-boot and generated
@@ -131,9 +137,9 @@ define CC_COMPILER_C
 	$(CC) -c -std=gnu89 -O -w -DNO_REGS -DUSE_MINIINTERPRETER -D__GLASGOW_HASKELL__=602 \
 	  -I$(INC2) -I$(SRC2)/parser -I$(SRC2) -I$(S2)/libraries/base/include $< -o $@
 endef
-$(S2)/obj/c_hschooks.o $(S2)/obj-stage3/c_hschooks.o: $(SRC2)/parser/hschooks.c
+$(S2)/obj/c_hschooks.o $(S2)/obj-stage3/c_hschooks.o $(S2)/obj-stage4/c_hschooks.o: $(SRC2)/parser/hschooks.c
 	$(CC_COMPILER_C)
-$(S2)/obj/c_rawSystem.o $(S2)/obj-stage3/c_rawSystem.o: $(SRC2)/cbits/rawSystem.c
+$(S2)/obj/c_rawSystem.o $(S2)/obj-stage3/c_rawSystem.o $(S2)/obj-stage4/c_rawSystem.o: $(SRC2)/cbits/rawSystem.c
 	$(CC_COMPILER_C)
 
 # link-stage2.sh links obj/*.o: stale objects of removed modules would go in too.
@@ -167,7 +173,11 @@ $(S2)/test/stage3/Hello.hc: $(S2)/test/Hello.hs $(S2)/ghc-stage3 $(S2)/test/Hell
 	    || echo "stage 2 and stage 3 DIFFER on test/Hello.hc: $$(diff Hello.hc stage3/Hello.hc | grep -c '^[<>]') lines"; }
 test3: $(S2)/test/stage3/Hello.hc
 
-stage4: $(STAGE4_HIS)
+$(S2)/ghc-stage4: $(STAGE4_OBJS) $(S2)/obj-stage4/c_hschooks.o $(S2)/obj-stage4/c_rawSystem.o \
+           $(M1)/lib/libHSbase.a $(M1)/lib/libHSbase_cbits.a $(H98)/libHShaskell98.a $(RTS)/libHSrts.a $(S2)/link-stage2.sh
+	OUTDIR=stage4 sh $(S2)/link-stage2.sh
+stage4: $(S2)/ghc-stage4
+stage5: $(STAGE5_HIS)
 
 # $(call COMPARE_HC,<dir written by the newer compiler>,<dir written by the older>,<label>)
 define COMPARE_HC
@@ -182,6 +192,13 @@ compare3:
 	$(call COMPARE_HC,$(ODIR3),$(ODIR2),stage 3 vs stage 2)
 compare4:
 	$(call COMPARE_HC,$(ODIR4),$(ODIR3),stage 4 vs stage 3)
+compare5:
+	$(call COMPARE_HC,$(ODIR5),$(ODIR4),stage 5 vs stage 4)
+	@if cmp -s $(S2)/ghc-stage3 $(S2)/ghc-stage4; then echo 'ghc-stage3 and ghc-stage4 are byte-identical'; \
+	else echo "ghc-stage3 and ghc-stage4 differ: $$(cmp -l $(S2)/ghc-stage3 $(S2)/ghc-stage4 2>/dev/null | wc -l) bytes"; fi
+	@same=0; diff=0; for o in $(STAGE3_OBJS); do rel=$${o#$(S2)/obj-stage3/}; \
+	  if cmp -s "$$o" "$(S2)/obj-stage4/$$rel"; then same=$$((same+1)); else diff=$$((diff+1)); echo "object differs: $$rel"; fi; done; \
+	echo "obj-stage4 vs obj-stage3: $$same identical, $$diff differ"
 
 # ---------------------------------------------------------------- status
 status:
@@ -190,4 +207,5 @@ status:
 	@printf 'haskell98  %s of 30 modules to compile\n' "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n haskell98 | grep -c 'compile-h98.sh' )"
 	@printf 'stage2     %s of 220 modules to compile, %s objects, link: %s\n' "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage2 | grep -c 'compile-stage2.sh' )" "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage2 | grep -c -- '-o $(S2)/obj/' )" "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage2 | grep -c 'link-stage2.sh' )"
 	@printf 'stage3     %s of 220 modules to compile, %s objects, link: %s\n' "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage3 | grep -c 'compile-stage2.sh' )" "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage3 | grep -c -- '-o $(S2)/obj-stage3/' )" "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage3 | grep -c 'link-stage2.sh' )"
-	@printf 'stage4     %s of 220 modules to compile\n' "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage4 | grep -c 'OUTDIR=$(ODIR4) .*compile-stage2.sh' )"
+	@printf 'stage4     %s of 220 modules to compile, %s objects, link: %s\n' "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage4 | grep -c 'compile-stage2.sh' )" "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage4 | grep -c -- '-o $(S2)/obj-stage4/' )" "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage4 | grep -c 'link-stage2.sh' )"
+	@printf 'stage5     %s of 220 modules to compile\n' "$$( $(MAKE) -s -f $(firstword $(MAKEFILE_LIST)) -n stage5 | grep -c 'OUTDIR=$(ODIR5) .*compile-stage2.sh' )"

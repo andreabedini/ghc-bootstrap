@@ -542,3 +542,31 @@ Outstanding before or at the resume:
 - Not built: a stage 5 from a linked ghc-stage4, which would show whether
   ghc-stage3 and ghc-stage4 are the same compiler (their inputs differ in
   exactly those two modules). The Makefile stops at stage4's .hc.
+
+## Stage 5: ghc-stage3 against ghc-stage4 (2026-09-16, 10:20-10:35)
+
+- gen-deps.py now emits stages 3-5 from one table (each compiled by the
+  previous stage's native compiler; 3 and 4 with objects and a link, 5 as
+  .hi/.hc only); the Makefile gained the ghc-stage4 link, `stage5` and
+  `compare5` (stage5/ against stage4/, plus the two compiler binaries and
+  the two object sets against each other).
+- pueue-agent task 37, `make -j4 stage5 && make compare5`: 2 min 14 s wall
+  for 222 objects, the ghc-stage4 link (37473016 bytes, the same size as
+  ghc-stage3) and 220 modules at -O by ghc-stage4, no retries.
+  **compare5: stage 5 vs stage 4 .hc 220 identical, 0 differ.** The stage-2
+  -> stage-3 differences did not propagate: a compiler that differs from
+  ghc-stage3 only in Pretty.o and CoreUtils.o writes the same 220 files.
+- ghc-stage3 vs ghc-stage4: 38 bytes differ, in exactly the places D51
+  predicted. obj-stage4 vs obj-stage3: 218 objects identical, utils_Pretty.o
+  differs in 1 byte (the upper word of the 1.5f literal) and
+  coreSyn_CoreUtils.o in 39 (the swapped SRT pair and its relocations). In
+  the linked binaries: 20 bytes in the .note.gnu.build-id (a hash of the
+  contents, a consequence), 4 + 4 bytes in .rodata and 9 bytes in .data
+  from CoreUtils (the swapped Type_funResultTy/Type_applyTy pointers of
+  its SRT and what refers to them) and 1 byte in .data (Pretty's literal):
+  20 + 4 + 4 + 9 + 1 = 38.
+- So the chain reaches a fixed point at stage 3: ghc-stage3 and ghc-stage4
+  are the same compiler up to two bytes-level artefacts whose sources are
+  named, and each compiles the compiler to the same output. The Makefile's
+  full acceptance run is `make -j4 test3 && make -j4 stage5 && make compare4
+  compare5` (about 6 min).

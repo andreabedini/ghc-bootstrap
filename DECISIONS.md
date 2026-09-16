@@ -1713,6 +1713,17 @@ defect stays unpatched in the pristine stage-2 source, since it does not
 affect the compiled programs and patching pristine source is a scope
 change; it is recorded here so that a future bit-reproducibility
 requirement knows where to look (a `.&. 0xffffffff`, or 6.4's
-`castFloatToWord32`). A stage 5 is not built.
+`castFloatToWord32`).
+
+**Addendum, the same day: stage 5.** `ghc-stage4` was linked from the
+stage-4 objects and compiled the 220 modules a fifth time: **stage 5 is
+byte-identical to stage 4 in all 220 `.hc` files.** `ghc-stage3` and
+`ghc-stage4` differ in 38 bytes, all accounted for: the 20-byte GNU build-id
+note, the swapped SRT pointer pair from `CoreUtils.o` (39 bytes in the
+object, with its relocations) and the one upper-word byte of `Pretty.o`'s
+`1.5f` literal; 218 of 220 objects are identical. The two leaks do not
+propagate: a compiler that differs only in them writes the same output. The
+fixed point is therefore reached at stage 3, and the acceptance run is
+`make -j4 test3 && make -j4 stage5 && make compare4 compare5`.
 
 **Overturned by:** nothing yet.
