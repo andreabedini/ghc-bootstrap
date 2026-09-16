@@ -1657,3 +1657,34 @@ the native compiler reproduces the stage-1 compiler's `.hc` output for base
 `make-patch.sh` accepts the tree again.
 
 **Overturned by:** nothing; there is no decision here to overturn.
+
+## D50 — RTS patch 0003: the megablock map gets a fixed base and a window
+*2026-09-16, `build/rts622`.* The first few hundred runs of the native
+stage-2 compiler produced one segfault, in `--show-iface` of an interface
+that then passed 160 repeats. The RTS's own comment names the cause:
+6.2.2's 64-bit `HEAP_ALLOCED` ("XXX: This is a HACK") keys a 4096-entry map
+on the low 32 bits of an address, and with `HEAP_BASE 0` on Linux the heap
+starts wherever `mmap(NULL)` puts it, so under ASLR the heap's low 32 bits
+alias the executable's `.rodata`/`.data` (static closures, map entries
+18-29) in about 0.6% of processes, and the GC then evacuates static closures
+as heap objects. An `LD_PRELOAD` shim that pins the first `mmap`'s hint makes
+it 6/6 either way (`build/rts622/alias-test/mmap-alias.c`; FINDINGS.md
+section 9 has the gdb trace and the numbers).
+
+**Decision.** Patch the RTS rather than the environment: `HEAP_BASE
+0x500000000` on x86-64 and a 65536-entry map keyed on `p - HEAP_BASE` (a
+64 GB window) with `getMBlocks` refusing memory outside it
+(`patches/0003-mblock-map-window.patch`). This is what 6.4 did in spirit, a
+fixed heap base on x86-64, without its two-level map: the window is enough
+under the 8 GB `ulimit -v` every compile runs with, and the patch is 30
+lines against two files rather than a storage-manager backport. Rejected:
+disabling ASLR (`setarch -R`) or hoping, which move the bug to the next
+machine; linking PIE-off is already the case and irrelevant since the heap,
+not the executable, is what moves. Cost: a one-minute RTS rebuild and a
+relink; the stage-2 compiler, Hello, 397 interfaces, `compare-base.sh` and
+two stage-3-style compiles (PrelNames 3 s, DriverFlags 2 s, `.hc` line
+counts equal to stage 1's) all check out on the relinked binary. The
+reproducer in `build/rts622` now has three patches; `apply-fixes.pl` covers
+only the first two, `patch -p1` the third.
+
+**Overturned by:** nothing yet.

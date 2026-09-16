@@ -150,9 +150,15 @@ they compile with the `.hc` command above.
   lines is touched.
 - `0002-gc-static-objects-linkage.patch` — GC.c:84 drop `static`, matching
   the `extern` declaration the header already exports.
+- `0003-mblock-map-window.patch` (2026-09-16) — MBlock.h/MBlock.c: a fixed
+  `HEAP_BASE` on x86-64 and a windowed mblock map in place of the low-32-bit
+  hack. Not a build fix but a runtime one; section 9 has the bug and the
+  evidence.
 
-Verified: extracting `ghc/rts` fresh from the tarball and applying both
-patches gives a tree identical (`diff -r`) to the working tree.
+Verified: extracting `ghc/rts` fresh from the tarball and applying the
+patches gives a tree identical (`diff -r`) to the working tree (0001 and
+0002 on 2026-09-09; 0003 was generated from the pristine `MBlock.[ch]` and
+re-applied to them with `patch --dry-run` on 2026-09-16).
 
 ## 6. Link and run
 
@@ -230,3 +236,61 @@ show is runtime correctness under compiled Haskell — the D42 class of bugs
 lives there — but 6.2.2 was the first GHC to know x86-64 existed, its
 register-convention selection is already count-based, and every place that
 was a porting problem in 4.08.2 was a non-event here.
+
+## 9. Patch 0003: `HEAP_ALLOCED` under ASLR (2026-09-16)
+
+*Found with the native stage-2 compiler (`build/ghc622-stage2/ghc`, linked
+against this `libHSrts.a`), the first program with real Haskell heap traffic
+to run on it.*
+
+**Symptom.** `--show-iface` over 397 interface files segfaulted once, on a
+file that then passed 160 repeats; a gdb run over all 397 saw nothing. About
+one process in 400.
+
+**Cause.** `MBlock.h`'s 64-bit branch says so itself ("XXX: This is a
+HACK"): `HEAP_ALLOCED(p)` indexes a 4096-entry `mblock_map` by the low 32
+bits of `p`, and on Linux `HEAP_BASE` is 0, so the first megablock comes from
+`mmap(NULL, ...)` and its low 32 bits are whatever ASLR chose. The stage-2
+`ghc` is a non-PIE executable: `.rodata` (0x12fa0e0-0x13e2ec8) and `.data`
+(0x1798440-0x1d00640) hold the static closures and info tables and occupy map
+entries 18-29. When the heap's low 32 bits land on those entries (26 of 4096,
+0.6%), `HEAP_ALLOCED` answers yes for static closures, `evacuate()` treats
+them as heap objects, and the process dies in the first collection that
+reaches one. gdb: `evacuate <- GarbageCollect <- scheduleWaitThread <-
+rts_evalLazyIO <- main`.
+
+**Reproducer.** `alias-test/mmap-alias.c`, an `LD_PRELOAD` shim that gives
+every large anonymous unhinted `mmap` a fixed hint (`ALIAS_HINT`), so the
+first megablock's low 32 bits are chosen rather than random. Against the
+pre-patch binary: megablocks from entry 19 or 23 -> 6/6 segfaults; from entry
+4 (`.text` only, no closures) or 2049 -> 6/6 passes. That is the whole
+diagnosis: same binary, same input, outcome decided by the heap's address.
+
+**Fix (the patch).** Two changes, both in the spirit of what 6.4 did on
+x86-64 rather than a backport of its two-level map:
+
+1. `HEAP_BASE 0x500000000L` for `x86_64_TARGET_ARCH`: the heap is requested
+   from a fixed address above the executable and `brk` and below the 0x7f..
+   mmap area. Linux honours sequential hints there (checked: eight 1 MB
+   requests in a row, and one at the far end of the window, all returned at
+   the hint); `strace` of the relinked compiler shows megablocks at
+   0x500000000, 0x500100000, ...
+2. The map is keyed on `(p - HEAP_BASE) >> MBLOCK_SHIFT` with 65536 entries
+   (a 64 GB window, 64 KB of `.bss`); addresses outside the window are never
+   heap-allocated, and `getMBlocks` barfs if the OS hands it memory outside
+   the window instead of letting `MARK_HEAP_ALLOCED` drop it silently. With
+   `ulimit -v 8 GB` on every compile the window cannot be exhausted.
+
+**Checks after relinking.** The shim's aliasing hints no longer reach the
+RTS (0/9 failures); `--show-iface` of the once-failing file 100/100; the
+397-interface scan 397/397; `compare-base.sh` unchanged (736 symbols each
+side); the native compiler compiling `PrelNames` (1.32 GB allocated, 4676
+collections, 27 MB residency, 3 s) and `DriverFlags` (1.18 GB, 4196
+collections, 2 s) to the same `.hc` line counts as stage 1. The stage-1 test
+programs in `build/ghc622-mhs/test` were linked against the old archive and
+have not been relinked; they ran short enough to be lucky.
+
+**Why it was not seen before.** The C driver of section 6 has no static
+Haskell closures; the twelve test programs (D48) each ran once; the stage-2
+link happened this morning, and the 397-run scan was the first time this RTS
+ran a few hundred processes.

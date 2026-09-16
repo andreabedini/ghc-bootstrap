@@ -1,0 +1,65 @@
+--- a/ghc/rts/MBlock.h
++++ b/ghc/rts/MBlock.h
+@@ -23,6 +23,15 @@
+ #error I have no idea where to begin the heap on a non-64-bit osf3 machine.
+ #endif
+ 
++#elif defined(x86_64_TARGET_ARCH) && SIZEOF_VOID_P == 8
++/* Ask for the heap from a fixed address, as 6.4 does on x86-64: above the
++ * executable and the C heap (a non-PIE binary sits at 0x400000 and brk
++ * grows from its end) and below the mmap area (0x7f...).  With HEAP_BASE 0
++ * the first megablock came from an unhinted mmap and inherited ASLR's
++ * random low 32 bits, which the mblock map below then confused with the
++ * executable's static closures (build/rts622/FINDINGS.md section 6). */
++#define HEAP_BASE 0x500000000L
++
+ #else
+ 
+ // we're using the generic method
+@@ -71,14 +80,20 @@
+ 					&& (mblock_map[MBLOCK_MAP_ENTRY(p)] = 1))
+ 
+ #elif SIZEOF_VOID_P == 8
+-/* XXX: This is a HACK, and will not work in general!  We just use the
+- * lower 32 bits of the address, and do the same as for the 32-bit
+- * version.  As long as the OS gives us memory in a roughly linear
+- * fashion, it won't go wrong until we've allocated 4G.  */
+-# define MBLOCK_MAP_SIZE	4096
+-# define MBLOCK_MAP_ENTRY(p)	(((StgWord)(p) & 0xffffffff) >> MBLOCK_SHIFT)
+-# define HEAP_ALLOCED(p)	(mblock_map[MBLOCK_MAP_ENTRY(p)])
+-# define MARK_HEAP_ALLOCED(p)	(mblock_map[MBLOCK_MAP_ENTRY(p)] = 1)
++/* The map covers the MBLOCK_MAP_SIZE megablocks from HEAP_BASE upwards
++ * (64 GB with these sizes); getMBlocks() refuses memory outside that
++ * window, so nothing outside it is ever heap-allocated.  The pristine
++ * 6.2.2 code keyed a 4096-entry map on the low 32 bits of the address,
++ * so a static closure whose low 32 bits matched a live megablock's looked
++ * heap-allocated to the GC, which then evacuated it as a heap object and
++ * died -- for about one process in 400 under ASLR, since the heap started
++ * wherever mmap(NULL) put it. */
++# define MBLOCK_MAP_SIZE	65536
++# define MBLOCK_MAP_ENTRY(p)	(((StgWord)(p) - (StgWord)HEAP_BASE) >> MBLOCK_SHIFT)
++# define HEAP_ALLOCED(p)	((MBLOCK_MAP_ENTRY(p) < MBLOCK_MAP_SIZE) \
++					&& mblock_map[MBLOCK_MAP_ENTRY(p)])
++# define MARK_HEAP_ALLOCED(p)	((MBLOCK_MAP_ENTRY(p) < MBLOCK_MAP_SIZE) \
++					&& (mblock_map[MBLOCK_MAP_ENTRY(p)] = 1))
+ 
+ 
+ #else
+--- a/ghc/rts/MBlock.c
++++ b/ghc/rts/MBlock.c
+@@ -217,6 +217,15 @@
+       }
+   }
+ 
++  // The mblock map covers only the window from HEAP_BASE (MBlock.h);
++  // memory outside it would be invisible to HEAP_ALLOCED, so refuse it
++  // loudly rather than let the GC misclassify closures.
++  if (MBLOCK_MAP_ENTRY(ret) >= MBLOCK_MAP_SIZE
++      || MBLOCK_MAP_ENTRY(ret + size - 1) >= MBLOCK_MAP_SIZE) {
++      barf("getMBlocks: %d megablock(s) at %p lie outside the mblock map window at %p",
++	   n, ret, (void *)HEAP_BASE);
++  }
++
+   // Next time, we'll try to allocate right after the block we just got.
+   // ToDo: check that we haven't already grabbed the memory at next_request
+   next_request = ret + size;
