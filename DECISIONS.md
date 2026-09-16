@@ -1688,3 +1688,31 @@ reproducer in `build/rts622` now has three patches; `apply-fixes.pl` covers
 only the first two, `patch -p1` the third.
 
 **Overturned by:** nothing yet.
+
+## D51 — Stage 3 and stage 4: the native compiler rebuilds itself, 218 of 220 modules byte-identical
+*2026-09-16, `build/Makefile` targets `stage3`, `test3`, `stage4`,
+`compare3`, `compare4`.* The native stage-2 GHC 6.2.2 compiled its own 220
+modules from the pristine source in 2 min 6 s wall (stage 1 needed 7617 s of
+compile time and 25 modules at `-fno-strictness`; natively every module
+compiles at plain `-O`), linked as `ghc-stage3`, and compiles Hello.hs to the
+same Abstract C as stage 2. `ghc-stage3` then compiled the 220 again
+(stage 4, 1 min 40 s): **218 `.hc` files byte-identical to stage 3's, all
+220 `.hi` identical**. The two differences are deterministic and explained
+in `build/ghc622-stage2/LOG.md`: an uninitialised upper word in a `Float`
+literal (`PprAbsC.floatToWord` reads a 4-byte float array back as an 8-byte
+Int, a 6.2.2 64-bit defect that the RTS never sees because `PK_FLT` reads
+the low word), and one SRT with two entries swapped, from Unique assignment
+order, which in a pre-8.0 GHC follows evaluation order and so can differ
+between a compiler built with `-fno-strictness` in 25 modules and one built
+without.
+
+**Decision.** The chain's acceptance test is now `make test3` followed by
+`make stage4 compare4`, and this is the fixed point we accept: same
+interfaces, same code up to the two understood leaks. The `floatToWord`
+defect stays unpatched in the pristine stage-2 source, since it does not
+affect the compiled programs and patching pristine source is a scope
+change; it is recorded here so that a future bit-reproducibility
+requirement knows where to look (a `.&. 0xffffffff`, or 6.4's
+`castFloatToWord32`). A stage 5 is not built.
+
+**Overturned by:** nothing yet.

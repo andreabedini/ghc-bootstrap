@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Emit build/mk/deps.mk: the per-module rules of build/Makefile with the real
 import graph, for libraries/base (build/ghc622-mhs/diag/base-rebuild-order.txt),
-libraries/haskell98 and the compiler proper (build/ghc622-stage2/order.txt).
+libraries/haskell98 and the compiler proper (build/ghc622-stage2/order.txt),
+the last twice: stage 2 (compiled by the mhs-built stage 1 into stage2/) and
+stage 3 (compiled by the native stage 2 into stage3/, objects in obj-stage3/) and
+stage 4 (compiled by ghc-stage3 into stage4/, interfaces and Abstract C only).
 
 Edges come from the same scanners the order files came from: base-order.py's
 cpp'd import scan for base, phase2/build-order.py's scan (plus the HsVersions.h
@@ -115,15 +118,29 @@ def obj2(p):
 emit("STAGE2_MODS := " + " ".join(m for m, _ in order2))
 emit("STAGE2_HIS := " + " ".join("$(ODIR2)/%s.hi" % os.path.splitext(p)[0] for _, p in order2))
 emit("STAGE2_OBJS := " + " ".join("$(S2)/obj/%s.o" % obj2(p) for _, p in order2))
+emit("STAGE3_HIS := " + " ".join("$(ODIR3)/%s.hi" % os.path.splitext(p)[0] for _, p in order2))
+emit("STAGE3_OBJS := " + " ".join("$(S2)/obj-stage3/%s.o" % obj2(p) for _, p in order2))
+emit("STAGE4_HIS := " + " ".join("$(ODIR4)/%s.hi" % os.path.splitext(p)[0] for _, p in order2))
 emit()
 path_of = dict(order2)
 for m, p in order2:
     stem = os.path.splitext(p)[0]
-    ds = " ".join("$(ODIR2)/%s.hi" % os.path.splitext(path_of[d])[0] for d in sorted(deps2.get(m, ())) if d in mods2 and d != m)
+    ds = " ".join("%s.hi" % os.path.splitext(path_of[d])[0] for d in sorted(deps2.get(m, ())) if d in mods2 and d != m)
+    ds2 = " ".join("$(ODIR2)/" + d for d in ds.split()); ds3 = " ".join("$(ODIR3)/" + d for d in ds.split())
+    ds4 = " ".join("$(ODIR4)/" + d for d in ds.split())
     fix = " $(S2)/fixups/%s" % p if os.path.exists(S2 + "/fixups/" + p) else ""
-    emit("$(ODIR2)/%s.hi $(ODIR2)/%s.hc &: $(SRC2)/%s%s %s $(LIBS_STAMP) $(M1)/ghc | $(S2)/flags.tsv $(MK)/compile-stage2.sh" % (stem, stem, p, fix, ds))
+    # stage 2: the stage-1 (mhs-built) compiler, fixups for what the MicroHs runtime cannot read
+    emit("$(ODIR2)/%s.hi $(ODIR2)/%s.hc &: $(SRC2)/%s%s %s $(LIBS_STAMP) $(M1)/ghc | $(S2)/flags.tsv $(MK)/compile-stage2.sh" % (stem, stem, p, fix, ds2))
     emit("\tsh $(MK)/compile-stage2.sh %s %s" % (m, p))
     emit("$(S2)/obj/%s.o: $(ODIR2)/%s.hc" % (obj2(p), stem))
     emit("\t$(HC2O_STAGE2)")
+    # stage 3: the native stage-2 compiler on the pristine source, no seeded flags
+    emit("$(ODIR3)/%s.hi $(ODIR3)/%s.hc &: $(SRC2)/%s %s $(LIBS_STAMP) $(S2)/ghc | $(MK)/compile-stage2.sh" % (stem, stem, p, ds3))
+    emit("\t$(STAGE3_ENV) sh $(MK)/compile-stage2.sh %s %s" % (m, p))
+    emit("$(S2)/obj-stage3/%s.o: $(ODIR3)/%s.hc" % (obj2(p), stem))
+    emit("\t$(HC2O_STAGE2)")
+    # stage 4: ghc-stage3 on the same source, .hi/.hc only -- the fixed-point check against stage3/
+    emit("$(ODIR4)/%s.hi $(ODIR4)/%s.hc &: $(SRC2)/%s %s $(LIBS_STAMP) $(S2)/ghc-stage3 | $(MK)/compile-stage2.sh" % (stem, stem, p, ds4))
+    emit("\t$(STAGE4_ENV) sh $(MK)/compile-stage2.sh %s %s" % (m, p))
 print("\n".join(out))
 print("# %d base, %d haskell98, %d stage-2 modules" % (len(base_order), len(h98_mods), len(order2)), file=sys.stderr)

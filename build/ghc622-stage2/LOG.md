@@ -491,3 +491,54 @@ Outstanding before or at the resume:
   (old archive; each ran once and was lucky). Still open: the stage-3
   Makefile target; committing today's changes (this patch, alias-test/,
   FINDINGS.md section 9, DECISIONS.md D50, plus yesterday's list).
+
+## Stage 3, stage 4 and the fixed-point check (2026-09-16, 09:45-10:05)
+
+- build/Makefile gained `stage3` (the 220 modules compiled by the native
+  stage 2 from the pristine source into stage3/, objects in obj-stage3/,
+  linked as ghc-stage3), `test3` (Hello by stage 3, diffed against stage 2's),
+  `stage4` (the 220 compiled by ghc-stage3 into stage4/, .hi/.hc only) and
+  `compare3`/`compare4`. gen-deps.py emits the stage-3/4 rules beside the
+  stage-2 ones from the same import edges; compile-stage2.sh is reused with
+  STAGE3_ENV/STAGE4_ENV (GHC, OUTDIR, OUT, LOGS, USE_FIXUPS=0, FLAGS=/dev/null,
+  MODTIMEOUT=1800): no fixups (they stood in for what the MicroHs runtime
+  could not read) and no seeded flags (flags.tsv records stage 1's needs).
+  link-stage2.sh's OUTDIR=stage3 case now really uses obj-stage3/.
+- pueue-agent task 35, `make -j4 test3`: **2 min 6 s wall** for the 220
+  modules (sum 204 s, every one at plain -O, no retries; Parser at -Onot the
+  slowest at 10 s), 222 objects, the link (ghc-stage3, 37.47 MB) and Hello;
+  "stage 2 and stage 3 agree on test/Hello.hc". Stage 1 had needed 7617 s of
+  compile for the same 220, and its 25 -fno-strictness modules compile at
+  -O natively: their "heap exhausted" was the MicroHs runtime, not the
+  compiler looping.
+- compare3 (stage3/*.hc, written by the native stage 2, against stage2/*.hc,
+  written by the mhs-built stage 1): 5 identical (the 9-line empty modules),
+  215 differ. Expected: stage 1 runs on shims whose FastString uniques are
+  assigned differently, so local names and emission order differ (Util: the
+  same 628 static headers and 69 entry points, reordered), and the 25
+  -fno-strictness interfaces stage 1 read give different code downstream
+  (TcExpr 17440 vs 17210 lines).
+- Task 36, `make -j4 stage4`: 1 min 40 s, 220/220 at -O. **compare4: 218 of
+  220 byte-identical**, and both .hi files of the other two identical. The
+  two differences are deterministic (each compiler reproduces its own output
+  on a rerun, and the two compilers disagree again on a rerun) and understood:
+  - utils/Pretty.hc:354 `(L_)22544384000` (stage 2) vs `(L_)1069547520`
+    (stage 3): 0x5_3FC00000 vs 0x3FC00000. The low 32 bits are 1.5f (the
+    `fullRender mode pprCols 1.5` literal); the upper 32 differ.
+    PprAbsC.floatToWord writes the Float into a one-element float array and
+    reads it back as a machine Int, so on a 64-bit host the upper half is the
+    array's padding: a 6.2.2 64-bit defect, harmless at run time (PK_FLT
+    reads the low word) but a reproducibility leak. The stage-1 tree's patch
+    0018 (FLOATCAST) casts through Data.Float and has no such half.
+  - coreSyn/CoreUtils.hc: one SRT lists Type_funResultTy and Type_applyTy in
+    swapped order (with the matching EC_ declarations). SRT order follows the
+    Unique order of the free names; external names get uniques in the order
+    the compiler first meets them and FastStrings in interning order, both
+    through unsafePerformIO counters and so dependent on evaluation order.
+    Stage 2 was compiled with 25 modules at -fno-strictness (Type among
+    them), stage 3 with none, so their evaluation orders can legitimately
+    differ. Pre-8.0 GHC never promised byte-identical stage-2/3 objects for
+    this reason.
+- Not built: a stage 5 from a linked ghc-stage4, which would show whether
+  ghc-stage3 and ghc-stage4 are the same compiler (their inputs differ in
+  exactly those two modules). The Makefile stops at stage4's .hc.

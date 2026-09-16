@@ -1,6 +1,8 @@
 #!/bin/sh
-# Compile one module of GHC 6.2.2's compiler proper with the stage-1 compiler,
-# for build/Makefile: run-compiler.sh's loop body for a single module.
+# Compile one module of GHC 6.2.2's compiler proper with the stage-1 compiler
+# (or, with GHC/OUTDIR/... set as build/Makefile's STAGE3_ENV does, with the
+# native stage-2 compiler into stage3/), for build/Makefile: run-compiler.sh's
+# loop body for a single module.
 #   sh build/mk/compile-stage2.sh <Module> <dir/File.ext>     exit 0 iff .hi and .hc exist
 # Flags: ghc/compiler/Makefile's SRC_HC_OPTS for a bootstrapped no-GHCi no-NCG
 # build, plus the per-module <file>_HC_OPTS (extra_flags), -O by default
@@ -11,7 +13,8 @@
 # replaces a source the *stage-1* compiler cannot read (USE_FIXUPS=0 to
 # disable, e.g. for a native GHC). Outputs are removed before each attempt;
 # the .hi must decode (check-hi.sh). Appends a row to results.tsv.
-# Env: GHC, OUTDIR (stage2), OUT, LOGS, MODTIMEOUT (3600), VERB, MHSRTS, EXTRA.
+# Env: GHC, OUTDIR (stage2), OUT, LOGS, MODTIMEOUT (3600), VERB, MHSRTS, EXTRA,
+# FLAGS (the seed tsv; default $S/flags.tsv, /dev/null for an unseeded ladder).
 set -u
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
@@ -70,8 +73,9 @@ retryable() {  # a runtime death, a panic or a timeout -- not a plain compile er
 }
 start=$(date +%s)
 opt=$(first_opt "$path"); ladder="$opt"
-if [ -f "$S/flags.tsv" ]; then
-  seed=$(awk -F'\t' -v m="$m" '$1==m {print $2}' "$S/flags.tsv" | tail -1)
+FLAGS="${FLAGS:-$S/flags.tsv}"
+if [ -f "$FLAGS" ]; then
+  seed=$(awk -F'\t' -v m="$m" '$1==m {print $2}' "$FLAGS" | tail -1)
   case "$seed" in
     *-fno-strictness*) opt="-O -fno-strictness"; ladder="$opt [flags.tsv]" ;;
     -O0)               opt="-O0";               ladder="$opt [flags.tsv]" ;;
@@ -90,8 +94,8 @@ fi
 secs=$(( $(date +%s) - start ))
 if [ $rc = 0 ] && [ -f "$hc" ] && [ -f "$hi" ] && sh "$R/build/mk/check-hi.sh" "$hi" "$m" >> "$log" 2>&1; then
   printf 'OK\t%s\t%ss\t%s %s\t%s lines hc\t%s%s\n' "$m" "$secs" "$opt" "$extra" "$(wc -l < "$hc")" "$ladder" "$fixnote" >> "$OUT"
-  echo "stage2 $m: OK ${secs}s ($opt$fixnote)"
+  echo "$(basename "$ODIR") $m: OK ${secs}s ($opt$fixnote)"
 else
   printf 'FAIL\t%s\t%ss\trc=%s\t%s\t%s%s\n' "$m" "$secs" "$rc" "$ladder" "$(tr '\n' ' ' < "$log" | sed 's/  */ /g' | cut -c1-400)" "$fixnote" >> "$OUT"
-  rm -f "$hc" "$hi"; echo "stage2 $m: FAIL rc=$rc ($ladder), see $log"; exit 1
+  rm -f "$hc" "$hi"; echo "$(basename "$ODIR") $m: FAIL rc=$rc ($ladder), see $log"; exit 1
 fi

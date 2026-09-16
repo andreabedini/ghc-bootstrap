@@ -6,12 +6,12 @@
 # from libHSrts.a's Main.o; the compiler's Main.o supplies ZCMain_main_closure;
 # hschooks.o overrides the RTS's default hooks (each hook is its own archive
 # member, so the explicit object wins without -u).
-#   OUTDIR=stage3 sh link-stage2.sh   -> ghc-stage3  from obj-stage3/
+#   OUTDIR=stage3 sh link-stage2.sh   -> ghc-stage3  from obj-stage3/ (build/Makefile stage3)
 set -u
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 S="$R/build/ghc622-stage2"
 ODIR="${OUTDIR:-stage2}"
-if [ "$ODIR" = stage2 ]; then OBJ="$S/obj"; BIN="$S/ghc"; else OBJ="$S/obj${ODIR#stage2}"; BIN="$S/ghc-${ODIR}"; fi
+if [ "$ODIR" = stage2 ]; then OBJ="$S/obj"; BIN="$S/ghc"; else OBJ="$S/obj-$ODIR"; BIN="$S/ghc-$ODIR"; fi
 CC=${CC:-gcc}
 U=""
 for s in GHCziBase_Izh_static_info GHCziBase_Czh_static_info GHCziFloat_Fzh_static_info \
