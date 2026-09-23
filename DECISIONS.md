@@ -1309,6 +1309,7 @@ own flag list. Every plateau in this project — 1, 9, 13, 20, 38, 43, 45 module
 ---
 
 ## D44 — Is GHC 6.x within mhs's reach? Measured, not estimated
+*2026-09-03.*
 
 **Question.** Whether the mhs entry point could be moved from 4.08.2 to 6.x,
 which would be attractive because 6.2 is the first GHC with an x86-64 port —

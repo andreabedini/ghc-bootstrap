@@ -81,6 +81,17 @@ ignores, and a transcription that imitates the tabs of another transcription
 would document nothing. The README text below says "identical up to the tabs
 in config.h's prologue" rather than "byte for byte".
 
+**Rerun 2026-09-23: one probed value now differs as well.** Line 147 of
+`config.h`: the reproduction has `#define CONST_EFTYPE 134`, run1 has `-1`
+(`log/configure.log`: `checking value of EFTYPE... 134`). The cause is the
+host, not the series: `/usr/include/asm-generic/errno.h` now defines
+`EFTYPE 134`, and it comes from `kernel-headers-7.2.4-200.fc44`, installed
+2026-09-10 17:26, after run1's `config.h` was written (07:56 the same day).
+The 26 patches apply exactly and every other file is identical; the value
+reaches `Foreign.C.Error.eFTYPE` in base. The reproduction is therefore
+exact only against the headers the reference was configured with, and a
+future reference rebuild should re-take `config.h` from this script.
+
 Also checked:
 
 - **Module order.** `phase2/build-order.py` over the reproduced tree, minus the
