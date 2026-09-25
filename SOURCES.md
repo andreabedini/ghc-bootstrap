@@ -14,13 +14,17 @@ says what they are, so a fresh checkout can be completed. Checksums are
 | `ghc-6.0-src.tar.bz2` | `bb7d5481963b60417a4ea51d015d2ceb7bbefcdac035d6d2df4143e839a2171a` | `https://downloads.haskell.org/~ghc/6.0/ghc-6.0-src.tar.bz2` |
 | `ghc-6.2-src.tar.bz2` | `8adfbe3d7c57de75dc7e437f188a8da73af6eff3bc444c5d7c77814016f7e298` | `https://downloads.haskell.org/~ghc/6.2/ghc-6.2-src.tar.bz2` |
 | `ghc-6.2.2-src.tar.bz2` | `a0fe7eb8d447f25fbc616cdbce2bb4e03961a884c2c37969d1e23588b588a852` | `https://downloads.haskell.org/~ghc/6.2.2/ghc-6.2.2-src.tar.bz2` |
+| `ghc-6.6-src.tar.bz2` | `79b2a29136d56c8120a526188297603304dc80d3093cda76fde939df7d4dcc7e` | `https://downloads.haskell.org/~ghc/6.6/ghc-6.6-src.tar.bz2` |
+| `ghc-6.6.1-src.tar.bz2` | `489126ceeb2dbb6a85ef8d87d6792e61e1bc0d5882e4b33a7725410d796132c6` | `https://downloads.haskell.org/~ghc/6.6.1/ghc-6.6.1-src.tar.bz2` |
 | `ghc-6.10.4-src.tar.bz2` | `d66a8e52572f4ff819fe5c4e34c6dd1e84a7763e25c3fadcc222453c0bd8534d` | `https://downloads.haskell.org/~ghc/6.10.4/ghc-6.10.4-src.tar.bz2` |
 | `hugs98-plus-Sep2006.tar.gz` | `aafaca9ca544572ebef70bbe86b5eb0abaa5d7c11c0b766d7db72a46b022bed5` | `https://www.haskell.org/hugs/downloads/2006-09/hugs98-plus-Sep2006.tar.gz` |
 
 The 6.2.2 tarball's checksum is also asserted by `phase4/reproduce-6.2.2.sh`.
 The chain uses 4.08.2 (phases 2-3) and 6.2.2 (phase 4); 5.00.2, 6.0 and
 6.10.4 were candidates measured in phase 1 and D44, and 6.2 was fetched
-alongside 6.2.2 and never opened.
+alongside 6.2.2 and never opened. 6.6 is the next rung: `build/ghc66-by-622`
+builds it with the chain's 6.2.2 (2026-09-25); 6.6.1 was fetched as a
+fallback and never opened.
 
 ## `MicroHs/`
 
@@ -56,7 +60,8 @@ the tarballs is scratch.
 
 ## Extractions and outputs
 
-Every `ghc-*` directory under `build/`, `phase0/hugs98-plus-Sep2006`,
+Every `ghc-*` directory under `build/`, `build/ghc66-by-622/{src,src-verify}`,
+`build/ghc66-by-622/ghc622-inst/src`, `phase0/hugs98-plus-Sep2006`,
 `build/repro-622`, `build/rebase622/{ghc-6.0,ghc-6.2.2,try622}` and
 `build/rts622/ghc-6.2.2` are extractions of the tarballs above, some with a
 patch series applied; the series and the scripts that apply them are tracked,

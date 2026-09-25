@@ -36,6 +36,8 @@
 !/build/hsc2hs-mhs/hsc2hs
 !/build/happy-mhs/datadir/HappyTemplate
 !/build/ppwrap/cpphs
+!/build/ghc66-by-622/ghc622-inst/bin/ghc
+!/build/ghc66-by-622/ghc622-inst/bin/ghc-pkg
 
 # ...except inside tarball extractions and patched copies of them
 /build/downloads/
@@ -56,6 +58,9 @@
 /build/ghc622-stage2/src/
 /build/ghc622-stage2/libraries/
 /build/lexer622/includes/
+/build/ghc66-by-622/src/
+/build/ghc66-by-622/src-verify/
+/build/ghc66-by-622/ghc622-inst/src/
 
 # ...and not the outputs: objects, interfaces, Abstract C, archives, binaries
 /build/ghc-mhs/

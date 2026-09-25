@@ -1,0 +1,7 @@
+#!/bin/sh
+# GHC 6.2.2 built by the bootstrap chain (build/ghc622-stage2/ghc-stage3) as an
+# installed compiler for building GHC 6.6: -B topdir baked in, plus a side
+# package.conf holding a stub 'unix' package (6.6's stage 1 passes -package unix;
+# the one module it imports from it, System.Posix.Signals, is in 6.2.2's base).
+ulimit -s unlimited 2>/dev/null
+exec /home/andrea/code/haskell/ghc-bootstrap/build/ghc622-stage2/ghc-stage3 -B/home/andrea/code/haskell/ghc-bootstrap/build/ghc622-stage2/topdir -package-conf /home/andrea/code/haskell/ghc-bootstrap/build/ghc66-by-622/ghc622-inst/package.conf "$@"

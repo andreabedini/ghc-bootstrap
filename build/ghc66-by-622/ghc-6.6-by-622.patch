@@ -1,0 +1,69 @@
+--- ghc-6.6/configure.orig
++++ ghc-6.6/configure
+@@ -2508,7 +2508,7 @@
+       exit 1
+    else
+    $PerlCmd -v >conftest.out 2>&1
+-   if grep "v5.6" conftest.out >/dev/null 2>&1; then
++   if grep "v5\." conftest.out >/dev/null 2>&1; then
+       :
+    else
+       if grep "v5.8" conftest.out >/dev/null 2>&1; then
+--- ghc-6.6/compiler/Makefile.ghcbin.orig
++++ ghc-6.6/compiler/Makefile.ghcbin
+@@ -24,9 +24,10 @@
+ 
+ ifeq "$(GhcWithInterpreter)" "YES"
+ SRC_HC_OPTS += -DGHCI -DBREAKPOINT
+-endif
+-
++# Use threaded RTS with GHCi, so threads don't get blocked at the prompt
++# (as compiler/Makefile says); without GHCi the thr RTS way need not exist.
+ SRC_HC_OPTS += -threaded
++endif
+ 
+ odir=stage$(stage)
+ 
+--- ghc-6.6/rts/package.conf.in.orig
++++ ghc-6.6/rts/package.conf.in
+@@ -66,7 +66,10 @@
+ includes:		Stg.h
+ depends:	 	
+ hugs-options:
+-cc-options:
++/* gcc >= 14 (2026): the .hc files and the headers they include are 2006 C:
++   K&R definitions in HsBase.h, `extern inline` with gnu89 meaning in Stable.h,
++   and GHC.Show detects minInt by signed overflow (GHC added -fwrapv in 6.8). */
++cc-options:		"-std=gnu89", "-fwrapv"
+ 
+ ld-options:
+ #ifdef LEADING_UNDERSCORE
+--- /dev/null
++++ ghc-6.6/mk/build.mk
+@@ -0,0 +1,26 @@
++# GHC 6.6 built by the bootstrap chain's GHC 6.2.2 (build/ghc66-by-622).
++# The bootstrap compiler is unregisterised via-C on x86-64, gcc is 16.
++GhcUnregisterised=YES
++GhcWithInterpreter=NO
++GhcWithSMP=NO
++SplitObjs=NO
++GhcLibWays=
++GhcRTSWays=
++XMLDocWays=
++# gcc >= 14: signed overflow must wrap (GHC itself added -fwrapv in 6.8);
++# 2006 C wants gnu89 (extern inline, K&R prototypes); -fpermissive keeps the
++# implicit-declaration class as warnings.
++GhcLibHcOpts=-O -Rghc-timing -fgenerics -optc-std=gnu89 -optc-fwrapv -optc-fpermissive -optc-w
++GhcStage2HcOpts=-optc-std=gnu89 -optc-fwrapv -optc-fpermissive -optc-w
++SRC_CC_OPTS += -std=gnu89 -fwrapv -fpermissive -w
++# hsc2hs compiles a C program against libraries/base/include/HsBase.h, whose
++# K&R definitions gcc >= 14 rejects in C99 mode (the 6.2.2 chain hit the same,
++# build/hsc2hs-mhs/hsc2hs).
++SRC_HSC2HS_OPTS += --cflag=-std=gnu89 --cflag=-fpermissive --cflag=-w
++# The rts (.c and .cmm) and base's cbits are compiled through the in-place ghc,
++# so SRC_CC_OPTS never reaches them; gcc 16 defaults to gnu17, where the header
++# `extern inline` functions (Stable.h deRefStablePtr ...) become external
++# definitions in every object and the link fails with multiple definitions.
++# Give every ghc-driven C compile in the tree the same flags.
++SRC_HC_OPTS += -optc-std=gnu89 -optc-fwrapv -optc-fpermissive -optc-w
++GhcWithNativeCodeGen=NO

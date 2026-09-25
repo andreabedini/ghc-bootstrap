@@ -1,0 +1,4 @@
+#!/bin/sh
+# ghc/utils/ghc-pkg/ghc-pkg.sh for the chain's GHC 6.2.2: the stage-2 topdir's
+# package.conf plus the side conf with the stub 'unix' package.
+exec /home/andrea/code/haskell/ghc-bootstrap/build/ghc66-by-622/ghc622-inst/bin/ghc-pkg.bin -f /home/andrea/code/haskell/ghc-bootstrap/build/ghc622-stage2/topdir/package.conf -f /home/andrea/code/haskell/ghc-bootstrap/build/ghc66-by-622/ghc622-inst/package.conf ${1+"$@"}
