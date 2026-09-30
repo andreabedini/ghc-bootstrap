@@ -5,6 +5,7 @@
 #   nix-build -A cpphs     cpphs 1.20.9 from source, by mhs      (nix/cpphs.nix)
 #   nix-build -A happy     happy 1.19.5 compiled by mhs         (build/fixpoint-happy.sh)
 #   nix-build -A ghc622    GHC 6.2.2's tree, generated files regenerated (nix/ghc622.nix)
+#   nix-build -A rts622    its runtime system, libHSrts.a           (build/rts622/build-rts.sh)
 #
 # The packages live in their own scope (lib.makeScope): inside it, callPackage
 # resolves hugs, mhs, cpphs and happy to these, not to nixpkgs' packages of the
@@ -23,4 +24,5 @@ pkgs.lib.makeScope pkgs.newScope (self: {
   cpphs = self.callPackage ./nix/cpphs.nix { };
   happy = self.callPackage ./nix/happy.nix { };
   ghc622 = self.callPackage ./nix/ghc622.nix { };
+  rts622 = self.callPackage ./nix/rts622.nix { };
 })
