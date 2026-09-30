@@ -4,7 +4,7 @@
 #   nix-build -A mhs       MicroHs, generation 1 run under Hugs (phase0/bootstrap-seed.sh)
 #   nix-build -A cpphs     cpphs 1.20.9 from source, by mhs      (nix/cpphs.nix)
 #   nix-build -A happy     happy 1.19.5 compiled by mhs         (build/fixpoint-happy.sh)
-#   nix-build -A ghc622-tree  GHC 6.2.2's tree, assembled from nix/ghc622/*.nix
+#   nix-build -A ghc622    GHC 6.2.2's tree, generated files regenerated (nix/ghc622.nix)
 #
 # The packages live in their own scope (lib.makeScope): inside it, callPackage
 # resolves hugs, mhs, cpphs and happy to these, not to nixpkgs' packages of the
@@ -22,14 +22,5 @@ pkgs.lib.makeScope pkgs.newScope (self: {
   mhs = self.callPackage ./nix/mhs.nix { };
   cpphs = self.callPackage ./nix/cpphs.nix { };
   happy = self.callPackage ./nix/happy.nix { };
-
-  # GHC 6.2.2's tree: each generated file is its own derivation (nix/ghc622/).
-  ghc622-src = self.callPackage ./nix/ghc622/src.nix { };
-  ghc622-configured = self.callPackage ./nix/ghc622/configured.nix { };
-  ghc622-genprimopcode = self.callPackage ./nix/ghc622/genprimopcode.nix { };
-  ghc622-primops = self.callPackage ./nix/ghc622/primops.nix { };
-  ghc622-parsers = self.callPackage ./nix/ghc622/parsers.nix { };
-  ghc622-lexer = self.callPackage ./nix/ghc622/lexer.nix { };
-  ghc622-htypes = self.callPackage ./nix/ghc622/htypes.nix { };
-  ghc622-tree = self.callPackage ./nix/ghc622/tree.nix { };
+  ghc622 = self.callPackage ./nix/ghc622.nix { };
 })
