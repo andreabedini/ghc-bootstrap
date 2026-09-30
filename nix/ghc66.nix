@@ -1,11 +1,18 @@
 # GHC 6.6 built by the chain's GHC 6.2.2 (build/ghc66-by-622, NOTES.md):
 # unregisterised via C, no GHCi, no native code generator, no profiling, with
-# the four tree edits of ghc-6.6-by-622.patch. The tarball's pre-generated
-# Parser.hs, Lexer.hs and ParserCore.hs are used (there is no alex).
+# the four tree edits of ghc-6.6-by-622.patch.
 #
-# Two derivations: `inst`, the 6.2.2 presented as an installed compiler, and
-# the 6.6 build itself (configure, make, make install, and test/T2.hs through
-# the installed compiler). Output: an installed GHC 6.6, bin/ghc.
+# None of the tarball's generated parsers and lexers is used. The seven files
+# below are deleted after unpacking, and 6.6's own Makefile rules regenerate
+# them: Parser.y from Parser.y.pp by `gcc -E -traditional -P`, the .y files by
+# happy 1.16 -agc (nix/happy116.nix), the .x files by alex 2.1.0 -g
+# (nix/alex210.nix), the versions that made the shipped files. After the build
+# each regenerated file must equal the shipped one, modulo blank lines and LINE
+# pragmas (nix/cmp-generated.sh).
+#
+# The compiler is nix/ghc622-inst.nix. The 6.6 build runs configure, make,
+# make install, and test/T2.hs through the installed compiler. Output: an
+# installed GHC 6.6, bin/ghc.
 #
 # Non-PIE (nix-non-pie): every gcc call, including the ones both GHCs make
 # for .hc files and links, goes through the cc wrapper, so -fno-pie/-no-pie
@@ -16,65 +23,23 @@
 , gmp
 , readline
 , ncurses
-, happy
-, ghc622
-, ghc622-stage3
+, happy116
+, alex210
+, ghc622-inst
 }:
 
 let
-  nonPie = { NIX_CFLAGS_COMPILE = "-fno-pie"; NIX_CFLAGS_LINK = "-no-pie"; };
-  s3 = ghc622-stage3;
-
-  # ghc622-inst/: bin/ghc wraps stage 3 with -B its topdir and a side
-  # package.conf; bin/ghc-pkg is 6.2.2's own ghc-pkg compiled by stage 3; the
-  # side package.conf holds parsec (6.2.2's libraries/parsec, compiled by
-  # stage 3) and the empty packages unix, lang, util, text and data, which
-  # 6.6's stage 1 and utils name (NOTES.md run 1).
-  inst = stdenv.mkDerivation {
-    pname = "ghc-6.2.2-inst";
-    version = "6.2.2";
-    dontUnpack = true;
-    buildInputs = [ gmp ];
-    hardeningDisable = [ "all" ];
-    dontStrip = true;
-    env = nonPie;
-    buildPhase = ''
-      ulimit -s unlimited
-      mkdir -p $out/bin $out/libraries/parsec
-      sed "s|/home/andrea/code/haskell/ghc-bootstrap/build/ghc66-by-622/ghc622-inst|$out|" \
-        ${../build/ghc66-by-622/ghc622-inst/package.conf} > $out/package.conf
-      grep -q "$out/libraries/parsec" $out/package.conf
-      cat > $out/bin/ghc <<EOF
-      #!${stdenv.shell}
-      ulimit -s unlimited 2>/dev/null
-      exec ${s3}/bin/ghc -B${s3}/topdir -package-conf $out/package.conf "\$@"
-      EOF
-      chmod +x $out/bin/ghc; ln -s ghc $out/bin/ghc-6.2.2
-      $out/bin/ghc --numeric-version | grep -qx 6.2.2
-
-      # ghc-pkg from the configured tree (its Main.hs includes ghc/includes/config.h),
-      # as the checkout's from build/ghc-6.2.2-run1; its sources are the tarball's.
-      tar xjf ${ghc622.src} ghc-6.2.2/libraries/parsec
-      export TMPDIR=$NIX_BUILD_TOP/tmp; mkdir -p $TMPDIR
-      P=${ghc622}/ghc/utils/ghc-pkg
-      mkdir ghc-pkg-obj
-      (ulimit -v 8000000; $out/bin/ghc -v1 --make -cpp -DPKG_TOOL -DWANT_PRETTY -O -I$P -i$P \
-         -odir ghc-pkg-obj -hidir ghc-pkg-obj -o $out/bin/ghc-pkg.bin $P/Main.hs)
-      cat > $out/bin/ghc-pkg <<EOF
-      #!${stdenv.shell}
-      exec $out/bin/ghc-pkg.bin -f ${s3}/topdir/package.conf -f $out/package.conf \''${1+"\$@"}
-      EOF
-      chmod +x $out/bin/ghc-pkg; ln -s ghc-pkg $out/bin/ghc-pkg-6.2.2
-
-      O=$out/libraries/parsec
-      (cd ghc-6.2.2/libraries/parsec && ulimit -v 8000000 && \
-       $out/bin/ghc -v1 --make -O -fglasgow-exts -package-name parsec -odir $O -hidir $O \
-         Text/ParserCombinators/Parsec.hs Text/ParserCombinators/Parsec/*.hs)
-      (cd $O && find . -name '*.o' | sort | xargs ar rcs libHSparsec.a && find . -name '*.o' -delete)
-      test $(find $O -name '*.hi' | wc -l) = 10
-    '';
-    installPhase = "true";
-  };
+  inst = ghc622-inst;
+  generated = [
+    "compiler/parser/Parser.y"
+    "compiler/parser/Parser.hs"
+    "compiler/parser/ParserCore.hs"
+    "compiler/parser/Lexer.hs"
+    "compiler/cmm/CmmParse.hs"
+    "compiler/cmm/CmmLex.hs"
+    "compiler/main/ParsePkgConf.hs"
+  ];
+  files = builtins.concatStringsSep " " generated;
 in
 stdenv.mkDerivation {
   pname = "ghc";
@@ -85,21 +50,28 @@ stdenv.mkDerivation {
   };
   patches = [ ../build/ghc66-by-622/ghc-6.6-by-622.patch ];
   patchFlags = [ "-p1" ];
-  nativeBuildInputs = [ perl happy ];
+  nativeBuildInputs = [ perl happy116 alex210 ];
   buildInputs = [ gmp readline ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
-  env = nonPie;
-  passthru = { inherit inst; };
+  env = inst.nonPie;
 
-  postPatch = "patchShebangs .";
+  postPatch = ''
+    patchShebangs .
+    for f in ${files}; do mkdir -p $NIX_BUILD_TOP/shipped/$(dirname $f); mv $f $NIX_BUILD_TOP/shipped/$f; done
+  '';
   # build-66.sh's configure line
   configurePhase = ''
     ./configure --prefix=$out --with-ghc=${inst}/bin/ghc --with-gcc=gcc \
       CFLAGS="-std=gnu89 -fpermissive -w"
     grep -q 'with-ghc=${inst}/bin/ghc' config.log
+    grep -Eq '^HAPPY[[:space:]]*=[[:space:]]*${happy116}/bin/happy$' mk/config.mk
+    grep -Eq '^ALEX[[:space:]]*=[[:space:]]*${alex210}/bin/alex$' mk/config.mk
   '';
   preBuild = "ulimit -s unlimited";
+  postBuild = ''
+    for f in ${files}; do sh ${./cmp-generated.sh} $f $NIX_BUILD_TOP/shipped/$f; done
+  '';
   enableParallelBuilding = false;
 
   # test/T2.hs by the installed compiler, with no extra flags (NOTES.md,
