@@ -9,6 +9,10 @@
 #   nix-build -A ghc622-stage1  its compiler proper, compiled by mhs  (build/ghc622-mhs/build.sh)
 #   nix-build -A ghc622-base    libraries/base, compiled by stage 1   (build/Makefile base)
 #   nix-build -A ghc622-stage2  the native compiler, by stage 1      (build/Makefile stage2, test)
+#   nix-build -A ghc622-stage3  the compiler again, by stage 2       (build/Makefile stage3, test3)
+#   nix-build -A ghc622-stage4  and by stage 3                       (build/Makefile stage4)
+#   nix-build -A ghc622-stage5  its .hc by stage 4                   (build/Makefile stage5)
+#   nix-build -A ghc622-fixpoint  stage 5's .hc = stage 4's         (build/Makefile compare3-5)
 #
 # The packages live in their own scope (lib.makeScope): inside it, callPackage
 # resolves hugs, mhs, cpphs and happy to these, not to nixpkgs' packages of the
@@ -31,4 +35,8 @@ pkgs.lib.makeScope pkgs.newScope (self: {
   ghc622-stage1 = self.callPackage ./nix/ghc622-stage1.nix { };
   ghc622-base = self.callPackage ./nix/ghc622-base.nix { };
   ghc622-stage2 = self.callPackage ./nix/ghc622-stage2.nix { };
+  ghc622-stage3 = self.callPackage ./nix/ghc622-native.nix { stage = 3; compiler = self.ghc622-stage2; };
+  ghc622-stage4 = self.callPackage ./nix/ghc622-native.nix { stage = 4; compiler = self.ghc622-stage3; };
+  ghc622-stage5 = self.callPackage ./nix/ghc622-native.nix { stage = 5; compiler = self.ghc622-stage4; link = false; };
+  ghc622-fixpoint = self.callPackage ./nix/ghc622-fixpoint.nix { };
 })

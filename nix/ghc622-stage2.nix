@@ -13,7 +13,8 @@
 # haskell98 (30 modules), hc (the 220 modules to .hi/.hc, ~4 hours), and the
 # result (.hc -> .o, link, and the Hello.hs acceptance test).
 # Output: bin/ghc and topdir/ (use as `ghc -B$out/topdir`).
-{ stdenv
+{ lib
+, stdenv
 , runCommand
 , python3
 , gmp
@@ -100,8 +101,14 @@ let
   # In three chunks of about 45 minutes (by the 2026-09-15 run's times), each
   # starting from the previous one's output: the whole compile is over two
   # hours, and a derivation cannot resume. Parser (18 min) ends chunk 2.
-  hcChunk = { part, from, to, prev ? null }: stdenv.mkDerivation {
-    pname = "ghc-6.2.2-stage2-hc${toString part}";
+  #
+  # The defaults are stage 2's; stages 3-5 (nix/ghc622-native.nix) pass a
+  # native compiler as build/Makefile's STAGE3_ENV does: no fixups, no
+  # flags.tsv seed, a 30-minute timeout, and their own output directory.
+  hcChunk = { part, from, to, prev ? null, stage ? "stage2", ghc ? stage1
+            , fixups ? true, flags ? ../build/ghc622-stage2/flags.tsv, modTimeout ? 3600 }:
+  stdenv.mkDerivation {
+    pname = "ghc-6.2.2-${stage}-hc${toString part}";
     version = "6.2.2";
     dontUnpack = true;
     nativeBuildInputs = [ python3 ];
@@ -110,9 +117,9 @@ let
     buildPhase = ''
       ulimit -s unlimited
       ${mkTopdir haskell98}
-      top=$PWD/topdir; odir=$PWD/stage2
-      mkdir -p stage2 logs
-      ${if prev == null then "" else "cp -r --no-preserve=mode ${prev}/stage2/. stage2/; cp ${prev}/logs/* logs/"}
+      top=$PWD/topdir; odir=$PWD/${stage}
+      mkdir -p ${stage} logs
+      ${if prev == null then "" else "cp -r --no-preserve=mode ${prev}/${stage}/. ${stage}/; cp ${prev}/logs/* logs/"}
       cp -r --no-preserve=mode ${src}/ghc src
       SRC=$PWD/src/compiler
       idirs=
@@ -135,7 +142,7 @@ let
       attempt() {
         rm -f $hc $hi
         ( cd $SRC; ulimit -v 8000000
-          timeout 3600 ${stage1} +RTS -K50M -RTS -B$top -v1 -C \
+          timeout ${toString modTimeout} ${ghc} +RTS -K50M -RTS -B$top -v1 -C \
             -cpp -fglasgow-exts -I. -IcodeGen -InativeGen -Iparser -DOMIT_NATIVE_CODEGEN \
             '-#include' '"hschooks.h"' -recomp $idirs $1 $extra -o $hc -ohi $hi $srcf ) < /dev/null > $log 2>&1
       }
@@ -150,9 +157,9 @@ let
         dir=$(dirname $path); hc=$odir/$dir/$m.hc; hi=$odir/$dir/$m.hi; log=$PWD/logs/$m.log
         export TMPDIR=$NIX_BUILD_TOP/tmp/$m; mkdir -p $TMPDIR
         extra=$(extra_flags $path)
-        srcf=$path; [ -f ${../build/ghc622-stage2/fixups}/$path ] && srcf=${../build/ghc622-stage2/fixups}/$path
+        srcf=$path${lib.optionalString fixups "; [ -f ${../build/ghc622-stage2/fixups}/$path ] && srcf=${../build/ghc622-stage2/fixups}/$path"}
         case $path in parser/Parser.hs) opt=-Onot ;; *) opt=-O ;; esac
-        seed=$(awk -F'\t' -v m=$m '$1==m {print $2}' ${../build/ghc622-stage2/flags.tsv} | tail -1)
+        seed=$(awk -F'\t' -v m=$m '$1==m {print $2}' ${flags} | tail -1)
         case $seed in *-fno-strictness*) opt="-O -fno-strictness" ;; -O0) opt=-O0 ;; esac
         rc=0; attempt "$opt" || rc=$?
         if [ $rc != 0 ] && retryable $rc; then
@@ -163,58 +170,70 @@ let
         fi
         if [ $rc != 0 ] || [ ! -f $hc ] || [ ! -f $hi ]; then cat $log; echo "FAILED: $m"; exit 1; fi
         python3 ${hidict} $hi 0 $m >> $log
-        echo "stage2 $m: OK ($opt)"
+        echo "${stage} $m: OK ($opt)"
       done < chunk.txt
     '';
     # the .hi-boot links point into the build directory
-    installPhase = "find stage2 -type l -delete; mkdir $out; cp -r stage2 logs $out/";
+    installPhase = "find ${stage} -type l -delete; mkdir $out; cp -r ${stage} logs $out/";
   };
   hc1 = hcChunk { part = 1; from = 1; to = 111; };
   hc2 = hcChunk { part = 2; from = 112; to = 156; prev = hc1; };
   hc = hcChunk { part = 3; from = 157; to = 220; prev = hc2; };
+
+  # .hc -> .o, the link, and the Hello.hs test, for the modules of `hc` (whose
+  # output holds them under `stage`/). With `ref`, a compiler whose test/Hello.hc
+  # this one's is compared with (build/Makefile test3: reported, not a failure).
+  linked = { stage, hc, ref ? null, passthru ? { } }: stdenv.mkDerivation {
+    pname = "ghc-6.2.2-${stage}";
+    version = "6.2.2";
+    dontUnpack = true;
+    nativeBuildInputs = [ python3 ];
+    buildInputs = [ gmp ];
+    hardeningDisable = [ "all" ];
+    dontStrip = true;
+    passthru = passthru // { inherit hc; };
+
+    buildPhase = ''
+      ulimit -s unlimited
+      C=${src}/ghc/compiler
+      ccflags="-std=gnu89 -O -w -fno-pie -DNO_REGS -DUSE_MINIINTERPRETER -D__GLASGOW_HASKELL__=602
+               -I${src}/ghc/includes -I$C/parser -I$C -I${src}/libraries/base/include"
+      mkdir obj
+      # build/Makefile HC2O_STAGE2, and CC_COMPILER_C for the two C files.
+      for hc in $(cd ${hc}/${stage} && find . -name '*.hc' | sort); do
+        gcc -c -x c $ccflags -fwrapv -include ${src}/ghc/includes/Stg.h \
+            ${hc}/${stage}/$hc -o obj/$(echo ''${hc#./} | tr / _ | sed 's/\.hc$//').o
+      done
+      test $(ls obj/*.o | wc -l) = 220
+      gcc -c $ccflags $C/parser/hschooks.c -o obj/c_hschooks.o
+      gcc -c $ccflags $C/cbits/rawSystem.c -o obj/c_rawSystem.o
+
+      # build/ghc622-stage2/link-stage2.sh: haskell98, base, rts, and rts's
+      # extra_ld_opts (the 32 -u symbols), taken from the package.conf.
+      u=$(grep -o '"-u", "[A-Za-z_0-9]*"' ${../build/ghc622-stage2/topdir/package.conf} | sed 's/"-u", "\(.*\)"/-u \1/')
+      test $(echo "$u" | wc -l) = 32
+      gcc -no-pie -o ghc obj/*.o -L${haskell98} -L${ghc622-base}/lib -L${rts622}/lib \
+          -lHShaskell98 -lHSbase -lHSbase_cbits -lHSrts -lm -lgmp -ldl $u
+
+      # The acceptance test (build/Makefile test): stage 2 compiles Hello.hs.
+      ${mkTopdir haskell98}
+      mkdir test; cp ${../build/ghc622-stage2/test/Hello.hs} test/Hello.hs
+      (cd test && TMPDIR=$NIX_BUILD_TOP ../ghc -B../topdir -v1 -C -O Hello.hs)
+      python3 ${hidict} test/Hello.hi 0 Main${lib.optionalString (ref != null) ''
+
+      if cmp -s test/Hello.hc ${ref}/test/Hello.hc; then echo "${ref.pname} and ${stage} agree on test/Hello.hc"
+      else echo "${ref.pname} and ${stage} DIFFER on test/Hello.hc: $(diff test/Hello.hc ${ref}/test/Hello.hc | grep -c '^[<>]') lines"; fi''}
+    '';
+
+    installPhase = ''
+      install -Dm755 ghc $out/bin/ghc
+      cp -r topdir $out/topdir
+      mkdir $out/test; cp test/Hello.hc test/Hello.hi $out/test/
+    '';
+  };
 in
-stdenv.mkDerivation {
-  pname = "ghc-6.2.2-stage2";
-  version = "6.2.2";
-  dontUnpack = true;
-  nativeBuildInputs = [ python3 ];
-  buildInputs = [ gmp ];
-  hardeningDisable = [ "all" ];
-  dontStrip = true;
-  passthru = { inherit src haskell98 hc1 hc2 hc; };
-
-  buildPhase = ''
-    ulimit -s unlimited
-    C=${src}/ghc/compiler
-    ccflags="-std=gnu89 -O -w -fno-pie -DNO_REGS -DUSE_MINIINTERPRETER -D__GLASGOW_HASKELL__=602
-             -I${src}/ghc/includes -I$C/parser -I$C -I${src}/libraries/base/include"
-    mkdir obj
-    # build/Makefile HC2O_STAGE2, and CC_COMPILER_C for the two C files.
-    for hc in $(cd ${hc}/stage2 && find . -name '*.hc' | sort); do
-      gcc -c -x c $ccflags -fwrapv -include ${src}/ghc/includes/Stg.h \
-          ${hc}/stage2/$hc -o obj/$(echo ''${hc#./} | tr / _ | sed 's/\.hc$//').o
-    done
-    test $(ls obj/*.o | wc -l) = 220
-    gcc -c $ccflags $C/parser/hschooks.c -o obj/c_hschooks.o
-    gcc -c $ccflags $C/cbits/rawSystem.c -o obj/c_rawSystem.o
-
-    # build/ghc622-stage2/link-stage2.sh: haskell98, base, rts, and rts's
-    # extra_ld_opts (the 32 -u symbols), taken from the package.conf.
-    u=$(grep -o '"-u", "[A-Za-z_0-9]*"' ${../build/ghc622-stage2/topdir/package.conf} | sed 's/"-u", "\(.*\)"/-u \1/')
-    test $(echo "$u" | wc -l) = 32
-    gcc -no-pie -o ghc obj/*.o -L${haskell98} -L${ghc622-base}/lib -L${rts622}/lib \
-        -lHShaskell98 -lHSbase -lHSbase_cbits -lHSrts -lm -lgmp -ldl $u
-
-    # The acceptance test (build/Makefile test): stage 2 compiles Hello.hs.
-    ${mkTopdir haskell98}
-    mkdir test; cp ${../build/ghc622-stage2/test/Hello.hs} test/Hello.hs
-    (cd test && TMPDIR=$NIX_BUILD_TOP ../ghc -B../topdir -v1 -C -O Hello.hs)
-    python3 ${hidict} test/Hello.hi 0 Main
-  '';
-
-  installPhase = ''
-    install -Dm755 ghc $out/bin/ghc
-    cp -r topdir $out/topdir
-    mkdir $out/test; cp test/Hello.hc test/Hello.hi $out/test/
-  '';
+linked {
+  stage = "stage2";
+  inherit hc;
+  passthru = { inherit src haskell98 hc1 hc2 hcChunk linked; };
 }
