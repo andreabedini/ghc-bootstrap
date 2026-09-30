@@ -133,7 +133,8 @@ let
   '';
 
 in
-runCommand "ghc-6.2.2-tree" { } ''
+# passthru: base's GHC/PrimopWrappers.hs comes from the same genprimopcode.
+runCommand "ghc-6.2.2-tree" { passthru.genprimopcode = ghc622-genprimopcode; } ''
   cp -a ${ghc622-configured} $out
   chmod -R u+w $out
   C=$out/ghc/compiler
