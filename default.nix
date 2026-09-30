@@ -13,6 +13,7 @@
 #   nix-build -A ghc622-stage4  and by stage 3                       (build/Makefile stage4)
 #   nix-build -A ghc622-stage5  its .hc by stage 4                   (build/Makefile stage5)
 #   nix-build -A ghc622-fixpoint  stage 5's .hc = stage 4's         (build/Makefile compare3-5)
+#   nix-build -A ghc66     GHC 6.6, built by stage 3               (build/ghc66-by-622)
 #
 # The packages live in their own scope (lib.makeScope): inside it, callPackage
 # resolves hugs, mhs, cpphs and happy to these, not to nixpkgs' packages of the
@@ -39,4 +40,5 @@ pkgs.lib.makeScope pkgs.newScope (self: {
   ghc622-stage4 = self.callPackage ./nix/ghc622-native.nix { stage = 4; compiler = self.ghc622-stage3; };
   ghc622-stage5 = self.callPackage ./nix/ghc622-native.nix { stage = 5; compiler = self.ghc622-stage4; link = false; };
   ghc622-fixpoint = self.callPackage ./nix/ghc622-fixpoint.nix { };
+  ghc66 = self.callPackage ./nix/ghc66.nix { };
 })
