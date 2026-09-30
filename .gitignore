@@ -10,6 +10,10 @@
 /MicroHs/
 /nhc98/
 
+# ---- nix-build's links into the store (default.nix) ----
+/result
+/result-*
+
 # ---- phase0: the Hugs extraction and its install prefix ----
 /phase0/hugs98-plus-Sep2006/
 /phase0/prefix/
