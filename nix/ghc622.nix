@@ -133,8 +133,18 @@ let
   '';
 
 in
-# passthru: base's GHC/PrimopWrappers.hs comes from the same genprimopcode.
-runCommand "ghc-6.2.2-tree" { passthru.genprimopcode = ghc622-genprimopcode; } ''
+# passthru: later stages reuse these (base: genprimopcode; stage 2: the
+# pristine tarball with the same generated parsers and primop tables).
+runCommand "ghc-6.2.2-tree"
+  {
+    passthru = {
+      src = ghc622-src;
+      genprimopcode = ghc622-genprimopcode;
+      parsers = ghc622-parsers;
+      primops = ghc622-primops;
+    };
+  }
+  ''
   cp -a ${ghc622-configured} $out
   chmod -R u+w $out
   C=$out/ghc/compiler

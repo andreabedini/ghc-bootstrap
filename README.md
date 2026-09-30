@@ -193,7 +193,7 @@ phase3/build-cbits.sh           # cbits            -> .o
 DECISIONS.md          the decision log, D1-D51: every choice and every wrong turn
 BOOTSTRAP-ANALYSIS.md why this chain, and why not a shorter one (2026-09-02, with status notes)
 PATCHES.md            the two patch series, grouped by what each patch is really about
-default.nix, nix/     the chain's first links as Nix derivations: nix-build -A hugs|mhs|cpphs|happy|ghc622|rts622|ghc622-stage1|ghc622-base
+default.nix, nix/     the chain's first links as Nix derivations: nix-build -A hugs|mhs|cpphs|happy|ghc622|rts622|ghc622-stage1|ghc622-base|ghc622-stage2
 phase0/               surveying candidate compilers; the Hugs -> MicroHs seed (feature-scan.py)
 phase1/               ghc-on-mhs: shims, import inventory, happy analysis
 phase2/               building hsc: patches 0001-0024, build order, cpp pipeline;

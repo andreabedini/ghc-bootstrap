@@ -8,6 +8,7 @@
 #   nix-build -A rts622    its runtime system, libHSrts.a           (build/rts622/build-rts.sh)
 #   nix-build -A ghc622-stage1  its compiler proper, compiled by mhs  (build/ghc622-mhs/build.sh)
 #   nix-build -A ghc622-base    libraries/base, compiled by stage 1   (build/Makefile base)
+#   nix-build -A ghc622-stage2  the native compiler, by stage 1      (build/Makefile stage2, test)
 #
 # The packages live in their own scope (lib.makeScope): inside it, callPackage
 # resolves hugs, mhs, cpphs and happy to these, not to nixpkgs' packages of the
@@ -29,4 +30,5 @@ pkgs.lib.makeScope pkgs.newScope (self: {
   rts622 = self.callPackage ./nix/rts622.nix { };
   ghc622-stage1 = self.callPackage ./nix/ghc622-stage1.nix { };
   ghc622-base = self.callPackage ./nix/ghc622-base.nix { };
+  ghc622-stage2 = self.callPackage ./nix/ghc622-stage2.nix { };
 })

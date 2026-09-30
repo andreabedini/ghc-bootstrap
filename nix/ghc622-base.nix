@@ -53,6 +53,7 @@ stdenv.mkDerivation {
   nativeBuildInputs = [ python3 ];
   hardeningDisable = [ "all" ];
   dontFixup = true;
+  passthru = { inherit unlit; };  # stage 2's topdir has the same unlit
 
   buildPhase = ''
     runHook preBuild
