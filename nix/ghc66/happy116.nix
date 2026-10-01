@@ -1,5 +1,5 @@
 # happy 1.16, the version that generated GHC 6.6's Parser.hs and
-# ParserCore.hs, compiled by the chain's GHC 6.2.2 (nix/ghc622-inst.nix)
+# ParserCore.hs, compiled by the chain's GHC 6.2.2 (nix/ghc622/inst.nix)
 # without Cabal, from its Hackage tarball, and with none of the parsers that
 # tarball ships:
 #
@@ -9,17 +9,17 @@
 #          release's were; gen 2 regenerates them again and the build fails
 #          unless its output is gen 1's, byte for byte (the fixed point)
 #
-# The release's src/Parser.hs must equal gen 1's (nix/cmp-generated.sh);
+# The release's src/Parser.hs must equal gen 1's (nix/ghc66/cmp-generated.sh);
 # AttrGrammarParser.hs cannot: happy 1.15 made it, with different code.
-# Templates: Setup.lhs's cpp step (nix/cpp-template.sh). The one source change
-# is nix/shims622/Data/Version.hs, which 6.2.2's base lacks.
+# Templates: Setup.lhs's cpp step (nix/ghc66/cpp-template.sh). The one source change
+# is nix/ghc66/shims622/Data/Version.hs, which 6.2.2's base lacks.
 # Output: bin/happy (gen 2) and share/happy-1.16/ (the templates).
 { stdenv
 , fetchurl
 , perl
 , gmp
 , happy
-, ghc622-inst
+, ghc622
 }:
 
 stdenv.mkDerivation {
@@ -33,12 +33,12 @@ stdenv.mkDerivation {
   buildInputs = [ gmp ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
-  env = ghc622-inst.nonPie;
+  env = ghc622.nonPie;
 
   buildPhase = ''
     ulimit -s unlimited
     export TMPDIR=$NIX_BUILD_TOP/tmp; mkdir -p $TMPDIR
-    ghc=${ghc622-inst}/bin/ghc
+    ghc=${ghc622}/bin/ghc
 
     # Setup.lhs's `templates` table (the GLR templates are not needed here)
     (cd templates
@@ -75,7 +75,7 @@ stdenv.mkDerivation {
     }
 
     for p in Parser AttrGrammarParser; do ${happy}/bin/happy src/$p.ly -o src/$p.hs; done
-    sh ${../phase4/fix-generated-parsers.sh} src/Parser.hs src/AttrGrammarParser.hs
+    sh ${../../phase4/fix-generated-parsers.sh} src/Parser.hs src/AttrGrammarParser.hs
     build 1; regen 1
     sh ${./cmp-generated.sh} gen1/Parser.hs shipped/Parser.hs
     cp gen1/Parser.hs gen1/AttrGrammarParser.hs src/

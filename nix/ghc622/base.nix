@@ -12,18 +12,18 @@
 , python3
 , mhs
 , cpphs
-, ghc622
-, rts622
-, ghc622-stage1
+, tree
+, rts
+, stage1
 }:
 
 let
-  inc = "${ghc622}/ghc/includes";
+  inc = "${tree}/ghc/includes";
 
   # ghc/utils/unlit, which the driver runs on .lhs sources. K&R C.
   unlit = runCommandCC "ghc-6.2.2-unlit" { hardeningDisable = [ "all" ]; } ''
     gcc -std=gnu89 -Wno-implicit-int -Wno-implicit-function-declaration \
-        -include string.h ${ghc622}/ghc/utils/unlit/unlit.c -o $out
+        -include string.h ${tree}/ghc/utils/unlit/unlit.c -o $out
   '';
 
   # GHC 6.2.2's hsc2hs compiled by mhs, from build/hsc2hs-mhs's copy (Parser
@@ -36,12 +36,12 @@ let
     }
     ''
       mkdir -p ghc/utils
-      cp -r ${../build/hsc2hs-mhs/ghc/utils/hsc2hs} ghc/utils/hsc2hs
+      cp -r ${../../build/hsc2hs-mhs/ghc/utils/hsc2hs} ghc/utils/hsc2hs
       chmod -R u+w ghc
       ln -s ${inc} ghc/includes
       cd ghc/utils/hsc2hs
-      mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i${../build/hsc2hs-mhs/shims} \
-          -i${../phase1/shims-h98} Main -ohsc2hs
+      mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i${../../build/hsc2hs-mhs/shims} \
+          -i${../../phase1/shims-h98} Main -ohsc2hs
       install -Dm755 hsc2hs $out/bin/hsc2hs
       install -Dm644 template-hsc.h $out/share/template-hsc.h
     '';
@@ -62,18 +62,18 @@ stdenv.mkDerivation {
     # topdir: build/ghc622-mhs/topdir, with the same links.
     top=$PWD/topdir
     mkdir -p libraries $top
-    cp -r ${ghc622}/libraries/base libraries/base
+    cp -r ${tree}/libraries/base libraries/base
     chmod -R u+w libraries
-    cp ${../build/ghc622-mhs/topdir/package.conf} $top/package.conf
-    cp ${../build/ghc622-mhs/topdir/ghc-usage.txt} $top/ghc-usage.txt
+    cp ${../../build/ghc622-mhs/topdir/package.conf} $top/package.conf
+    cp ${../../build/ghc622-mhs/topdir/ghc-usage.txt} $top/ghc-usage.txt
     cp ${unlit} $top/unlit
     ln -s ${inc} $top/includes
-    ln -s ${rts622}/lib $top/rts
+    ln -s ${rts}/lib $top/rts
     ln -s ../libraries $top/libraries
     cd libraries/base
 
-    ${ghc622.genprimopcode}/bin/genprimopcode --make-haskell-wrappers \
-      < ${ghc622}/ghc/compiler/prelude/primops.txt > GHC/PrimopWrappers.hs
+    ${tree.genprimopcode}/bin/genprimopcode --make-haskell-wrappers \
+      < ${tree}/ghc/compiler/prelude/primops.txt > GHC/PrimopWrappers.hs
     # mk/suffix.mk's %.hs: %.hsc with base's HSC2HS_OPTS, and the driver
     # script's --cflag=-std=gnu89 (HsBase.h has K&R definitions).
     for h in System/CPUTime System/Time System/Posix/Signals Text/Regex/Posix; do
@@ -84,12 +84,12 @@ stdenv.mkDerivation {
 
     # build/mk/compile-base.sh, one module at a time in dependency order.
     compile() {
-      timeout 1800 ${ghc622-stage1}/bin/ghc +RTS -K5M -RTS -B$top -v1 -C \
+      timeout 1800 ${stage1}/bin/ghc +RTS -K5M -RTS -B$top -v1 -C \
         -fglasgow-exts -cpp -Iinclude '-#include' HsBase.h -funbox-strict-fields \
         -package-name base -O "$@" $src > $log 2>&1
     }
     mkdir -p ../../logs ../../obj
-    for m in $(cat ${../build/ghc622-mhs/diag/base-rebuild-order.txt}); do
+    for m in $(cat ${../../build/ghc622-mhs/diag/base-rebuild-order.txt}); do
       p=$(echo $m | tr . /); log=../../logs/$m.log
       if [ -f $p.lhs ]; then src=$p.lhs; else src=$p.hs; fi
       export TMPDIR=$NIX_BUILD_TOP/tmp/$m; mkdir -p $TMPDIR
@@ -98,7 +98,7 @@ stdenv.mkDerivation {
         rc=0; compile -fno-strictness || rc=$?; note=" [-fno-strictness]"
       fi
       if [ $rc != 0 ] || [ ! -f $p.hc ] || [ ! -f $p.hi ]; then cat $log; echo "FAILED: $m"; exit 1; fi
-      python3 ${../build/ghc622-mhs/test/hidict.py} $p.hi 0 $m >> $log
+      python3 ${../../build/ghc622-mhs/test/hidict.py} $p.hi 0 $m >> $log
       echo "base $m: OK$note"
 
       # build/Makefile HC2O_BASE; -fwrapv is mandatory.
@@ -111,7 +111,7 @@ stdenv.mkDerivation {
     # build-cbits.sh: cbits/*.c minus ilxstubs and consUtils (regex/ is
     # excluded: HavePosixRegex = YES), and the Control.Concurrent stub.
     cflags="-std=gnu89 -O -w -fno-pie -DNO_REGS -DUSE_MINIINTERPRETER -DCOMPILING_STDLIB
-            -D__GLASGOW_HASKELL__=622 -I${inc} -I${ghc622}/ghc/rts"
+            -D__GLASGOW_HASKELL__=622 -I${inc} -I${tree}/ghc/rts"
     mkdir ../../cbits
     for c in cbits/*.c; do
       b=$(basename $c .c)

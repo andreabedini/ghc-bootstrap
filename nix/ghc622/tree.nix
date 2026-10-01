@@ -25,7 +25,7 @@ let
   # into boxed arrays (build/lexer622/FINDINGS.md). Output: the file itself.
   ghc622-lexer = runCommand "ghc-6.2.2-Lexer.hs" { nativeBuildInputs = [ python3 ]; } ''
     tar xjf ${ghc622-src} --strip-components=4 ghc-6.2.2/ghc/compiler/parser/Lexer.hs
-    python3 ${../phase4/convert-lexer.py} Lexer.hs $out
+    python3 ${../../phase4/convert-lexer.py} Lexer.hs $out
   '';
 
   # The three happy grammars, with the portable template (no -agc), then the
@@ -37,7 +37,7 @@ let
     for y in $ys; do
       mkdir -p $out/$(dirname $y)
       happy $y.y -o $out/$y.hs
-      sh ${../phase4/fix-generated-parsers.sh} $out/$y.hs
+      sh ${../../phase4/fix-generated-parsers.sh} $out/$y.hs
     done
   '';
 
@@ -51,9 +51,9 @@ let
     }
     ''
       tar xjf ${ghc622-src} --strip-components=4 ghc-6.2.2/ghc/utils/genprimopcode/Main.hs
-      patch -s Main.hs ${../phase4/genprimopcode-Main.hs.patch}
-      cp ${../build/shims-6.2.2-run1/Parsec.hs} Parsec.hs
-      mhs -XCPP -i. -i${../phase1/shims-h98} Main -ogenprimopcode
+      patch -s Main.hs ${../../phase4/genprimopcode-Main.hs.patch}
+      cp ${../../build/shims-6.2.2-run1/Parsec.hs} Parsec.hs
+      mhs -XCPP -i. -i${../../phase1/shims-h98} Main -ogenprimopcode
       install -Dm755 genprimopcode $out/bin/genprimopcode
     '';
 
@@ -72,7 +72,7 @@ let
 
     patchPhase = ''
       runHook prePatch
-      for p in ${../phase4/patches}/*.patch; do
+      for p in ${../../phase4/patches}/*.patch; do
         msg=$(patch -p1 -N -i $p 2>&1) || { echo "$msg"; echo "FAILED: $p"; exit 1; }
         case $msg in *fuzz*|*offset*) echo "$msg"; echo "INEXACT: $p"; exit 1 ;; esac
       done
@@ -128,7 +128,7 @@ let
   # The HTYPE_* defines configure's K&R probes no longer produce under
   # gcc >= 14 (DECISIONS.md D47). Output: the block to append to config.h.
   ghc622-htypes = runCommandCC "ghc-6.2.2-htypes.h" { } ''
-    gcc -O -w -o gen-htypes ${../phase4/gen-htypes.c}
+    gcc -O -w -o gen-htypes ${../../phase4/gen-htypes.c}
     ./gen-htypes > $out
   '';
 

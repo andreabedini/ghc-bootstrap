@@ -18,44 +18,44 @@
 , runCommand
 , python3
 , gmp
-, ghc622
-, rts622
-, ghc622-stage1
-, ghc622-base
+, tree
+, rts
+, stage1
+, base
 }:
 
 let
-  hidict = ../build/ghc622-mhs/test/hidict.py;
-  stage1 = "${ghc622-stage1}/bin/ghc";
+  hidict = ../../build/ghc622-mhs/test/hidict.py;
+  ghc1 = "${stage1}/bin/ghc";
 
   # Config.hs is phase2/gen-6.2.2's with the booter's version (LOG.md).
   src = runCommand "ghc-6.2.2-stage2-src" { } ''
     mkdir $out
-    tar xjf ${ghc622.src} -C $out --strip-components=1 \
+    tar xjf ${tree.src} -C $out --strip-components=1 \
       ghc-6.2.2/ghc ghc-6.2.2/mk ghc-6.2.2/libraries/base ghc-6.2.2/libraries/haskell98
     chmod -R u+w $out
     C=$out/ghc/compiler
-    cp -r --no-preserve=mode ${ghc622.parsers}/. $C/
-    cp ${ghc622.primops}/primops.txt $C/prelude/
-    cp ${ghc622.primops}/primop-*.hs-incl $C/
+    cp -r --no-preserve=mode ${tree.parsers}/. $C/
+    cp ${tree.primops}/primops.txt $C/prelude/
+    cp ${tree.primops}/primop-*.hs-incl $C/
     sed 's/^cBooterVersion        = "4.08.2"$/cBooterVersion        = "6.2.2"/' \
-      ${../phase2/gen-6.2.2/Config.hs} > $C/main/Config.hs
+      ${../../phase2/gen-6.2.2/Config.hs} > $C/main/Config.hs
     grep -q '"6.2.2"' $C/main/Config.hs
     rm -r $out/ghc/includes
-    cp -r --no-preserve=mode ${ghc622}/ghc/includes $out/ghc/includes
+    cp -r --no-preserve=mode ${tree}/ghc/includes $out/ghc/includes
   '';
 
   # build/ghc622-stage2/topdir: an "installed" layout. $1 = the directory
   # holding haskell98's .hi files and libHShaskell98.a.
   mkTopdir = h98: ''
     mkdir -p topdir/libraries
-    cp ${../build/ghc622-stage2/topdir/package.conf} topdir/package.conf
-    cp ${../build/ghc622-stage2/topdir/ghc-usage.txt} topdir/ghc-usage.txt
-    cp ${ghc622-base.unlit} topdir/unlit
+    cp ${../../build/ghc622-stage2/topdir/package.conf} topdir/package.conf
+    cp ${../../build/ghc622-stage2/topdir/ghc-usage.txt} topdir/ghc-usage.txt
+    cp ${base.unlit} topdir/unlit
     ln -s ${src}/ghc/includes topdir/includes
-    ln -s ${rts622}/lib topdir/rts
-    ln -s ${ghc622-base}/libraries/base topdir/libraries/base
-    ln -s ${ghc622-base}/lib topdir/libraries/base-lib
+    ln -s ${rts}/lib topdir/rts
+    ln -s ${base}/libraries/base topdir/libraries/base
+    ln -s ${base}/lib topdir/libraries/base-lib
     ln -s ${h98} topdir/libraries/haskell98
   '';
 
@@ -78,7 +78,7 @@ let
                MarshalError MarshalUtils Maybe Monad Ptr Random Ratio StablePtr \
                Storable System Time Word; do
         export TMPDIR=$NIX_BUILD_TOP/tmp/$m; mkdir -p $TMPDIR
-        (ulimit -v 8000000; timeout 1800 ${stage1} +RTS -K20M -RTS -B$NIX_BUILD_TOP/topdir \
+        (ulimit -v 8000000; timeout 1800 ${ghc1} +RTS -K20M -RTS -B$NIX_BUILD_TOP/topdir \
            -v1 -C -O -package-name haskell98 -package base $m.hs) > $m.log 2>&1 \
           || { cat $m.log; echo "FAILED: $m"; exit 1; }
         python3 ${hidict} $m.hi 0 $m >> $m.log
@@ -102,11 +102,11 @@ let
   # starting from the previous one's output: the whole compile is over two
   # hours, and a derivation cannot resume. Parser (18 min) ends chunk 2.
   #
-  # The defaults are stage 2's; stages 3-5 (nix/ghc622-native.nix) pass a
+  # The defaults are stage 2's; stages 3-5 (nix/ghc622/native.nix) pass a
   # native compiler as build/Makefile's STAGE3_ENV does: no fixups, no
   # flags.tsv seed, a 30-minute timeout, and their own output directory.
-  hcChunk = { part, from, to, prev ? null, stage ? "stage2", ghc ? stage1
-            , fixups ? true, flags ? ../build/ghc622-stage2/flags.tsv, modTimeout ? 3600 }:
+  hcChunk = { part, from, to, prev ? null, stage ? "stage2", ghc ? ghc1
+            , fixups ? true, flags ? ../../build/ghc622-stage2/flags.tsv, modTimeout ? 3600 }:
   stdenv.mkDerivation {
     pname = "ghc-6.2.2-${stage}-hc${toString part}";
     version = "6.2.2";
@@ -151,13 +151,13 @@ let
           grep -q -e 'ERR:' -e panic -e impossible -e exhausted -e 'stack overflow' \
                   -e Killed -e Segmentation -e 'out of memory' $log
       }
-      sed -n '${toString from},${toString to}p' ${../build/ghc622-stage2/order.txt} > chunk.txt
+      sed -n '${toString from},${toString to}p' ${../../build/ghc622-stage2/order.txt} > chunk.txt
       test $(wc -l < chunk.txt) = ${toString (to - from + 1)}
       while read -r m path; do
         dir=$(dirname $path); hc=$odir/$dir/$m.hc; hi=$odir/$dir/$m.hi; log=$PWD/logs/$m.log
         export TMPDIR=$NIX_BUILD_TOP/tmp/$m; mkdir -p $TMPDIR
         extra=$(extra_flags $path)
-        srcf=$path${lib.optionalString fixups "; [ -f ${../build/ghc622-stage2/fixups}/$path ] && srcf=${../build/ghc622-stage2/fixups}/$path"}
+        srcf=$path${lib.optionalString fixups "; [ -f ${../../build/ghc622-stage2/fixups}/$path ] && srcf=${../../build/ghc622-stage2/fixups}/$path"}
         case $path in parser/Parser.hs) opt=-Onot ;; *) opt=-O ;; esac
         seed=$(awk -F'\t' -v m=$m '$1==m {print $2}' ${flags} | tail -1)
         case $seed in *-fno-strictness*) opt="-O -fno-strictness" ;; -O0) opt=-O0 ;; esac
@@ -210,14 +210,14 @@ let
 
       # build/ghc622-stage2/link-stage2.sh: haskell98, base, rts, and rts's
       # extra_ld_opts (the 32 -u symbols), taken from the package.conf.
-      u=$(grep -o '"-u", "[A-Za-z_0-9]*"' ${../build/ghc622-stage2/topdir/package.conf} | sed 's/"-u", "\(.*\)"/-u \1/')
+      u=$(grep -o '"-u", "[A-Za-z_0-9]*"' ${../../build/ghc622-stage2/topdir/package.conf} | sed 's/"-u", "\(.*\)"/-u \1/')
       test $(echo "$u" | wc -l) = 32
-      gcc -no-pie -o ghc obj/*.o -L${haskell98} -L${ghc622-base}/lib -L${rts622}/lib \
+      gcc -no-pie -o ghc obj/*.o -L${haskell98} -L${base}/lib -L${rts}/lib \
           -lHShaskell98 -lHSbase -lHSbase_cbits -lHSrts -lm -lgmp -ldl $u
 
       # The acceptance test (build/Makefile test): stage 2 compiles Hello.hs.
       ${mkTopdir haskell98}
-      mkdir test; cp ${../build/ghc622-stage2/test/Hello.hs} test/Hello.hs
+      mkdir test; cp ${../../build/ghc622-stage2/test/Hello.hs} test/Hello.hs
       (cd test && TMPDIR=$NIX_BUILD_TOP ../ghc -B../topdir -v1 -C -O Hello.hs)
       python3 ${hidict} test/Hello.hi 0 Main${lib.optionalString (ref != null) ''
 

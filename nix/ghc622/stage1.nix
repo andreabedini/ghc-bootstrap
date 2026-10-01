@@ -9,11 +9,11 @@
 , python3
 , mhs
 , cpphs
-, ghc622
+, tree
 }:
 
 let
-  W = ../build/ghc622-mhs;
+  W = ../../build/ghc622-mhs;
 in
 stdenv.mkDerivation {
   pname = "ghc-6.2.2-stage1";
@@ -25,13 +25,13 @@ stdenv.mkDerivation {
 
   buildPhase = ''
     runHook preBuild
-    TREE=${ghc622}/ghc/compiler
+    TREE=${tree}/ghc/compiler
     # __GLASGOW_HASKELL__=408: see build/probe-ordered-622.sh.
     hscpp="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__"
-    inc="-i${../phase2/hsboot-6.2.2-run1} -i${../build/shims-6.2.2-run1} -i${../phase1/shims}
-         -i${../phase1/shims-ghc} -i${../phase1/shims-h98} -i${../phase2/gen-6.2.2}"
+    inc="-i${../../phase2/hsboot-6.2.2-run1} -i${../../build/shims-6.2.2-run1} -i${../../phase1/shims}
+         -i${../../phase1/shims-ghc} -i${../../phase1/shims-h98} -i${../../phase2/gen-6.2.2}"
     for d in $TREE/*/; do inc="$inc -i''${d%/}"; done
-    inc="$inc -i$TREE -I$TREE -I${ghc622}/ghc/includes"
+    inc="$inc -i$TREE -I$TREE -I${tree}/ghc/includes"
 
     ulimit -s unlimited 2>/dev/null || ulimit -s 4000000
     echo "stack: $(ulimit -s)"

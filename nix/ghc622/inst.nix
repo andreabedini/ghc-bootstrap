@@ -4,20 +4,20 @@
 # by stage 3; the side package.conf holds parsec (6.2.2's libraries/parsec,
 # compiled by stage 3) and the empty packages unix, lang, util, text and data,
 # which 6.6's stage 1 and utils name (build/ghc66-by-622/NOTES.md run 1).
-# Used to build GHC 6.6 (nix/ghc66.nix) and the happy and alex that
-# regenerate its parsers (nix/happy116.nix, nix/alex210.nix).
+# Used to build GHC 6.6 (nix/ghc66/ghc.nix) and the happy and alex that
+# regenerate its parsers (nix/ghc66/happy116.nix, nix/ghc66/alex210.nix).
 #
 # Non-PIE (nix-non-pie): the wrapped ghc calls gcc itself for .hc files and
 # links, so -fno-pie/-no-pie go through the cc wrapper.
 { stdenv
 , gmp
-, ghc622
-, ghc622-stage3
+, tree
+, stage3
 }:
 
 let
   nonPie = { NIX_CFLAGS_COMPILE = "-fno-pie"; NIX_CFLAGS_LINK = "-no-pie"; };
-  s3 = ghc622-stage3;
+  s3 = stage3;
 in
 stdenv.mkDerivation {
   pname = "ghc-6.2.2-inst";
@@ -32,7 +32,7 @@ stdenv.mkDerivation {
     ulimit -s unlimited
     mkdir -p $out/bin $out/libraries/parsec
     sed "s|/home/andrea/code/haskell/ghc-bootstrap/build/ghc66-by-622/ghc622-inst|$out|" \
-      ${../build/ghc66-by-622/ghc622-inst/package.conf} > $out/package.conf
+      ${../../build/ghc66-by-622/ghc622-inst/package.conf} > $out/package.conf
     grep -q "$out/libraries/parsec" $out/package.conf
     cat > $out/bin/ghc <<EOF
     #!${stdenv.shell}
@@ -44,9 +44,9 @@ stdenv.mkDerivation {
 
     # ghc-pkg from the configured tree (its Main.hs includes ghc/includes/config.h),
     # as the checkout's from build/ghc-6.2.2-run1; its sources are the tarball's.
-    tar xjf ${ghc622.src} ghc-6.2.2/libraries/parsec
+    tar xjf ${tree.src} ghc-6.2.2/libraries/parsec
     export TMPDIR=$NIX_BUILD_TOP/tmp; mkdir -p $TMPDIR
-    P=${ghc622}/ghc/utils/ghc-pkg
+    P=${tree}/ghc/utils/ghc-pkg
     mkdir ghc-pkg-obj
     (ulimit -v 8000000; $out/bin/ghc -v1 --make -cpp -DPKG_TOOL -DWANT_PRETTY -O -I$P -i$P \
        -odir ghc-pkg-obj -hidir ghc-pkg-obj -o $out/bin/ghc-pkg.bin $P/Main.hs)

@@ -5,12 +5,12 @@
 # None of the tarball's generated parsers and lexers is used. The seven files
 # below are deleted after unpacking, and 6.6's own Makefile rules regenerate
 # them: Parser.y from Parser.y.pp by `gcc -E -traditional -P`, the .y files by
-# happy 1.16 -agc (nix/happy116.nix), the .x files by alex 2.1.0 -g
-# (nix/alex210.nix), the versions that made the shipped files. After the build
+# happy 1.16 -agc (nix/ghc66/happy116.nix), the .x files by alex 2.1.0 -g
+# (nix/ghc66/alex210.nix), the versions that made the shipped files. After the build
 # each regenerated file must equal the shipped one, modulo blank lines and LINE
-# pragmas (nix/cmp-generated.sh).
+# pragmas (nix/ghc66/cmp-generated.sh).
 #
-# The compiler is nix/ghc622-inst.nix. The 6.6 build runs configure, make,
+# The compiler is nix/ghc622/inst.nix. The 6.6 build runs configure, make,
 # make install, and test/T2.hs through the installed compiler. Output: an
 # installed GHC 6.6, bin/ghc.
 #
@@ -25,11 +25,11 @@
 , ncurses
 , happy116
 , alex210
-, ghc622-inst
+, ghc622
 }:
 
 let
-  inst = ghc622-inst;
+  inst = ghc622;
   generated = [
     "compiler/parser/Parser.y"
     "compiler/parser/Parser.hs"
@@ -48,7 +48,7 @@ stdenv.mkDerivation {
     url = "https://downloads.haskell.org/~ghc/6.6/ghc-6.6-src.tar.bz2";
     sha256 = "79b2a29136d56c8120a526188297603304dc80d3093cda76fde939df7d4dcc7e";
   };
-  patches = [ ../build/ghc66-by-622/ghc-6.6-by-622.patch ];
+  patches = [ ../../build/ghc66-by-622/ghc-6.6-by-622.patch ];
   patchFlags = [ "-p1" ];
   nativeBuildInputs = [ perl happy116 alex210 ];
   buildInputs = [ gmp readline ncurses ];
@@ -78,7 +78,7 @@ stdenv.mkDerivation {
   # "Verification"); the expected output is T2's by construction.
   doInstallCheck = true;
   installCheckPhase = ''
-    mkdir t2; cp ${../build/ghc66-by-622/test/T2.hs} t2/T2.hs
+    mkdir t2; cp ${../../build/ghc66-by-622/test/T2.hs} t2/T2.hs
     (cd t2 && $out/bin/ghc -v0 --make T2.hs -o t2 && ./t2 > out.txt)
     cat > t2/expected.txt <<'EOF'
     hello from ghc 6.6 built by 6.2.2

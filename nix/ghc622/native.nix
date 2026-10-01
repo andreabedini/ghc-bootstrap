@@ -4,15 +4,15 @@
 #   stage 3  by stage 2 (compiled by stage 1, the mhs-built compiler)
 #   stage 4  by stage 3
 #   stage 5  by stage 4, .hi/.hc only: the fixed-point check compares them
-#            with stage 4's (nix/ghc622-fixpoint.nix)
+#            with stage 4's (nix/ghc622/fixpoint.nix)
 #
-# The compile and link are stage 2's (nix/ghc622-stage2.nix hcChunk and
+# The compile and link are stage 2's (nix/ghc622/stage2.nix hcChunk and
 # linked) with STAGE3_ENV's settings: no fixups (they only stand in for what
 # the MicroHs runtime cannot read), no flags.tsv seed (it records stage 1's
 # needs), a 30-minute timeout. The topdir is stage 2's: base and haskell98
 # stay the ones stage 1 compiled, as in the Makefile. A native compile is
 # about 20 times faster than stage 1's, so one derivation holds all 220.
-{ ghc622-stage2
+{ stage2
 , compiler
 , stage
 , link ? true
@@ -20,7 +20,7 @@
 
 let
   name = "stage${toString stage}";
-  hc = ghc622-stage2.hcChunk {
+  hc = stage2.hcChunk {
     part = "";
     from = 1;
     to = 220;
@@ -31,4 +31,4 @@ let
     modTimeout = 1800;
   };
 in
-if link then ghc622-stage2.linked { stage = name; inherit hc; ref = compiler; } else hc
+if link then stage2.linked { stage = name; inherit hc; ref = compiler; } else hc

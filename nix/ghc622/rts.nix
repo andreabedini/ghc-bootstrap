@@ -11,7 +11,7 @@
 , runCommandCC
 , mhs
 , cpphs
-, ghc622
+, tree
 }:
 
 let
@@ -24,9 +24,9 @@ let
       hardeningDisable = [ "all" ];
     }
     ''
-      cp ${ghc622}/ghc/utils/genapply/GenApply.hs .
-      mhs -XCPP -D__GLASGOW_HASKELL__=622 -DNO_REGS -I${ghc622}/ghc/utils/genapply \
-          -i. -i${../build/rts622/genapply/shim} GenApply.hs -ogenapply
+      cp ${tree}/ghc/utils/genapply/GenApply.hs .
+      mhs -XCPP -D__GLASGOW_HASKELL__=622 -DNO_REGS -I${tree}/ghc/utils/genapply \
+          -i. -i${../../build/rts622/genapply/shim} GenApply.hs -ogenapply
       ./genapply > $out
     '';
 in
@@ -40,14 +40,14 @@ stdenv.mkDerivation {
 
   unpackPhase = ''
     mkdir ghc
-    cp -r ${ghc622}/ghc/rts ${ghc622}/ghc/includes ghc/
+    cp -r ${tree}/ghc/rts ${tree}/ghc/includes ghc/
     chmod -R u+w ghc
     cp ${autoApply} AutoApply.hc
   '';
 
   # build/rts622/patches, exactly: cast-as-lvalue, GC.c linkage, mblock map.
   patchPhase = ''
-    for p in ${../build/rts622/patches}/*.patch; do
+    for p in ${../../build/rts622/patches}/*.patch; do
       msg=$(patch -p1 -N -i $p 2>&1) || { echo "$msg"; echo "FAILED: $p"; exit 1; }
       case $msg in *fuzz*|*offset*) echo "$msg"; echo "INEXACT: $p"; exit 1 ;; esac
     done

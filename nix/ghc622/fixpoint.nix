@@ -13,15 +13,15 @@
 # and the compiler binaries of stages 3 and 4 against each other (reported).
 # Output: report.txt.
 { runCommand
-, ghc622-stage2
-, ghc622-stage3
-, ghc622-stage4
-, ghc622-stage5
+, stage2
+, stage3
+, stage4
+, stage5
 }:
 
 runCommand "ghc-6.2.2-fixpoint" { } ''
-  s2=${ghc622-stage2.hc}/stage2 s3=${ghc622-stage3.hc}/stage3
-  s4=${ghc622-stage4.hc}/stage4 s5=${ghc622-stage5}/stage5
+  s2=${stage2.hc}/stage2 s3=${stage3.hc}/stage3
+  s4=${stage4.hc}/stage4 s5=${stage5}/stage5
   hcs=$(cd $s2 && find . -name '*.hc' | sort)
   test $(echo "$hcs" | wc -l) = 220
   # compare <newer> <older> <label>: prints the differing files and a summary;
@@ -37,10 +37,10 @@ runCommand "ghc-6.2.2-fixpoint" { } ''
     compare $s3 $s2 "stage 3 vs stage 2"
     compare $s4 $s3 "stage 4 vs stage 3"
     compare $s5 $s4 "stage 5 vs stage 4"; fixdiff=$diff
-    if cmp -s ${ghc622-stage3}/bin/ghc ${ghc622-stage4}/bin/ghc; then
+    if cmp -s ${stage3}/bin/ghc ${stage4}/bin/ghc; then
       echo "stage 3 and stage 4 bin/ghc are byte-identical"
     else
-      echo "stage 3 and stage 4 bin/ghc differ: $(cmp -l ${ghc622-stage3}/bin/ghc ${ghc622-stage4}/bin/ghc | wc -l) bytes"
+      echo "stage 3 and stage 4 bin/ghc differ: $(cmp -l ${stage3}/bin/ghc ${stage4}/bin/ghc | wc -l) bytes"
     fi
   } > report.txt
   cat report.txt
