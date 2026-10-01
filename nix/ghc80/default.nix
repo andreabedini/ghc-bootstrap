@@ -71,7 +71,7 @@ stdenv.mkDerivation {
     grep -q 'with-ghc=${ghc78}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
-  enableParallelBuilding = false;
+  enableParallelBuilding = true;   # 8.0's ghc.mk build is -j safe (nixpkgs builds it so)
 
   # nix/test/T3.hs, compiled by the installed compiler with no extra flags.
   doInstallCheck = true;

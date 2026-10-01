@@ -67,7 +67,7 @@ stdenv.mkDerivation {
     grep -q 'with-ghc=${ghc88}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
-  enableParallelBuilding = false;
+  enableParallelBuilding = true;
 
   # nix/test/T3.hs, compiled by the installed compiler with no extra flags.
   doInstallCheck = true;
