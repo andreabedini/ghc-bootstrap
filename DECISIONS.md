@@ -1728,3 +1728,96 @@ fixed point is therefore reached at stage 3, and the acceptance run is
 `make -j4 test3 && make -j4 stage5 && make compare4 compare5`.
 
 **Overturned by:** nothing yet.
+
+## D52 — 6.2.2 builds itself with its own build system; the chain climbs to 6.12.3; GMP 6.2 breaks every GHC before 8.0
+*2026-10-01, `nix/ghc622/inst.nix`, `nix/ghc610`, `nix/ghc612`, `nix/gmp612.nix`,
+`nix/test/GmpZero.hs`.* Three things happened in one day and one bug tied them
+together.
+
+**6.2.2 by its own `configure && make`.** `nix-build -A ghc622` is now 6.2.2
+built by its own build system with the chain's stage 3 as `--with-ghc`
+(`nix/ghc622/inst.nix`; the stage-3 wrapper with a side `package.conf` that
+was the installed 6.2.2 until now is `nix/ghc622/boot.nix`, and nothing but
+inst.nix uses it). A 2026 host needs: the three `build/rts622` RTS patches,
+the `gen-htypes` block appended to `mk/config.h` (D47), `-D_GNU_SOURCE` for
+hsc2hs and the C bits (`struct ucred` in network's `Socket.hsc`), the private
+`execvpe` declarations of `libraries/unix` and `hslibs/posix` removed (glibc
+has had it since 2.11, with other types), the C flags carried by the rts
+package's `extra_cc_opts` so the installed compiler passes them to gcc, a
+`happy` wrapper that applies `phase4/fix-generated-parsers.sh` to what happy
+1.19.5 writes (with `GHC_HAPPY_OPTS` and `SRC_HAPPY_OPTS` emptied), the
+shipped generated `.hs` touched, and the make output searched for `*** [`
+because fptools' loops carry on past a failing subdirectory (hslibs/posix's
+cbits did fail once and `make` still exited 0). The install has ghc, ghc-pkg,
+hsc2hs and every library of the tarball: base, haskell98, haskell-src,
+network, parsec, QuickCheck, unix and the hslibs compatibility packages.
+
+Checked: the 220 compiler modules compiled by this 6.2.2 (`hcChunk`, stage
+"stage6") are **byte-identical to stage 4's in all 220 `.hc` and 220 `.hi`**;
+the checkout's twelve test programs behave as with the boot compiler.
+
+**Why the nine steps before it stay.** 6.2.2's build system needs a working
+GHC to drive it; stage 1 is GHC's source on the MicroHs runtime, about twenty
+times slower than native and dead on some modules at `-O`. From stage 3 on
+the compiler is native, and from inst.nix on the build system is the
+compiler's own. Every later rung is one `configure && make` derivation
+(`nix/ghc66`, `nix/ghc610`, `nix/ghc612`, ...).
+
+**The ladder.** Each release's `configure.ac` names the oldest GHC that may
+build it; the jumps that keep the chain shortest are 6.2.2 → 6.6 → 6.10.4
+(≥ 6.4) → 6.12.3 (≥ 6.8) → 7.4.2 (≥ 6.12) → 7.8.4 (≥ 7.4) → 8.0.2 (≥ 7.8)
+→ 8.4.4 (≥ 8.0) → 8.8.4 (≥ 8.4) → 9.0.2 (≥ 8.8) → 9.4.8 (≥ 9.0, Hadrian
+only) → 9.8.4 (≥ 9.4) → 9.12 (≥ 9.6). Built today: **6.10.4 by 6.6** (libffi
+needed a plain `ar`; its configure made `AR` "ar q") and **6.12.3 by
+6.10.4**, both unregisterised via C and both registerised: with
+`GhcUnregisterised = NO`, `GhcWithNativeCodeGen = YES` and `-fasm` for the
+libraries and stage 2, the unregisterised 6.10.4 compiles a stage 1 that then
+generates native x86-64 code for everything else. `ghc --info` of that
+6.12.3 says Unregisterised NO, NCG YES, tables next to code YES; it passes
+`nix/test/T3.hs` with no diagnostics and is half the size. From 6.12 on the
+chain is registerised (`registerised ? true`), which makes every later rung
+several times faster to build. 6.12.3 needed its `includes/Rts.h` blocks for
+`__GNUC__ > 4`, never compiled in 2010, disabled (one defines macros as
+`#pragma GCC visibility`).
+
+**The bug.** 6.6 built by the make-built 6.2.2 died compiling `GHC/Float.lhs`,
+three times out of three, while the same command passed 45 times outside the
+build; 7.4.2 by 6.12.3 died compiling `GHC/Show.lhs`, whichever 6.12.3 booted
+it and whichever way it was built. A gdb hook inside the build (`gdbModule`
+in `nix/ghc66/ghc.nix` and `nix/ghc74/default.nix`: the in-place compiler
+runs under `gdb -batch -ex run -ex bt` for the one compile) gave the same
+picture twice: SIGSEGV in `evacuate`, from `scavenge_stack` (6.6) or
+`scavenge_block` (7.4), on an address in the mmap region, and `info symbol`
+named it: **`table.0+152`, sixteen bytes before libgmp's `dummy_limb`**.
+GMP 6.2 (2020) made `mpz_init` lazy: a zero-valued result that an mpz
+function returns early (`mpz_mul` by zero, `mpz_tdiv_q` with |a| < |b|, ...)
+keeps `_mp_d` at a static dummy limb instead of memory the GHC runtime
+allocated in the Haskell heap. Every GHC before 8.0 (6.2.2's `J#` in the RTS,
+integer-gmp 0.x's Cmm wrappers) takes `_mp_d - sizeof(StgArrWords)` as the
+`ByteArray#` closure, so the collector evacuates a pointer into libgmp's
+data segment and dies when the word there is not an info pointer. Whether
+it dies depends on what that word is and on which zeros are live at a
+collection, hence the maddening reproducibility. `nix/test/GmpZero.hs`
+makes 2.4 million such zeros live across collections: a program compiled by
+the make-built 6.2.2 segfaults with GMP 6.3 and prints `(2400000,0)` with GMP
+6.1.2 substituted by `LD_LIBRARY_PATH` — the same binary. The hand chain's
+stage-1 base, with `-fno-strictness` on nine modules, had merely shifted the
+allocation pattern enough to pass; the nine flags I had copied into inst.nix
+on that theory were a red herring and are gone.
+
+**Decision.** `nix/gmp612.nix` builds GMP 6.1.2 (the last before the lazy
+`mpz_init`; `--disable-assembly`, `-std=gnu11` for gcc 15's C23 default, no
+`-no-pie` on a shared library), and every rung before 8.0 — stage 2's link,
+stages 3-5, boot, inst, happy 1.16, alex 2.1.0, 6.6, 6.10.4, 6.12.3, 7.4.2,
+7.8.4 — takes it instead of the host's GMP. 8.0's integer-gmp works on limbs
+and is fine with any GMP. The chain is rebuilt from the stage-2 link; the
+`.hc` of stages 2-5 do not depend on GMP, so the fixed point must come out
+unchanged. Rejected: patching the RTS and integer-gmp to copy a result whose
+`_mp_d` is not heap-allocated (two code bases, and the distros' answer to
+this bug was the GMP version too); using GHC's in-tree GMP (4.1 in 6.2.2,
+built with gcc 15, a port of its own). A caveat for anyone using these
+compilers outside Nix: a program they compile binds to whatever
+`libgmp.so.10` the loader finds unless the GMP 6.1.2 directory is on its
+path; inside Nix the cc wrapper's rpath takes care of it.
+
+**Overturned by:** nothing yet.

@@ -58,6 +58,30 @@ From Hackage (`https://hackage.haskell.org/package/happy-<version>/happy-<versio
 Only 1.19.5 is built (`build/build-happy-mhs.sh`); the extraction next to
 the tarballs is scratch.
 
+## Fetched by the Nix derivations
+
+Not kept in the checkout; `fetchurl` in the derivation named, with the hash
+there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~ghc/<v>/`.
+
+| input | derivation | hash |
+|---|---|---|
+| `ghc-6.2.2-src.tar.bz2`, `ghc-6.6-src.tar.bz2`, `ghc-6.10.4-src.tar.bz2` | `nix/ghc622/tree.nix`, `nix/ghc66/ghc.nix`, `nix/ghc610` | as in the table above |
+| `ghc-6.12.3-src.tar.bz2` | `nix/ghc612` | `sha256-bL2+QVAR8sfRXk2FB1jY05P3Bhe4jLMjfSxgK7YOXmg=` |
+| `ghc-7.4.2-src.tar.bz2` | `nix/ghc74` | `sha256-8u4SiaM8xwU5KHEphBrMfq8WESu2DFm1pu6RiHv9g20=` |
+| `ghc-7.8.4-src.tar.xz` | `nix/ghc78` | `sha256-wxnNlK2yhBd+0ObSFUbtC5AK2EuGuHwGqZ6sNRUpgsQ=` |
+| `ghc-8.0.2-src.tar.xz` | `nix/ghc80` | `sha256-EWJUU+HQaGs/pnOZiPcOysg2ytwwufDItJ75CR1hGLE=` |
+| `ghc-8.4.4-src.tar.xz` | `nix/ghc84` | `sha256-ERF3NaWOUHxIHAnz85rloxTp+/SfwxCVKPmep5WQBLI=` |
+| `ghc-8.8.4-src.tar.xz` | `nix/ghc88` | `sha256-8FBeOLIjX/nxCQtR9E1sjv03EGjlprtCoqbYtntf/C0=` |
+| `ghc-9.0.2-src.tar.xz` | `nix/ghc90` | `sha256-FA5CuWNGMi0aOesXYCvNx24pICitSmkoayMLqxiKkZc=` |
+| `happy-1.16.tar.gz`, `alex-2.1.0.tar.gz` (Hackage) | `nix/ghc66/happy116.nix`, `nix/ghc66/alex210.nix` | in the files |
+| `gmp-6.1.2.tar.xz` (`ftp.gnu.org/gnu/gmp/`) | `nix/gmp612.nix` | `sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=` |
+| `hugs98-plus-Sep2006.tar.gz`, MicroHs, cpphs 1.20.9 | `nix/hugs.nix`, `nix/mhs.nix`, `nix/cpphs.nix` | in the files |
+
+GMP 6.1.2 is the GMP every compiler before 8.0 links against: GMP 6.2's lazy
+`mpz_init` breaks their Integer (DECISIONS.md D52). The host's GMP serves
+8.0 and later. The release tarballs used to pick the rungs are those whose
+`configure.ac` accepts the previous rung as the bootstrapping compiler.
+
 ## Extractions and outputs
 
 Every `ghc-*` directory under `build/`, `build/ghc66-by-622/{src,src-verify}`,

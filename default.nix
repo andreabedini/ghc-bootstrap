@@ -11,6 +11,16 @@
 #                          .stage4 .stage5 .fixpoint)
 #   nix-build -A ghc66     GHC 6.6, configure and make with that 6.2.2
 #                          (nix/ghc66/: .happy116 .alex210)
+#   nix-build -A ghc610    GHC 6.10.4, configure and make with that 6.6 (nix/ghc610/)
+#   nix-build -A ghc612    GHC 6.12.3, configure and make with that 6.10.4 (nix/ghc612/)
+#   nix-build -A ghc74     GHC 7.4.2, configure and make with that 6.12.3 (nix/ghc74/)
+#   nix-build -A ghc78     GHC 7.8.4, configure and make with that 7.4.2 (nix/ghc78/)
+#   nix-build -A ghc80     GHC 8.0.2, configure and make with that 7.8.4 (nix/ghc80/)
+#   nix-build -A ghc84     GHC 8.4.4, configure and make with that 8.0.2 (nix/ghc84/)
+#   nix-build -A ghc88     GHC 8.8.4, configure and make with that 8.4.4 (nix/ghc88/)
+#   nix-build -A ghc90     GHC 9.0.2, configure and make with that 8.8.4 (nix/ghc90/)
+#                          Each rung is the newest release whose configure accepts the
+#                          one before as the bootstrapping compiler. Drafts until built.
 #
 # The packages live in their own scope (lib.makeScope): inside it, callPackage
 # resolves hugs, mhs, cpphs, happy and ghc622 to these, not to nixpkgs'
@@ -28,6 +38,15 @@ pkgs.lib.makeScope pkgs.newScope (self: {
   mhs = self.callPackage ./nix/mhs.nix { };
   cpphs = self.callPackage ./nix/cpphs.nix { };
   happy = self.callPackage ./nix/happy.nix { };
+  gmp612 = self.callPackage ./nix/gmp612.nix { };
   ghc622 = self.callPackage ./nix/ghc622 { };
   ghc66 = self.callPackage ./nix/ghc66 { };
+  ghc610 = self.callPackage ./nix/ghc610 { };
+  ghc612 = self.callPackage ./nix/ghc612 { };
+  ghc74 = self.callPackage ./nix/ghc74 { };
+  ghc78 = self.callPackage ./nix/ghc78 { };
+  ghc80 = self.callPackage ./nix/ghc80 { };
+  ghc84 = self.callPackage ./nix/ghc84 { };
+  ghc88 = self.callPackage ./nix/ghc88 { };
+  ghc90 = self.callPackage ./nix/ghc90 { };
 })

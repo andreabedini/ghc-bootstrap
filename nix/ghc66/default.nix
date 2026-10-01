@@ -11,13 +11,14 @@
 # cpp-template.sh, cmp-generated.sh and shims622/ are theirs.
 { lib
 , newScope
+, gdbModule ? null   # diagnostic, see ghc.nix
 }:
 
 let
   parts = lib.makeScope newScope (self: {
     happy116 = self.callPackage ./happy116.nix { };
     alex210 = self.callPackage ./alex210.nix { };
-    ghc = self.callPackage ./ghc.nix { };
+    ghc = self.callPackage ./ghc.nix { inherit gdbModule; };
   });
 in
 parts.ghc // { inherit (parts) happy116 alex210; }

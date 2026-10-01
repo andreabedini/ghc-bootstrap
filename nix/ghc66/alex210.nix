@@ -17,7 +17,7 @@
 { stdenv
 , fetchurl
 , perl
-, gmp
+, gmp612
 , happy116
 , ghc622
 }:
@@ -30,7 +30,7 @@ stdenv.mkDerivation {
     sha256 = "0b9c1246ca6ef27df4bfcb16d13cf7525d943ba2edc897d628605e1c9bd7d58b";
   };
   nativeBuildInputs = [ perl ];
-  buildInputs = [ gmp ];
+  buildInputs = [ gmp612 ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
   env = ghc622.nonPie;

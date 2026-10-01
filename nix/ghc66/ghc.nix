@@ -18,14 +18,20 @@
 # for .hc files and links, goes through the cc wrapper, so -fno-pie/-no-pie
 # are given there rather than in each Makefile.
 { stdenv
+, lib
 , fetchurl
 , perl
-, gmp
+, gmp612
 , readline
 , ncurses
 , happy116
 , alex210
 , ghc622
+, gdb
+, gdbModule ? null
+  # diagnostic: a source path fragment (e.g. "GHC/Float.lhs"); the in-place
+  # compiler runs under `gdb -batch -ex run -ex bt` for the compile whose
+  # arguments contain it, so a crash leaves its backtrace in the build log
 }:
 
 let
@@ -50,15 +56,30 @@ stdenv.mkDerivation {
   };
   patches = [ ../../build/ghc66-by-622/ghc-6.6-by-622.patch ];
   patchFlags = [ "-p1" ];
-  nativeBuildInputs = [ perl happy116 alex210 ];
-  buildInputs = [ gmp readline ncurses ];
+  nativeBuildInputs = [ perl happy116 alex210 ] ++ lib.optional (gdbModule != null) gdb;
+  buildInputs = [ gmp612 readline ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
   env = inst.nonPie;
+  passthru = { inherit (inst) nonPie; };
 
   postPatch = ''
     patchShebangs .
     for f in ${files}; do mkdir -p $NIX_BUILD_TOP/shipped/$(dirname $f); mv $f $NIX_BUILD_TOP/shipped/$f; done
+  '' + lib.optionalString (gdbModule != null) ''
+    mkdir -p $NIX_BUILD_TOP/bin
+    cat > $NIX_BUILD_TOP/bin/gdbwrap <<'EOF'
+    #!${stdenv.shell}
+    case "$*" in
+      *" -c "*${gdbModule}*) echo "== gdbwrap: running under gdb: $*"
+                     exec gdb -batch -ex run -ex bt -ex 'info registers' -ex 'x/8i $pc-16' -ex 'x/8gx $rbx' -ex 'info symbol $rbx' -ex 'info proc mappings' -ex 'quit 0' --args "$@" ;;
+      *) exec "$@" ;;
+    esac
+    EOF
+    chmod +x $NIX_BUILD_TOP/bin/gdbwrap
+    # compiler/Makefile writes ghc-inplace as `exec <ghc> -B<top> "$@"`
+    sed -i "s|echo exec \$(GHC_COMPILER_DIR_ABS)/\$(GHC_PROG) |echo exec $NIX_BUILD_TOP/bin/gdbwrap \$(GHC_COMPILER_DIR_ABS)/\$(GHC_PROG) |" compiler/Makefile
+    grep -q 'gdbwrap' compiler/Makefile
   '';
   # build-66.sh's configure line
   configurePhase = ''
@@ -68,7 +89,9 @@ stdenv.mkDerivation {
     grep -Eq '^HAPPY[[:space:]]*=[[:space:]]*${happy116}/bin/happy$' mk/config.mk
     grep -Eq '^ALEX[[:space:]]*=[[:space:]]*${alex210}/bin/alex$' mk/config.mk
   '';
-  preBuild = "ulimit -s unlimited";
+  # -c unlimited: a crash in the build then reaches the host's coredump
+  # handler (coredumpctl) instead of being recorded without a core.
+  preBuild = "ulimit -s unlimited; ulimit -c unlimited";
   postBuild = ''
     for f in ${files}; do sh ${./cmp-generated.sh} $f $NIX_BUILD_TOP/shipped/$f; done
   '';
@@ -89,6 +112,9 @@ stdenv.mkDerivation {
     2568
     EOF
     diff t2/expected.txt t2/out.txt
+    # GMP >= 6.2 and pre-8.0 Integers (nix/gmp612.nix, D52): zeros across GCs
+    cp ${../test/GmpZero.hs} t2/GmpZero.hs
+    (cd t2 && $out/bin/ghc -v0 -O --make GmpZero.hs -o gz && ./gz > gz.txt && printf "(2400000,0)\n" | diff - gz.txt)
     $out/bin/ghc --numeric-version | grep -qx 6.6
   '';
 }

@@ -17,7 +17,7 @@
 , stdenv
 , runCommand
 , python3
-, gmp
+, gmp612
 , tree
 , rts
 , stage1
@@ -188,7 +188,7 @@ let
     version = "6.2.2";
     dontUnpack = true;
     nativeBuildInputs = [ python3 ];
-    buildInputs = [ gmp ];
+    buildInputs = [ gmp612 ];
     hardeningDisable = [ "all" ];
     dontStrip = true;
     passthru = passthru // { inherit hc; };
