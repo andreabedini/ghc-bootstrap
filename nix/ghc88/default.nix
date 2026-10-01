@@ -37,7 +37,7 @@ stdenv.mkDerivation {
     GhcWithInterpreter = NO
     GhcWithSMP = NO
     GhcLibWays = v
-    GhcRTSWays =
+    GhcRTSWays = thr
     DYNAMIC_BY_DEFAULT = NO
     DYNAMIC_GHC_PROGRAMS = NO
     DYNAMIC_TOO = NO
@@ -52,14 +52,14 @@ stdenv.mkDerivation {
     GhcStage1HcOpts = -O
     GhcStage2HcOpts = -O${if registerised then " -fasm" else ""}
     GhcLibHcOpts = -O${if registerised then " -fasm" else ""}
-    SRC_HC_OPTS = -H64m -O -optc-std=gnu89 -optc-fpermissive -optc-w -optc-fwrapv
-    SRC_CC_OPTS += -std=gnu89 -fpermissive -w -fwrapv
-    SRC_HSC2HS_OPTS += --cflag=-std=gnu89 --cflag=-fpermissive --cflag=-w
+    SRC_HC_OPTS = -H64m -O -optc-std=gnu11 -optc-w
+    SRC_CC_OPTS += -std=gnu11 -w
+    SRC_HSC2HS_OPTS += --cflag=-std=gnu11 --cflag=-w
     EOF
   '';
   configurePhase = ''
     ./configure --prefix=$out --with-ghc=${ghc84}/bin/ghc --with-gcc=gcc \
-      CFLAGS="-std=gnu89 -fpermissive -w"
+      CFLAGS="-std=gnu11 -w"
     grep -q 'with-ghc=${ghc84}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl

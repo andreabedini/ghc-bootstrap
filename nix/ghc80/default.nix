@@ -3,7 +3,11 @@
 # false`), no GHCi, static only. 8.0.2
 # asks for a 7.8 or later as the bootstrapping compiler; 7.10 is skipped.
 # The tarball ships Parser.hs, Lexer.hs, CmmParse.hs and CmmLex.hs and its
-# own libffi. Docs are Sphinx now (BUILD_SPHINX_*, BUILD_MAN).
+# own libffi. Docs are Sphinx now (BUILD_SPHINX_*, BUILD_MAN). The C flags
+# change here: -std=gnu11 -w instead of the -std=gnu89 -fpermissive -fwrapv
+# the 2004-2012 sources and their generated C needed (integer-gmp's cbits
+# are C99), and the host's GMP: 8.0's integer-gmp works on limbs and does
+# not meet GMP 6.2's lazy mpz_init (D52).
 #
 # Guix patches 8.0.2's rts/posix/OSMem.c to fall back from MADV_FREE to
 # MADV_DONTNEED at run time; 8.0.2 already tries MADV_FREE first and the
@@ -42,7 +46,7 @@ stdenv.mkDerivation {
     GhcWithInterpreter = NO
     GhcWithSMP = NO
     GhcLibWays = v
-    GhcRTSWays =
+    GhcRTSWays = thr
     DYNAMIC_BY_DEFAULT = NO
     DYNAMIC_GHC_PROGRAMS = NO
     DYNAMIC_TOO = NO
@@ -56,14 +60,14 @@ stdenv.mkDerivation {
     GhcStage1HcOpts = -O
     GhcStage2HcOpts = -O${if registerised then " -fasm" else ""}
     GhcLibHcOpts = -O${if registerised then " -fasm" else ""}
-    SRC_HC_OPTS = -H64m -O -optc-std=gnu89 -optc-fpermissive -optc-w -optc-fwrapv
-    SRC_CC_OPTS += -std=gnu89 -fpermissive -w -fwrapv
-    SRC_HSC2HS_OPTS += --cflag=-std=gnu89 --cflag=-fpermissive --cflag=-w
+    SRC_HC_OPTS = -H64m -O -optc-std=gnu11 -optc-w
+    SRC_CC_OPTS += -std=gnu11 -w
+    SRC_HSC2HS_OPTS += --cflag=-std=gnu11 --cflag=-w
     EOF
   '';
   configurePhase = ''
     ./configure --prefix=$out --with-ghc=${ghc78}/bin/ghc --with-gcc=gcc \
-      CFLAGS="-std=gnu89 -fpermissive -w"
+      CFLAGS="-std=gnu11 -w"
     grep -q 'with-ghc=${ghc78}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl

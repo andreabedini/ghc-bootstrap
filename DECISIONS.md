@@ -1820,4 +1820,13 @@ compilers outside Nix: a program they compile binds to whatever
 `libgmp.so.10` the loader finds unless the GMP 6.1.2 directory is on its
 path; inside Nix the cc wrapper's rpath takes care of it.
 
+**Addendum, the same evening.** On GMP 6.1.2 the chain rebuilt without
+incident: 6.2.2 by make, 6.6, 6.10.4, 6.12.3 (registerised) and then
+**7.4.2** (registerised, NCG, tables next to code, 215 MB), every one
+passing its install check with `GmpZero` included; 7.4.2 compiles and runs
+`GmpZero` outside the build too. The fixed point is unchanged and stage 4's
+440 `.hc`/`.hi` are byte-identical to before the GMP change. **7.8.4** by
+7.4.2 followed (registerised, static, `DYNAMIC_* = NO`, GMP 6.1.2, 270 MB,
+install check passed), the last rung that needs GMP 6.1.2.
+
 **Overturned by:** nothing yet.
