@@ -41,11 +41,16 @@ stdenv.mkDerivation {
   env = ghc90.nonPie;
   passthru = { inherit (ghc90) nonPie; };
 
-  # Upstream d61f7428 (#21478), the patch Guix applies to 9.0-9.4: the make
+  # Upstream d61f7428 (#21478) as Guix carries it for 9.0-9.4: the make
   # build system linked rts/StgCRunAsm.S into the RTS on every architecture,
   # and on x86-64 that object is empty and carries no .note.GNU-stack, so
-  # every program linked against the RTS was marked as needing an
-  # executable stack. Hadrian never had the problem; make never got the fix.
+  # with a binutils before 2.44 every program linked against the RTS was
+  # marked as needing an executable stack. Hadrian never had the problem;
+  # make never got the fix. The commit as it is on GitLab is a no-op: its
+  # ifneq joins the four $(findstring ...) with spaces, so the compared
+  # string is never empty; Guix's copy removes the spaces, and so does this
+  # one (checked with a two-line Makefile and by finding StgCRunAsm.o in
+  # the libHSrts.a of a 9.0.2 built with the GitLab text).
   patches = [ ../ghc90/StgCRunAsm-only-when-needed.patch ];
 
   postPatch = ''
@@ -90,7 +95,9 @@ stdenv.mkDerivation {
     mkdir t; cp ${../test/T3.hs} t/T3.hs
     (cd t && $out/bin/ghc -v0 --make T3.hs -o t3 && ./t3 > out.txt)
     diff ${../test/T3.out} t/out.txt
-    # the StgCRunAsm patch: programs must not ask for an executable stack
+    # the StgCRunAsm patch: no StgCRunAsm.o in the RTS, no executable stack
+    ar t $out/lib/*/rts/libHSrts.a | grep -q StgCRun.o
+    ! ar t $out/lib/*/rts/libHSrts.a | grep -q StgCRunAsm.o
     readelf -lW t/t3 | grep -E 'GNU_STACK.* RW ' > /dev/null
     $out/bin/ghc --numeric-version | grep -qx 9.4.8
   '';
