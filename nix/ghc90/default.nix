@@ -62,7 +62,7 @@ stdenv.mkDerivation {
     EOF
   '';
   configurePhase = ''
-    ./configure --prefix=$out --with-ghc=${ghc88}/bin/ghc --with-gcc=gcc \
+    ./configure --prefix=$out --with-ghc=${ghc88}/bin/ghc CC=gcc \
       CFLAGS="-std=gnu11 -w"
     grep -q 'with-ghc=${ghc88}/bin/ghc' config.log
   '';
