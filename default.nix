@@ -23,8 +23,9 @@
 #                          9.4 keeps the make build system for a boot GHC < 9.1)
 #   nix-build -A ghc98     GHC 9.8.4, Hadrian (bootstrapped by bootstrap.py from a plan
 #                          with Nix-fetched sources, nix/hadrian-ghc.nix) with that 9.4.8 (nix/ghc98/)
-#   nix-build -A ghc914    GHC 9.14.1, Hadrian with that 9.8.4 (nix/ghc914/; 9.14 accepts a 9.6)
-#   nix-build -A ghc912    GHC 9.12.4, Hadrian with that 9.8.4 (nix/ghc912/; fallback, off the ladder)
+#   nix-build -A ghc912    GHC 9.12.4, Hadrian with that 9.8.4 (nix/ghc912/)
+#   nix-build -A ghc914    GHC 9.14.1, Hadrian with that 9.12.4 (nix/ghc914/; configure says
+#                          a 9.6 would do, stage 0 needs 9.10's ghc-internal)
 #                          Each rung is the newest release whose configure accepts the
 #                          one before as the bootstrapping compiler. Drafts until built.
 #

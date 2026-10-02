@@ -1,9 +1,10 @@
 # GHC 9.12.4 built by the chain's GHC 9.8.4 (nix/ghc98) with Hadrian
 # (nix/hadrian-ghc.nix). 9.12.4 asks for a 9.6 or later as the bootstrapping
 # compiler. Its hadrian/bootstrap/ has a plan for exactly a 9.8.4 boot
-# compiler, plan-bootstrap-9_8_4.json, copied here verbatim. Not on the
-# shortest ladder (9.14.1 accepts a 9.6 too, nix/ghc914); kept as the
-# fallback should 9.14.1 refuse a 9.8 boot in practice.
+# compiler, plan-bootstrap-9_8_4.json, copied here verbatim. 9.14.1's
+# configure accepts a 9.6 too, but its stage-0 ghci needs the boot
+# compiler's ghc-internal, which exists from 9.10 on (nix/ghc914), so this
+# is the rung between 9.8.4 and 9.14.1.
 #
 # Of the patches nixpkgs applies to 9.12.4 none is for x86-64 Linux with
 # glibc: include-modern-utimbuf is Windows-only, the adjustor stack overrun
