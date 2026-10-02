@@ -65,7 +65,7 @@ stdenv.mkDerivation {
     url = "https://downloads.haskell.org/~ghc/9.8.4/ghc-9.8.4-src.tar.xz";
     sha256 = "17e8188f3c8a5c2f73fb4e35d01032e8dc258835ec876d52c8ad8ee3d24b2fc5";
   };
-  nativeBuildInputs = [ perl python3 autoconf automake m4 ghc94 ];
+  nativeBuildInputs = [ perl python3 autoconf automake m4 ghc94 ghc94.happy120 ghc94.alex327 ];
   buildInputs = [ gmp ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
