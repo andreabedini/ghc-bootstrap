@@ -75,6 +75,8 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | `ghc-9.0.2-src.tar.xz` | `nix/ghc90` | `sha256-FA5CuWNGMi0aOesXYCvNx24pICitSmkoayMLqxiKkZc=` |
 | `ghc-9.4.8-src.tar.xz` | `nix/ghc94` | `sha256-C/QH62f+PjwksPTI3qjLY+B/Y8oPds8gWFZRQ1B6uF4=` |
 | `ghc-9.8.4-src.tar.xz` | `nix/ghc98` | `sha256-F+gYjzyKXC9z+0410BAy6NwliDXsh21SyK2O49JLL8U=` |
+| `happy-1.20.1.1.tar.gz`, `alex-3.2.7.4.tar.gz` (Hackage) | `nix/ghc94/happy120.nix`, `nix/ghc94/alex327.nix` | in the files |
+| `src/Parser.ly`, `src/AttrGrammarParser.ly` at the `1.20.1.1` tag of github.com/haskell/happy (the Hackage tarball ships only the generated parsers) | `nix/ghc94/happy120.nix` | in the file |
 | Hadrian's 18 bootstrap dependencies (Hackage tarballs and revised `.cabal` files: shake 0.19.8, QuickCheck 2.14.3, ...) | `nix/ghc98/plan-bootstrap-9_4_4.json`, copied from `ghc-9.8.4/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
 | `happy-1.16.tar.gz`, `alex-2.1.0.tar.gz` (Hackage) | `nix/ghc66/happy116.nix`, `nix/ghc66/alex210.nix` | in the files |
 | `gmp-6.1.2.tar.xz` (`ftp.gnu.org/gnu/gmp/`) | `nix/gmp612.nix` | `sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=` |
