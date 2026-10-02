@@ -1,8 +1,15 @@
 # GHC 8.8.4 built by the chain's GHC 8.4.4 (nix/ghc84): configure and make,
 # registerised with the native code generator (via C with `registerised =
-# false`), no GHCi, static only. 8.8.4
+# false`), GHCi, static only. 8.8.4
 # asks for an 8.4 or later as the bootstrapping compiler; 8.6 is skipped.
 # The tarball ships Parser.hs, Lexer.hs, CmmParse.hs and CmmLex.hs.
+#
+# GhcWithInterpreter = YES from 8.8 on: 8.8.4's compiler/main/DynFlags.hs
+# imports Foreign (Ptr) only `#if defined(GHCI)` but its stage-2
+# SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a GHCi-less 8.8.4 does
+# not compile ("Not in scope: type constructor or class `Ptr'", any boot
+# compiler). GHCi with static libraries is the standard configuration
+# (nixpkgs, Guix); it costs the ghci library, iserv and the RTS linker.
 #
 # Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
 # 8.8.4, bin/ghc.
@@ -34,7 +41,7 @@ stdenv.mkDerivation {
     cat > mk/build.mk <<'EOF'
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
-    GhcWithInterpreter = NO
+    GhcWithInterpreter = YES
     GhcWithSMP = NO
     GhcLibWays = v
     GhcRTSWays = thr

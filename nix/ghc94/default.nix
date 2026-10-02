@@ -4,14 +4,17 @@
 # MaxBootWithMakeGhcVersion, "Note [Support for building ghc 9.4 with the
 # make build system]"), which a 9.0.2 is; nixpkgs 23.11 and Guix both build
 # 9.4 this way. Registerised with the native code generator (via C with
-# `registerised = false`), no GHCi, static only. 9.4.8 asks for a 9.0 or
+# `registerised = false`), GHCi, static only. 9.4.8 asks for a 9.0 or
 # later as the bootstrapping compiler; 9.2 is skipped. The tarball ships
 # GHC/Parser.hs, GHC/Parser/Lexer.hs, GHC/Cmm/Parser.hs and GHC/Cmm/Lexer.hs,
 # so neither happy nor alex is needed.
 #
-# Guix applies ghc-9-StgCRunAsm-only-when-needed.patch to 9.0-9.4 (the make
-# build links rts/StgCRunAsm.S on every architecture, which marks the RTS as
-# needing an executable stack); not applied until the build asks for it.
+# GhcWithInterpreter = YES from 8.8 on: 8.8.4's compiler/main/DynFlags.hs
+# imports Foreign (Ptr) only `#if defined(GHCI)` but its stage-2
+# SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a GHCi-less 8.8.4 does
+# not compile ("Not in scope: type constructor or class `Ptr'", any boot
+# compiler). GHCi with static libraries is the standard configuration
+# (nixpkgs, Guix); it costs the ghci library, iserv and the RTS linker.
 #
 # Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
 # 9.4.8, bin/ghc.
@@ -38,12 +41,19 @@ stdenv.mkDerivation {
   env = ghc90.nonPie;
   passthru = { inherit (ghc90) nonPie; };
 
+  # Upstream d61f7428 (#21478), the patch Guix applies to 9.0-9.4: the make
+  # build system linked rts/StgCRunAsm.S into the RTS on every architecture,
+  # and on x86-64 that object is empty and carries no .note.GNU-stack, so
+  # every program linked against the RTS was marked as needing an
+  # executable stack. Hadrian never had the problem; make never got the fix.
+  patches = [ ../ghc90/StgCRunAsm-only-when-needed.patch ];
+
   postPatch = ''
     patchShebangs .
     cat > mk/build.mk <<'EOF'
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
-    GhcWithInterpreter = NO
+    GhcWithInterpreter = YES
     GhcWithSMP = NO
     GhcLibWays = v
     GhcRTSWays = thr
@@ -80,6 +90,8 @@ stdenv.mkDerivation {
     mkdir t; cp ${../test/T3.hs} t/T3.hs
     (cd t && $out/bin/ghc -v0 --make T3.hs -o t3 && ./t3 > out.txt)
     diff ${../test/T3.out} t/out.txt
+    # the StgCRunAsm patch: programs must not ask for an executable stack
+    readelf -lW t/t3 | grep -E 'GNU_STACK.* RW ' > /dev/null
     $out/bin/ghc --numeric-version | grep -qx 9.4.8
   '';
 }
