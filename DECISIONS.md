@@ -1936,4 +1936,38 @@ plan over. Flavour: `default` with `no_dynamic_libs`, `no_dynamic_ghc`,
 target builds the binary distribution and runs its `configure --prefix` and
 `make install`.
 
-**Overturned by:** nothing yet.
+**Addendum, the same night: 9.4.8 and 9.8.4 are built, and three more
+configuration deviations went.** 9.4.8 by make (614 MB, ~25 min with -j16)
+once happy 1.20.1.1 and alex 3.2.7.4 existed and python3 was an input
+(`rts/gen_event_types.py`). 9.8.4 by Hadrian (888 MB, ~35 min): the plan
+rewrite changed eight boot-library versions (ghc-prim 0.9.0 → 0.9.1, base
+4.17.0.0 → 4.17.2.1, …), bootstrap.py built shake and friends and Hadrian
+with the 9.4.8, Hadrian built stages 0-2 and installed through the binary
+distribution; `ghc --info` says SMP YES, tables next to code, the compiler
+runs GHCi and links a `-threaded` program outside Nix that accepts `-N2
+-qg`. Three things the first 9.8.4 attempt exposed, each resolved where it
+belongs:
+
+- *No SMP.* `GhcWithSMP = NO` had come down from the 6.x rungs (an
+  unregisterised build cannot have it). A NOSMP threaded RTS rejects `-N`
+  and `-qg` as "unknown RTS option", and `hadrian.cabal` links Hadrian
+  with `-with-rtsopts=-I0 -qg`, so the Hadrian the 9.4.8 had just built
+  died at startup. **SMP is on from 8.8 on**, with GHCi: 8.8.4, 9.0.2 and
+  9.4.8 rebuilt (`Support SMP YES`); 6.2.2-8.4.4 keep NO, they only ever
+  compile the next rung.
+- *No GMP directory.* From 9.0, ghc-bignum records a GMP library directory
+  only when configure is given `--with-gmp-libraries` (nixpkgs passes it
+  for every GHC). Without it the 9.4.8 could not link a program outside
+  Nix: its settings name the Nix gcc wrapper by store path, whose linker
+  searches no /lib64. The rungs up to 9.0 record `gcc` and resolve it on
+  PATH, which is why 8.0.2 had linked the host's libgmp "by accident".
+  9.0, 9.4 and 9.8 configure with `--with-gmp-includes/-libraries`, and the
+  install checks assert the directory in `ghc-pkg field ghc-bignum
+  library-dirs`.
+- *C23.* gcc 15 reads `extern void *realloc();` in `utils/hp2ps/Utilities.c`
+  as a function of no arguments. Upstream's fix (!13863 for #25662, in 9.10;
+  the Fedora copy nixpkgs applies to GHC < 9.10) includes stdlib.h instead:
+  `nix/ghc98/hp2ps-C-gnu17.patch`.
+
+Hadrian's `no_dynamic_libs` leaves the RTS's dyn ways in (`RTS ways` lists
+them); harmless, only build time. **Overturned by:** nothing yet.
