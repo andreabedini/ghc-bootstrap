@@ -1830,3 +1830,88 @@ passing its install check with `GmpZero` included; 7.4.2 compiles and runs
 install check passed), the last rung that needs GMP 6.1.2.
 
 **Overturned by:** nothing yet.
+
+---
+
+## D53 — The chain climbs 8.0.2 → 8.4.4 → 8.8.4 → 9.0.2 → 9.4.8 with `configure && make`; 9.8.4 is the first Hadrian rung
+*2026-10-02, `nix/ghc80` … `nix/ghc98`, `nix/ghc90/StgCRunAsm-only-when-needed.patch`.*
+
+**Built today, each by the rung before it, each `nix-build -A ghcNN`:**
+8.0.2 (374 MB, 13 min), 8.4.4 (454 MB, 16 min), 8.8.4 (557 MB), 9.0.2
+(559 MB), all registerised with the native code generator, static, the
+threaded RTS way, `make -j16` (nixpkgs builds every 8.x and later in
+parallel; the 2004-2012 build systems were kept serial), passing
+`nix/test/T3.hs`; 8.0.2 also passes `GmpZero` against the host's GMP 6.3
+outside the build, so D52's line is right: integer-gmp from 8.0 on works on
+limbs and does not care about the lazy `mpz_init`. 9.4.8 and 9.8.4: see the
+addendum.
+
+**What each rung asked for.** Every one of these was first checked against
+how nixpkgs (8.0.2 in 18.09, 8.4.4 in 19.09, 8.8.4 in 20.09, 9.0.2 in 23.05,
+9.4.8 in 23.11) and Guix build the same release; none of the fixes below is
+about the boot compiler, each would hit a GHC of that version built any way.
+
+- *8.0.2*: `-std=gnu89 -fpermissive -fwrapv`, the C flags the 2004-2012
+  sources and their generated C needed under gcc 15, break integer-gmp's
+  C99 cbits (`for` loop declarations); 8.x and later take `-std=gnu11 -w`.
+  iserv is built unconditionally and links `-lHSrts_thr`, so the threaded
+  RTS way is built (`GhcRTSWays = thr`) although the compiler itself stays
+  non-threaded.
+- *8.4.4*: `--with-gcc` is obsolete, configure takes `CC=gcc`.
+- *8.8.4*: `--with-ghc` is obsolete, configure takes `GHC=`. Then stage 2
+  died in `compiler/main/DynFlags.hs`: "Not in scope: type constructor or
+  class `Ptr'" at `SHARED_GLOBAL_VAR`. The file imports `Foreign (Ptr)`
+  only `#if defined(GHCI)` ("needed for 2nd stage") while the macro needs
+  it whenever `GHC_STAGE >= 2`; 9.0 guards the import with `GHC_STAGE >= 2`
+  instead. A GHCi-less 8.8.4 has never compiled. **Decision: from 8.8 on the
+  chain builds the interpreter** (`GhcWithInterpreter = YES`), which is the
+  configuration everyone else builds; with static libraries GHCi uses the
+  RTS linker and `print (sum [1..10])` in `ghci` says 55. Rejected: a
+  one-line patch moving the import, which would keep our 8.8 a
+  configuration nobody else has.
+- *9.0.2, 9.4.8*: Guix applies upstream d61f7428 (#21478) to 9.0-9.4: the
+  make build system links `rts/StgCRunAsm.S` into the RTS on every
+  architecture, and on x86-64 the file preprocesses to nothing, an object
+  with no `.note.GNU-stack`, so every program linked against the RTS asked
+  for an executable stack. Applied, then found to be a no-op: the commit as
+  it is on GitLab joins its four `$(findstring …)` with spaces, so the
+  `ifneq "…" ""` compares three spaces with nothing and is always true
+  (checked with a two-line Makefile; the first 9.0.2 had `StgCRunAsm.o`, 48
+  bytes, in `libHSrts.a`, and its `GNU_STACK` was RW only because binutils
+  2.46 no longer defaults to an executable stack). Guix's copy of the patch
+  has no spaces; that is the one in `nix/ghc90/`, and the install check
+  asserts `StgCRun.o` present and `StgCRunAsm.o` absent from the archive.
+  The 8.x RTSs are not affected: their `StgCRunAsm.S` carries the note.
+
+**9.4.8 does not need Hadrian.** The ladder (D52) had 9.4.8 as the first
+Hadrian-only rung. Its tarball still carries `mk/` and `ghc.mk`, and
+`configure.ac` sets `CanBootWithMake = YES` for a boot compiler older than
+9.1 ("Note [Support for building ghc 9.4 with the make build system]",
+`MaxBootWithMakeGhcVersion`); nixpkgs 23.11 builds 9.4.8 with make (and
+even lowers the floor to 8.10 for it), Guix builds 9.4.3 with make. With a
+9.0.2 boot compiler `nix/ghc94` is the 8.x derivation again.
+
+**9.8.4 is Hadrian only** (no `ghc.mk`), and it is where the build system
+stops being a tarball's own `make`: Hadrian is a Haskell program with 18
+Hackage dependencies (shake, QuickCheck, …) that would ordinarily be built
+by cabal-install. GHC ships `hadrian/bootstrap/bootstrap.py` for packagers:
+given a bare GHC and a *bootstrap plan* (a JSON file naming each dependency's
+version, Hackage revision and sha256, generated upstream with nix), it
+compiles each dependency's `Setup.hs` with the boot compiler and installs
+it into a private package database, then Hadrian itself. **Decision:**
+`nix/ghc98` uses that script, as Guix does (nixpkgs builds Hadrian from its
+own Haskell package set instead): the 9.8.4 tarball's newest plan,
+`plan-bootstrap-9_4_4.json`, is copied into `nix/ghc98/` verbatim and read
+with `builtins.fromJSON`; Nix fetches the 18 tarballs and the 18 revised
+`.cabal` files with the plan's hashes (bootstrap.py verifies the `.cabal`
+whatever the revision) and the build packs them as the `-s` sources tarball,
+so the build needs no network. The plan also names the boot compiler's own
+libraries with the versions of a 9.4.4, and bootstrap.py checks them with
+`ghc-pkg describe pkg-version`; the derivation rewrites those versions to
+what the chain's 9.4.8 has (`ghc-pkg field pkg version`) before handing the
+plan over. Flavour: `default` with `no_dynamic_libs`, `no_dynamic_ghc`,
+`no_profiled_libs`, `no_split_sections`, `--docs=none`; Hadrian's `install`
+target builds the binary distribution and runs its `configure --prefix` and
+`make install`.
+
+**Overturned by:** nothing yet.
