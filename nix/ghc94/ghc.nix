@@ -23,10 +23,11 @@
 # rungs keep NO: they only ever compile the next rung.
 #
 # --with-gmp-includes/--with-gmp-libraries as nixpkgs passes them: from 9.0
-# ghc-bignum records a GMP library directory only when told one, and
-# without it a program compiled by the installed GHC outside Nix fails to
-# link (-lgmp not found); the 8.x rungs' integer-gmp configure recorded it
-# from the build environment.
+# ghc-bignum records a GMP library directory only when told one. Without it
+# the 9.4.8 could not link a program outside Nix (-lgmp not found): 9.4's
+# settings name the Nix gcc wrapper by its store path, and that linker
+# searches no /lib64. The rungs up to 9.0 record "gcc" and resolve it on
+# PATH, so outside Nix they linked the host's libgmp by accident.
 #
 # Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
 # 9.4.8, bin/ghc.
