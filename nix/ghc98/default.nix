@@ -80,7 +80,8 @@ stdenv.mkDerivation {
   postPatch = "patchShebangs .";
   configurePhase = ''
     runHook preConfigure
-    ./configure --prefix=$out GHC=${ghc94}/bin/ghc CC=gcc
+    ./configure --prefix=$out GHC=${ghc94}/bin/ghc CC=gcc \
+      --with-gmp-includes=${gmp.dev}/include --with-gmp-libraries=${gmp}/lib
     grep -q 'GHC=${ghc94}/bin/ghc' config.log
     runHook postConfigure
   '';
@@ -123,6 +124,7 @@ stdenv.mkDerivation {
     mkdir t; cp ${../test/T3.hs} t/T3.hs
     (cd t && $out/bin/ghc -v0 --make T3.hs -o t3 && ./t3 > out.txt)
     diff ${../test/T3.out} t/out.txt
+    $out/bin/ghc-pkg field ghc-bignum library-dirs | grep -q '${gmp}/lib'
     $out/bin/ghc --numeric-version | grep -qx 9.8.4
   '';
 }

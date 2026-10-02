@@ -12,12 +12,21 @@
 # refuses to configure them without the programs: happy 1.20.1.1 and alex
 # 3.2.7.4, compiled by the chain's 9.0.2 (happy120.nix, alex327.nix).
 #
-# GhcWithInterpreter = YES from 8.8 on: 8.8.4's compiler/main/DynFlags.hs
-# imports Foreign (Ptr) only `#if defined(GHCI)` but its stage-2
-# SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a GHCi-less 8.8.4 does
-# not compile ("Not in scope: type constructor or class `Ptr'", any boot
-# compiler). GHCi with static libraries is the standard configuration
-# (nixpkgs, Guix); it costs the ghci library, iserv and the RTS linker.
+# GhcWithInterpreter = YES and GhcWithSMP = YES from 8.8 on, the standard
+# configuration (nixpkgs, Guix), after two upstream facts: 8.8.4's
+# compiler/main/DynFlags.hs imports Foreign (Ptr) only `#if defined(GHCI)`
+# but its stage-2 SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a
+# GHCi-less 8.8.4 does not compile ("Not in scope: type constructor or
+# class `Ptr'", any boot compiler); and a NOSMP threaded RTS rejects -N and
+# -qg as unknown options, while 9.8's Hadrian is linked with
+# `-with-rtsopts=-I0 -qg`, so an SMP-less 9.4 cannot build 9.8. The 6.x-8.4
+# rungs keep NO: they only ever compile the next rung.
+#
+# --with-gmp-includes/--with-gmp-libraries as nixpkgs passes them: from 9.0
+# ghc-bignum records a GMP library directory only when told one, and
+# without it a program compiled by the installed GHC outside Nix fails to
+# link (-lgmp not found); the 8.x rungs' integer-gmp configure recorded it
+# from the build environment.
 #
 # Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
 # 9.4.8, bin/ghc.
@@ -65,7 +74,7 @@ stdenv.mkDerivation {
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
     GhcWithInterpreter = YES
-    GhcWithSMP = NO
+    GhcWithSMP = YES
     GhcLibWays = v
     GhcRTSWays = thr
     DYNAMIC_BY_DEFAULT = NO
@@ -89,6 +98,7 @@ stdenv.mkDerivation {
   '';
   configurePhase = ''
     ./configure --prefix=$out GHC=${ghc90}/bin/ghc CC=gcc \
+      --with-gmp-includes=${gmp.dev}/include --with-gmp-libraries=${gmp}/lib \
       CFLAGS="-std=gnu11 -w"
     grep -q 'GHC=${ghc90}/bin/ghc' config.log
     grep -Eq '^HAPPY[[:space:]]*=[[:space:]]*${happy120}/bin/happy$' mk/config.mk
@@ -103,6 +113,8 @@ stdenv.mkDerivation {
     mkdir t; cp ${../test/T3.hs} t/T3.hs
     (cd t && $out/bin/ghc -v0 --make T3.hs -o t3 && ./t3 > out.txt)
     diff ${../test/T3.out} t/out.txt
+    # ghc-bignum must know where libgmp is, or nothing links outside Nix
+    $out/bin/ghc-pkg field ghc-bignum library-dirs | grep -q '${gmp}/lib'
     # the StgCRunAsm patch: no StgCRunAsm.o in the RTS, no executable stack
     ar t $out/lib/*/rts/libHSrts.a | grep -q StgCRun.o
     ! ar t $out/lib/*/rts/libHSrts.a | grep -q StgCRunAsm.o

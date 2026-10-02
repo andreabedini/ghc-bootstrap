@@ -4,12 +4,15 @@
 # asks for an 8.4 or later as the bootstrapping compiler; 8.6 is skipped.
 # The tarball ships Parser.hs, Lexer.hs, CmmParse.hs and CmmLex.hs.
 #
-# GhcWithInterpreter = YES from 8.8 on: 8.8.4's compiler/main/DynFlags.hs
-# imports Foreign (Ptr) only `#if defined(GHCI)` but its stage-2
-# SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a GHCi-less 8.8.4 does
-# not compile ("Not in scope: type constructor or class `Ptr'", any boot
-# compiler). GHCi with static libraries is the standard configuration
-# (nixpkgs, Guix); it costs the ghci library, iserv and the RTS linker.
+# GhcWithInterpreter = YES and GhcWithSMP = YES from 8.8 on, the standard
+# configuration (nixpkgs, Guix), after two upstream facts: 8.8.4's
+# compiler/main/DynFlags.hs imports Foreign (Ptr) only `#if defined(GHCI)`
+# but its stage-2 SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a
+# GHCi-less 8.8.4 does not compile ("Not in scope: type constructor or
+# class `Ptr'", any boot compiler); and a NOSMP threaded RTS rejects -N and
+# -qg as unknown options, while 9.8's Hadrian is linked with
+# `-with-rtsopts=-I0 -qg`, so an SMP-less 9.4 cannot build 9.8. The 6.x-8.4
+# rungs keep NO: they only ever compile the next rung.
 #
 # Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
 # 8.8.4, bin/ghc.
@@ -42,7 +45,7 @@ stdenv.mkDerivation {
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
     GhcWithInterpreter = YES
-    GhcWithSMP = NO
+    GhcWithSMP = YES
     GhcLibWays = v
     GhcRTSWays = thr
     DYNAMIC_BY_DEFAULT = NO
