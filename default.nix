@@ -19,6 +19,10 @@
 #   nix-build -A ghc84     GHC 8.4.4, configure and make with that 8.0.2 (nix/ghc84/)
 #   nix-build -A ghc88     GHC 8.8.4, configure and make with that 8.4.4 (nix/ghc88/)
 #   nix-build -A ghc90     GHC 9.0.2, configure and make with that 8.8.4 (nix/ghc90/)
+#   nix-build -A ghc94     GHC 9.4.8, configure and make with that 9.0.2 (nix/ghc94/;
+#                          9.4 keeps the make build system for a boot GHC < 9.1)
+#   nix-build -A ghc98     GHC 9.8.4, Hadrian (bootstrapped by bootstrap.py from a plan
+#                          with Nix-fetched sources) with that 9.4.8 (nix/ghc98/)
 #                          Each rung is the newest release whose configure accepts the
 #                          one before as the bootstrapping compiler. Drafts until built.
 #
@@ -49,4 +53,6 @@ pkgs.lib.makeScope pkgs.newScope (self: {
   ghc84 = self.callPackage ./nix/ghc84 { };
   ghc88 = self.callPackage ./nix/ghc88 { };
   ghc90 = self.callPackage ./nix/ghc90 { };
+  ghc94 = self.callPackage ./nix/ghc94 { };
+  ghc98 = self.callPackage ./nix/ghc98 { };
 })

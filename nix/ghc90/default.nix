@@ -62,9 +62,9 @@ stdenv.mkDerivation {
     EOF
   '';
   configurePhase = ''
-    ./configure --prefix=$out --with-ghc=${ghc88}/bin/ghc CC=gcc \
+    ./configure --prefix=$out GHC=${ghc88}/bin/ghc CC=gcc \
       CFLAGS="-std=gnu11 -w"
-    grep -q 'with-ghc=${ghc88}/bin/ghc' config.log
+    grep -q 'GHC=${ghc88}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
   enableParallelBuilding = true;
