@@ -77,6 +77,13 @@ stdenv.mkDerivation {
     bootstrapSources = map srcOf hackageDeps ++ map cabalOf hackageDeps;
   };
 
+  # gcc 15 defaults to C23, where `extern void *realloc();` declares a
+  # function of no arguments: utils/hp2ps/Utilities.c (K&R-era) fails to
+  # compile. Upstream's fix (GitLab !13863 for #25662, in 9.10 and later;
+  # the Fedora copy is the one nixpkgs applies to GHC < 9.10): include
+  # stdlib.h instead.
+  patches = [ ./hp2ps-C-gnu17.patch ];
+
   postPatch = "patchShebangs .";
   configurePhase = ''
     runHook preConfigure
