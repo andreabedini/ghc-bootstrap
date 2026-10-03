@@ -36,6 +36,13 @@ Dismissed at the root by Breitner (748): HBC needs LML, and 1990s code does not 
 Guix's 4.08.2 is built **from the pre-generated C in the tarball**, so this chain still has a
 binary-equivalent seed at its root. Necessary work; not sufficient.
 
+> **Status (2026-10-03).** The upper chain is done here, from this repository's
+> seedless 6.2.2: 6.6 → 6.10.4 → 6.12.3 → 7.4.2 → 7.8.4 → 8.0.2 → 8.4.4 →
+> 8.8.4 → 9.0.2 → 9.4.8 (make) → 9.8.4 → 9.12.4 → 9.14.1 (Hadrian), every
+> rung a `nix-build -A ghcNN` built by the one before it; the 6.12.3 / 7.4.2
+> gap Guix left open is closed (D52), and 9.14.1 is the newest release
+> (DECISIONS.md D52–D54, README "What works").
+
 ### 2. Hugs -> nhc98 -> early GHC (rekado, 2017)
 
 Hugs is the one still-buildable Haskell implementation written in C. rekado ran the *nhc98

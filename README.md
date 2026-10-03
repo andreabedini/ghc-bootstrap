@@ -62,9 +62,66 @@ Abstract C is byte-identical to stage 4's in all 220 modules (D49-D51,
 `build/ghc622-stage2/LOG.md`). The whole 6.2.2 chain is one Makefile,
 `build/Makefile`.
 
+The same chain as a picture (DIAGRAMS.md has five more: the Hugs seed, the
+mhs-built tools, the 6.2.2 derivation graph, the fixed-point comparisons,
+and the road past 6.2.2):
+
+```mermaid
+flowchart LR
+    host["Host: C toolchain<br/>gcc, binutils, glibc, GMP<br/>sh, make, tar, perl, python3"]
+    hugs["Hugs 98 (Sep 2006)<br/>patches 0002, 0003"]
+    mhs["MicroHs (mhs)<br/>gen 1 interpreted by Hugs<br/>gen 2 == gen 3"]
+    tools["cpphs, happy 1.19.5, hsc2hs<br/>compiled by mhs"]
+    s1["GHC 6.2.2 stage 1<br/>compiler proper, run on<br/>the MicroHs runtime"]
+    libs["rts, base, haskell98<br/>compiled by stage 1 + gcc"]
+    s2["GHC 6.2.2 stage 2<br/>native"]
+    s3["stage 3"]
+    s4["stage 4"]
+    s5["stage 5<br/>.hc only"]
+    g66["GHC 6.6<br/>configure + make<br/>happy 1.16, alex 2.1.0"]
+    g610["6.10.4"]
+    g612["6.12.3<br/>registerised from here"]
+    g74["7.4.2"] 
+    g78["7.8.4<br/>last on GMP 6.1.2"]
+    g80["8.0.2"]
+    g84["8.4.4"]
+    g88["8.8.4<br/>GHCi + SMP from here"]
+    g90["9.0.2"]
+    g94["9.4.8<br/>last with make"]
+    g98["9.8.4<br/>Hadrian from here"]
+    g912["9.12.4"]
+    g914["9.14.1<br/>newest release"]
+    host --> hugs --> mhs --> tools --> s1 --> libs --> s2 --> s3 --> s4 --> s5
+    s5 -. "220/220 .hc byte-identical" .-> s4
+    s3 -->|"wrapped as boot;<br/>6.2.2's own make = ghc622"| g66 --> g610 --> g612 --> g74 --> g78 --> g80 --> g84 --> g88 --> g90 --> g94 --> g98 --> g912 --> g914
+```
+
 ## What works
 
-**GHC 6.2.2** (the current line of work; see DECISIONS.md D45-D51,
+**The whole ladder, 6.2.2 to 9.14.1** (DECISIONS.md D52-D54; every rung is
+`nix-build -A ghcNN`, each built by the one before it, each the newest
+release whose build accepts the previous rung as the boot compiler, each
+passing `nix/test/T3.hs` and the checks named in its derivation):
+
+| Rung | Built by | Build system | What it needed on a 2026 host (gcc 15, glibc 2.42, binutils 2.46) |
+|---|---|---|---|
+| 6.2.2 (`ghc622`) | mhs, then itself to a fixed point | its own `configure && make` from stage 3 | RTS patches, `gen-htypes`, `_GNU_SOURCE`, a happy wrapper; GMP 6.1.2 (D52) |
+| 6.6 | 6.2.2 | make | parsers regenerated with happy 1.16 and alex 2.1.0 built by 6.2.2 |
+| 6.10.4, 6.12.3 | 6.6, 6.10.4 | make | plain `ar` for libffi; `__GNUC__ > 4` blocks in Rts.h; registerised + NCG from 6.12 |
+| 7.4.2, 7.8.4 | 6.12.3, 7.4.2 | make | `-std=gnu89 -fpermissive -fwrapv`; `DYNAMIC_* = NO`; GMP 6.1.2 |
+| 8.0.2, 8.4.4 | 7.8.4, 8.0.2 | make -j | `-std=gnu11`; threaded RTS way for iserv; `CC=gcc` (8.4); host GMP from here |
+| 8.8.4, 9.0.2 | 8.4.4, 8.8.4 | make -j | `GHC=`; GHCi and SMP (8.8 does not compile without GHCi); StgCRunAsm patch; `--with-gmp-*` (9.0) |
+| 9.4.8 | 9.0.2 | make -j (9.4 keeps make for a boot < 9.1) | happy 1.20.1.1 and alex 3.2.7.4 built by 9.0.2 for `build-tool-depends`; python3 |
+| 9.8.4 | 9.4.8 | Hadrian, bootstrapped by `bootstrap.py` from a plan with Nix-fetched sources | hp2ps C23 patch (upstream, in 9.10) |
+| 9.12.4 | 9.8.4 | Hadrian | nothing beyond the plan |
+| 9.14.1 | 9.12.4 (its configure says 9.6, stage 0 needs 9.10) | Hadrian | the ghc-9.14 branch's `Binary HalfWord` guard |
+
+9.14.1 is the newest GHC release at the time of writing. The compilers from
+8.8 on are the standard configuration: registerised, native code generator,
+GHCi, SMP, static libraries; a `-threaded` program they compile links
+outside Nix and takes `-N`.
+
+**GHC 6.2.2 in detail** (see DECISIONS.md D45-D51,
 `build/ghc622-mhs/FINDINGS.md`, `FINDINGS-link.md` and
 `build/ghc622-stage2/LOG.md`):
 
@@ -190,10 +247,11 @@ phase3/build-cbits.sh           # cbits            -> .o
 ## Layout
 
 ```
-DECISIONS.md          the decision log, D1-D51: every choice and every wrong turn
+DECISIONS.md          the decision log, D1-D54: every choice and every wrong turn
 BOOTSTRAP-ANALYSIS.md why this chain, and why not a shorter one (2026-09-02, with status notes)
 PATCHES.md            the two patch series, grouped by what each patch is really about
-default.nix, nix/     the chain as Nix derivations: nix-build -A hugs|mhs|cpphs|happy|ghc622|ghc66; nix/ghc622/ and nix/ghc66/ hold the steps (ghc622.stage2, ghc66.happy116, ...)
+DIAGRAMS.md, diagrams/ the chain as six diagrams (Mermaid, and D2 for the derivation graph): links, seed, tools, derivation graph, comparisons, road ahead
+default.nix, nix/     the chain as Nix derivations: nix-build -A hugs|mhs|cpphs|happy|ghc622|ghc66|ghc610|ghc612|ghc74|ghc78|ghc80|ghc84|ghc88|ghc90|ghc94|ghc98|ghc912|ghc914; nix/ghc622/, nix/ghc66/ and nix/ghc94/ hold steps (ghc622.stage2, ghc66.happy116, ghc94.alex327, ...); nix/hadrian-ghc.nix is the Hadrian rungs
 phase0/               surveying candidate compilers; the Hugs -> MicroHs seed (feature-scan.py)
 phase1/               ghc-on-mhs: shims, import inventory, happy analysis
 phase2/               building hsc: patches 0001-0024, build order, cpp pipeline;

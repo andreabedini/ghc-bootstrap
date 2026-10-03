@@ -1,0 +1,55 @@
+# GHC 6.2.2 as the Nix derivation graph (nix/ghc622/). Edges are the inputs
+# of each nix/ghc622/*.nix; stdenv, python3, perl and gmp are omitted. An
+# edge into a box stands for one into each derivation in it. Declaration
+# order matters: TALA uses it as a tiebreak, and this order gives one
+# straight column for the four compiles.
+#   d2 --layout=tala diagrams/ghc622-derivations.d2 diagrams/ghc622-derivations.svg
+
+direction: down
+
+outer: "outer scope\n(default.nix)" {
+  happy
+  cpphs
+  mhs
+}
+
+ghc622: "nix/ghc622 (lib.makeScope)" {
+  pre: "before a native GHC exists: mhs, cpphs, gcc" {
+    base: "base\n147 modules: .hi + .hc by stage 1,\n.o by gcc; hsc2hs built by mhs"
+    stage1: "stage1\nmhs → ghc.comb → comb2c.py →\nghc-data.c → gcc + MicroHs runtime"
+    rts: "rts\nlibHSrts.a, unregisterised x86-64,\ngcc only, 3 patches"
+    tree: "tree\npristine tarball + 26 patches;\n3 parsers, 10 primop tables,\nalex lexer regenerated"
+    tree -> rts
+    tree -> stage1
+    rts -> base
+    stage1 -> base
+  }
+
+  stages: "the compiler proper, compiled four times" {
+    stage5: "stage5\nby stage 4, .hc only"
+    stage4: "stage4\nby stage 3"
+    stage3: "stage3\nby stage 2, pristine source"
+    stage2: "stage2\n220 modules by stage 1,\nlinked native"
+    stage2 -> stage3 -> stage4 -> stage5
+  }
+
+  fixpoint: "fixpoint\nstage5 .hc == stage4 .hc,\nmodule by module" {
+    style.stroke-dash: 3
+  }
+  boot: "boot\nstage 3 wrapped as an installed compiler:\n-B topdir, ghc-pkg, parsec"
+  inst: "inst = ghc622\n6.2.2 by its own configure + make,\nbootstrapped by boot" {
+    style.bold: true
+  }
+
+  pre -> stages.stage2: "tree, rts,\nstage1, base"
+  stages -> fixpoint: "the four .hc sets"
+  stages.stage3 -> boot
+  pre.tree -> boot
+  boot -> inst
+  pre.tree -> inst
+}
+
+outer.mhs -> ghc622.pre
+outer.cpphs -> ghc622.pre
+outer.happy -> ghc622.pre.tree
+outer.happy -> ghc622.inst
