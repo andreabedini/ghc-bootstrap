@@ -1,0 +1,19 @@
+ghci: the Binary HalfWord instance for every boot compiler whose ghc-heap has the newtype
+
+GHC 9.14.1 guards the instance with MIN_VERSION_ghc_internal(9,1400,0), but
+9.12.3 backported the HalfWord newtype to ghc-heap, so a 9.12.3 or 9.12.4 boot
+compiler has the newtype and no instance, and stage 0 of ghci fails with
+"Could not deduce Binary Heap.HalfWord". The guard below is the one on the
+ghc-9.14 branch (libraries/ghci/GHCi/Message.hs, read 2026-10-03).
+
+--- a/libraries/ghci/GHCi/Message.hs	2026-10-03 11:38:04.080531494 +0800
++++ b/libraries/ghci/GHCi/Message.hs	2026-10-03 11:38:04.084913146 +0800
+@@ -522,7 +522,7 @@
+   put = put . castFunPtrToPtr
+   get = castPtrToFunPtr <$> get
+ 
+-#if MIN_VERSION_ghc_internal(9,1400,0)
++#if MIN_VERSION_GLASGOW_HASKELL(9,12,2,20250919)
+ instance Binary Heap.HalfWord where
+   put x = put (fromIntegral x :: Word32)
+   get = fromIntegral <$> (get :: Get Word32)

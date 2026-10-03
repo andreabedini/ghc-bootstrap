@@ -12,7 +12,15 @@
 # derivation rewrites its boot-library versions to the 9.12.4's.
 #
 # Of the patches nixpkgs applies to 9.14.1 none is for x86-64 Linux with
-# glibc (see nix/ghc912/default.nix).
+# glibc (see nix/ghc912/default.nix); nixpkgs boots 9.14.1 from a 9.10.3
+# bindist. With a 9.12.4 boot, stage 0 of libraries/ghci fails: "Could not
+# deduce Binary Heap.HalfWord". 9.14.1's GHCi/Message.hs defines that
+# instance only `#if MIN_VERSION_ghc_internal(9,1400,0)`, assuming the
+# HalfWord newtype is 9.14's, but 9.12.3 backported it to ghc-heap (9.12.2
+# still has `type HalfWord = Word32`), so a 9.12.3 or 9.12.4 boot has the
+# newtype and no instance. The ghc-9.14 branch guards it with
+# MIN_VERSION_GLASGOW_HASKELL(9,12,2,20250919) instead; the patch is that
+# one line.
 { callPackage, ghc912, ghc94 }:
 (callPackage ../hadrian-ghc.nix { }) {
   version = "9.14.1";
@@ -21,4 +29,5 @@
   happy = ghc94.happy120;
   alex = ghc94.alex327;
   plan = ./plan-bootstrap-9_12_2.json;
+  patches = [ ./ghci-Binary-HalfWord-9.12.3-boot.patch ];
 }
