@@ -1971,3 +1971,76 @@ belongs:
 
 Hadrian's `no_dynamic_libs` leaves the RTS's dyn ways in (`RTS ways` lists
 them); harmless, only build time. **Overturned by:** nothing yet.
+
+---
+
+## D54 — Hadrian rungs: 9.8.4 → 9.12.4 → 9.14.1, one derivation for all three; the chain reaches the newest release
+*2026-10-03, `nix/hadrian-ghc.nix`, `nix/ghc98`, `nix/ghc912`, `nix/ghc914`.*
+
+**Built today, each by the rung before it:** 9.12.4 (973 MB, ~45 min) and
+9.14.1 (989 MB, ~55 min), both with Hadrian bootstrapped by bootstrap.py
+from a plan, both registerised, SMP, GHCi, static libraries, both passing
+`nix/test/T3.hs`, linking a `-threaded` program outside Nix that takes
+`-N2 -qg`, and printing `25!` and `2^200` right. 9.14.1 is the newest GHC
+release (9.14.1 of 2025; the 9.14.1.2026… directories on
+downloads.haskell.org are pre-releases of 9.14.2). **The chain is C
+compiler + Hugs → MicroHs → 6.2.2 → 6.6 → 6.10.4 → 6.12.3 → 7.4.2 →
+7.8.4 → 8.0.2 → 8.4.4 → 8.8.4 → 9.0.2 → 9.4.8 → 9.8.4 → 9.12.4 → 9.14.1,
+and every link is `nix-build -A ghcNN`.**
+
+**One Hadrian derivation.** `nix/hadrian-ghc.nix` is D53's 9.8.4
+derivation with the version, tarball hash, boot compiler, happy/alex, plan
+and patches as parameters; `nix/ghc98/default.nix` became a call of it
+that evaluates to the very derivation that was built (checked by store
+path, as was 9.12.4's after the later parameter), so nothing was rebuilt
+for the refactoring. The plan's boot-library versions are rewritten from
+`ghc-pkg` as before; 9.12.4's tarball carries a plan for exactly a 9.8.4
+boot (no rewrite was needed), 9.14.1's for 9.12.2 (twelve rewrites, rts
+1.0.2 → 1.0.3, ghc-internal 9.1202.0 → 9.1204.0, …).
+
+**Why 9.12.4 is on the ladder.** Both 9.12.4 and 9.14.1 say
+`MinBootGhcVersion="9.6"` in configure.ac, so the biggest jump looked like
+9.8.4 → 9.14.1, and it was tried first: Hadrian bootstrapped from the
+9.8.4 with 9.12.4's 9.8 plan (9.14.1's own plans are for 9.10 and 9.12
+boots and list `os-string` among the boot libraries, which a 9.8 has not
+got), configure passed, and the stage-0 build died configuring `ghci`:
+"missing dependencies ghc-heap >= 9.10.1, ghc-internal >= 9.1001.0". 9.14
+dropped `ghcHeap` from Hadrian's `stage0Packages` and its ghci wants the
+boot compiler's `ghc-internal`, a package that exists from 9.10 on; 9.12
+still built ghc-heap at stage 0 and did without ghc-internal. configure's
+floor is stale; the real one is 9.10, and nixpkgs boots 9.14.1 from a
+9.10.3 bindist. 9.12.4 is the newest release a 9.8 can build.
+
+**Two things 9.14.1 needed with a 9.12.4 boot, neither for the boot
+compiler's sake:**
+
+- *`Binary HalfWord`.* Stage 0 of ghci: "Could not deduce Binary
+  Heap.HalfWord". 9.14.1's `GHCi/Message.hs` defines the instance only
+  `#if MIN_VERSION_ghc_internal(9,1400,0)`, assuming the `HalfWord`
+  newtype in ghc-heap is 9.14's; 9.12.3 backported it (9.12.2 still has
+  `type HalfWord = Word32`), so a 9.12.3 or 9.12.4 boot has the newtype and
+  no instance. The ghc-9.14 branch guards it with
+  `MIN_VERSION_GLASGOW_HASKELL(9,12,2,20250919)`; that one line is
+  `nix/ghc914/ghci-Binary-HalfWord-9.12.3-boot.patch`. nixpkgs, booting
+  from 9.10.3, never meets it.
+- *Where the GMP directory is recorded.* The install check asserted
+  `--with-gmp-libraries` in `ghc-bignum`'s `library-dirs`; 9.14's
+  ghc-bignum is a shim over `ghc-internal`, which holds the GMP backend and
+  records the directory. `gmpPackage` parameter, "ghc-bignum" by default.
+  (A detour: for a while it looked as if 9.14 had lost the directory; it
+  was `grep -A1` showing one continuation line of a two-line field.)
+
+Of the patches nixpkgs applies to 9.12.4 and 9.14.1 none is for x86-64
+Linux with glibc 2.42: include-modern-utimbuf is Windows, the adjustor
+stack overrun is i386, `ELF64_ST_VISIBILITY` is in glibc's elf.h,
+export-heap-methods is the JavaScript backend, the rest are docs and
+PowerPC.
+
+**What is left on the host-fixes ledger for the Hadrian rungs:** the
+hp2ps C23 patch (9.8 only; 9.10 has it) and the HalfWord guard (9.14.1
+only; the branch has it). Everything else is the tarballs' own build
+systems, driven as their packagers drive them.
+
+**Overturned by:** nothing yet. When 9.14.2 is released the guard patch
+should be checked against it and dropped if it carries the branch's text;
+a 9.16 will want the 9.14's plan treatment.
