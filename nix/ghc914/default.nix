@@ -30,4 +30,7 @@
   alex = ghc94.alex327;
   plan = ./plan-bootstrap-9_12_2.json;
   patches = [ ./ghci-Binary-HalfWord-9.12.3-boot.patch ];
+  # 9.14's ghc-bignum is a shim over ghc-internal, which holds the GMP backend
+  # and records --with-gmp-libraries in its library-dirs.
+  gmpPackage = "ghc-internal";
 }

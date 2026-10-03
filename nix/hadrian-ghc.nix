@@ -18,8 +18,9 @@
 # compiler linked statically (no_dynamic_libs, no_dynamic_ghc), no profiled
 # libraries, no split sections, no documentation. Hadrian's `install`
 # target builds the binary distribution, configures it with --prefix and
-# runs its `make install`. --with-gmp-* so ghc-bignum records the GMP
-# directory (see nix/ghc94/ghc.nix).
+# runs its `make install`. --with-gmp-* so the bignum package records the
+# GMP directory (see nix/ghc94/ghc.nix): ghc-bignum up to 9.12, ghc-internal
+# from 9.14, where the GMP backend lives (`gmpPackage`).
 #
 # Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC,
 # bin/ghc.
@@ -40,6 +41,7 @@
 , happy, alex          # build-tool-depends of compiler, genprimopcode, hpc
 , plan                 # path of the plan-bootstrap-*.json
 , patches ? [ ]
+, gmpPackage ? "ghc-bignum"   # the package whose registration records GMP's directory: ghc-internal from 9.14
 , notes ? ""           # for the derivation's passthru, free text
 }:
 
@@ -132,7 +134,7 @@ stdenv.mkDerivation {
     mkdir t; cp ${./test/T3.hs} t/T3.hs
     (cd t && $out/bin/ghc -v0 --make T3.hs -o t3 && ./t3 > out.txt)
     diff ${./test/T3.out} t/out.txt
-    $out/bin/ghc-pkg field ghc-bignum library-dirs | grep -q '${gmp}/lib'
+    $out/bin/ghc-pkg field ${gmpPackage} library-dirs | grep -q '${gmp}/lib'
     $out/bin/ghc --numeric-version | grep -qx ${version}
   '';
 }
