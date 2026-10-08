@@ -16,7 +16,7 @@ stdenv.mkDerivation {
   pname = "cpphs";
   version = "1.20.9";
   # MicroHs's cpphssrc/malcolm-wallace-universe submodule, at the commit
-  # MicroHs 14742218 pins.
+  # MicroHs 0.16.8.0 pins.
   src = fetchFromGitHub {
     owner = "hackage-trustees";
     repo = "malcolm-wallace-universe";

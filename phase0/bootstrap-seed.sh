@@ -15,7 +15,10 @@ PATH=$HERE/prefix/bin:$PATH
 export PATH
 
 cd "$MHS"
-git apply "$HERE/patches/0001-microhs-hugs-shim.patch" 2>/dev/null || true
+# MicroHs/ is a release extraction, not a clone, so git apply would resolve
+# paths against the enclosing repository and skip them; use patch, once.
+SHIM=$HERE/patches/0001-microhs-hugs-shim.patch
+patch -p1 -R -s -f --dry-run <"$SHIM" >/dev/null 2>&1 || patch -p1 -s <"$SHIM"
 make mhs.conf
 
 # 2. Generation 1: run the MicroHs compiler *interpreted under Hugs* to emit C

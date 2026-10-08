@@ -3,6 +3,15 @@
 Building GHC from source without a Haskell compiler that did not itself come
 out of the chain, starting from a C compiler and the source of Hugs.
 
+"Bootstrapping" here is meant in the sense of
+[bootstrappable.org](https://bootstrappable.org): every compiler in the chain
+is built from source by tools that were themselves built from source, so
+that the trusted base is a C toolchain and source code rather than an opaque
+pre-built binary or generated code standing in for source. What the chain
+still takes from the host is listed below. It is not the narrower sense of
+porting GHC to a new platform, nor of rebuilding GHC with a GHC that someone
+already has.
+
 The chain, each link built from source by the link before it:
 
 ```

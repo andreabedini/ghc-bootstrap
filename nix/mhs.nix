@@ -7,12 +7,12 @@
 { stdenv, fetchFromGitHub, hugs }:
 stdenv.mkDerivation {
   pname = "mhs";
-  version = "0.16.5.0-80-g14742218";
+  version = "0.16.8.0";
   src = fetchFromGitHub {
     owner = "augustss";
     repo = "MicroHs";
-    rev = "1474221819a29d6c948fb9a04bd70ed1ded4ca71";
-    hash = "sha256-Tco0NT1gZXGhlo41khsbQK4omZSm830nkcFYOR4xiU0=";
+    tag = "v0.16.8.0";
+    hash = "sha256-SuZtxRL27EUnrqm5ly+3TexFoZPvuoqHvH+GHEWCkjQ=";
   };
   # The shipped seed goes before anything else runs; nothing below may use it.
   postUnpack = ''

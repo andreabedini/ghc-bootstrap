@@ -28,13 +28,16 @@ fallback and never opened.
 
 ## `MicroHs/`
 
-A clone of `https://github.com/augustss/MicroHS.git` at commit
-`1474221819a29d6c948fb9a04bd70ed1ded4ca71` (`v0.16.5.0-80-g14742218`), with
-`phase0/patches/0001-microhs-hugs-shim.patch` applied to its `hugs/` shim
-tree (five files; the working-tree diff against that commit is identical to
-the patch). `phase0/bootstrap-seed.sh` expects it at `../MicroHs` and builds
-`MicroHs/bin/mhs` and `MicroHs/bin/cpphs`, which every later phase uses.
-`generated/hmhs.c` and `mhs.conf` inside it are build outputs.
+An extraction of `MicroHs-0.16.8.0.tar.gz`, the latest release
+(`https://github.com/augustss/MicroHs/archive/refs/tags/v0.16.8.0.tar.gz`,
+sha256 `7b014251b6dfc332b16a49457797c8f1b32d88633dff5b550132cee8558492f7`,
+kept in the repo root), with `phase0/patches/0001-microhs-hugs-shim.patch`
+applied to its `hugs/` shim tree (five files). `phase0/bootstrap-seed.sh`
+expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
+`MicroHs/bin/cpphs`, which every later phase uses. `generated/hmhs.c` and
+`mhs.conf` inside it are build outputs. The chain was built on commit
+`1474221819a29d6c948fb9a04bd70ed1ded4ca71` (`v0.16.5.0-80-g14742218`);
+0.16.8.0 is that commit plus 29 more.
 
 ## `build/downloads/`
 
