@@ -125,6 +125,13 @@ let
       done
     '';
 
+  # main/Config.hs: the compiler Makefile's $(CONFIG_HS) rule on the configured
+  # tree, with the settings of gen/config-hs.mk (tools/config-hs.sh).
+  ghc622-config = runCommandCC "ghc-6.2.2-config-hs" { } ''
+    sh ${../tools/config-hs.sh} ${ghc622-configured} ${../gen/config-hs.mk} $out
+    grep -q '^cGhcUnregisterised    = "YES"$' $out/Config.hs
+  '';
+
   # The HTYPE_* defines configure's K&R probes no longer produce under
   # gcc >= 14 (DECISIONS.md D47). Output: the block to append to config.h.
   ghc622-htypes = runCommandCC "ghc-6.2.2-htypes.h" { } ''
@@ -142,6 +149,7 @@ runCommand "ghc-6.2.2-tree"
       genprimopcode = ghc622-genprimopcode;
       parsers = ghc622-parsers;
       primops = ghc622-primops;
+      config = ghc622-config;
     };
   }
   ''

@@ -57,7 +57,7 @@ first_opt() {
 }
 extra=$(extra_flags "$path")
 fixnote=""; src="$path"
-if [ -f "$R/ghc622/stage2/fixups/$path" ] && [ "${USE_FIXUPS:-1}" = 1 ]; then src="$R/ghc622/stage2/fixups/$path"; fixnote=" [fixups]"; fi
+if [ -f "$S/fixups/$path" ] && [ "${USE_FIXUPS:-1}" = 1 ]; then src="$S/fixups/$path"; fixnote=" [fixups]"; fi
 cd "$SRC" || exit 1
 attempt() {   # $1 = opt flags for this attempt
   rm -f "$hc" "$hi"

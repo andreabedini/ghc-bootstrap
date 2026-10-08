@@ -28,12 +28,12 @@
 #   7  ghc622/tools/convert-lexer.py on the shipped alex output parser/Lexer.hs
 #   8  ln -s ../../utils/ghc-pkg ghc/compiler/utils/ghc-pkg
 #      (main/Packages.lhs #includes ../utils/ghc-pkg/Package.hs)
-#   9  assemble <dest>/ghc, regenerate the order file
+#   9  assemble <dest>/ghc, regenerate the order file; 9b main/Config.hs
 #  10  verify: diff -r against build/ghc-6.2.2-run1/ghc when it exists
 #
 # Not produced here, because they are inputs rather than tree contents (see
-# FINDINGS.md "Inputs that are not in the tree"): ghc622/shims,
-# ghc622/hsboot, ghc622/gen/Config.hs.
+# FINDINGS.md "Inputs that are not in the tree"): ghc622/shims and
+# ghc622/hsboot. Step 9b writes main/Config.hs to <dest>/gen for the probe.
 #
 # Needs: gcc, GNU make, patch, python3, tar/bzip2, and the chain's own tools
 # (MicroHs/bin/{mhs,cpphs}, build/happy-mhs/happy-mhs2). Takes 3-4 minutes.
@@ -48,7 +48,7 @@ REF=$R/build/ghc-6.2.2-run1/ghc
 
 mkdir -p "$D/tmp" "$D/log"
 export TMPDIR="$D/tmp"                         # patch(1) and mhs need a writable one
-rm -rf "$D/src" "$D/ghc" "$D/tools"
+rm -rf "$D/src" "$D/ghc" "$D/tools" "$D/gen"
 mkdir -p "$D/src"
 step() { printf '== %s\n' "$*"; }
 
@@ -182,6 +182,11 @@ if [ -f "$R/build/order-6.2.2.txt" ]; then
     echo "   DIFFERS from build/order-6.2.2.txt (see log/order.diff)"
   fi
 fi
+
+# 9b --------------------------------------------------------------------------
+step "main/Config.hs -> $D/gen (the compiler Makefile's rule, ghc622/gen/config-hs.mk)"
+sh "$R/ghc622/tools/config-hs.sh" "$S" "$R/ghc622/gen/config-hs.mk" "$D/gen" \
+  > "$D/log/config-hs.log" 2>&1 || { cat "$D/log/config-hs.log"; exit 1; }
 
 # 10 --------------------------------------------------------------------------
 if [ -d "$REF" ]; then

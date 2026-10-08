@@ -1,0 +1,1000 @@
+polyparse 1.12, the Hackage release, with the edits that
+  hackage-trustees/malcolm-wallace-universe 3ec065411afb (the cpphs submodule
+  MicroHs 0.16.8.0 pins) makes to its .hs sources: MonadFail instances, since
+  fail left Monad in base 4.13, and the same layout without tabs or trailing
+  blanks. Apply with -p1 in the directory holding polyparse-1.12/.
+
+diff -ruN a/polyparse-1.12/src/Text/Parse/ByteString.hs b/polyparse-1.12/src/Text/Parse/ByteString.hs
+--- a/polyparse-1.12/src/Text/Parse/ByteString.hs
++++ b/polyparse-1.12/src/Text/Parse/ByteString.hs
+@@ -1,20 +1,20 @@
+ module Text.Parse.ByteString
+-  ( -- * The Parse class is a replacement for the standard Read class. 
++  ( -- * The Parse class is a replacement for the standard Read class.
+     --   This particular instance reads from ByteString rather than String.
+     -- $parser
+-    TextParser	-- synonym for Text.ParserCombinators.Poly.ByteString
+-  , Parse(..)	-- instances: (), (a,b), (a,b,c), Maybe a, Either a, [a],
+-		--            Int, Integer, Float, Double, Char, Bool
+-  , parseByRead	-- :: Read a => String -> TextParser a
++    TextParser  -- synonym for Text.ParserCombinators.Poly.ByteString
++  , Parse(..)   -- instances: (), (a,b), (a,b,c), Maybe a, Either a, [a],
++                --            Int, Integer, Float, Double, Char, Bool
++  , parseByRead -- :: Read a => String -> TextParser a
+   , readByParse -- :: TextParser a -> ReadS a
+   , readsPrecByParsePrec -- :: (Int->TextParser a) -> Int -> ReadS a
+     -- ** Combinators specific to bytestring input, lexed haskell-style
+-  , word	-- :: TextParser String
+-  , isWord	-- :: String -> TextParser ()
+-  , literal	-- :: String -> TextParser ()
+-  , optionalParens	-- :: TextParser a -> TextParser a
+-  , parens	-- :: Bool -> TextParser a -> TextParser a
+-  , field	-- :: Parse a => String -> TextParser a
++  , word        -- :: TextParser String
++  , isWord      -- :: String -> TextParser ()
++  , literal     -- :: String -> TextParser ()
++  , optionalParens      -- :: TextParser a -> TextParser a
++  , parens      -- :: Bool -> TextParser a -> TextParser a
++  , field       -- :: Parse a => String -> TextParser a
+   , constructors-- :: [(String,TextParser a)] -> TextParser a
+   , enumeration -- :: Show a => String -> [a] -> TextParser a
+     -- ** Parsers for literal numerics and characters
+@@ -72,7 +72,7 @@
+     parsePrec _ = optionalParens parse
+     -- | Parsing a list of items by default accepts the [] and comma syntax,
+     --   except when the list is really a character string using \"\".
+-    parseList :: TextParser [a]	-- only to distinguish [] and ""
++    parseList :: TextParser [a] -- only to distinguish [] and ""
+     parseList  = do { isWord "[]"; return [] }
+                    `onFail`
+                  do { isWord "["; isWord "]"; return [] }
+@@ -271,7 +271,7 @@
+ parseInt base radix isDigit digitToInt =
+                  do cs <- many1 (satisfy isDigit)
+                     return (foldl1 (\n d-> n*radix+d)
+-                                   (map (fromIntegral.digitToInt) cs))
++                                   (map (fromIntegral . digitToInt) cs))
+                  `adjustErr` (++("\nexpected one or more "++base++" digits"))
+ 
+ -- | Parse a decimal, octal, or hexadecimal (unsigned) Integral numeric literal.
+@@ -301,7 +301,7 @@
+                          `onFail` return BS.empty )
+                 exp  <- exponent `onFail` return 0
+                 ( return . fromRational . (* (10^^(exp - BS.length frac)))
+-                  . (%1) .  (\ (Right x)->x) . fst
++                  . (% 1) .  (\ (Right x) -> x) . fst
+                   . runParser parseDec ) (ds `BS.append` frac)
+              `onFail`
+              do w <- manySatisfy isAlpha
+@@ -426,7 +426,7 @@
+ 
+ -- Basic types
+ instance Parse Int where
+-    parse = fmap fromInteger $	-- convert from Integer, deals with minInt
++    parse = fmap fromInteger $  -- convert from Integer, deals with minInt
+               do manySatisfy isSpace; parseSigned parseUnsignedInteger
+ instance Parse Integer where
+     parse = do manySatisfy isSpace; parseSigned parseUnsignedInteger
+@@ -436,7 +436,7 @@
+     parse = do manySatisfy isSpace; parseSigned parseFloat
+ instance Parse Char where
+     parse = do manySatisfy isSpace; parseLitChar'
+-	-- not totally correct for strings...
++        -- not totally correct for strings...
+     parseList = do { w <- word; if head w == '"' then return (init (tail w))
+                                 else fail "not a string" }
+ 
+diff -ruN a/polyparse-1.12/src/Text/Parse.hs b/polyparse-1.12/src/Text/Parse.hs
+--- a/polyparse-1.12/src/Text/Parse.hs
++++ b/polyparse-1.12/src/Text/Parse.hs
+@@ -1,19 +1,19 @@
+ module Text.Parse
+-  ( -- * The Parse class is a replacement for the standard Read class. 
++  ( -- * The Parse class is a replacement for the standard Read class.
+     -- $parser
+-    TextParser	-- synonym for Parser Char, i.e. string input, no state
+-  , Parse(..)	-- instances: (), (a,b), (a,b,c), Maybe a, Either a, [a],
+-		--            Int, Integer, Float, Double, Char, Bool
+-  , parseByRead	-- :: Read a => String -> TextParser a
++    TextParser  -- synonym for Parser Char, i.e. string input, no state
++  , Parse(..)   -- instances: (), (a,b), (a,b,c), Maybe a, Either a, [a],
++                --            Int, Integer, Float, Double, Char, Bool
++  , parseByRead -- :: Read a => String -> TextParser a
+   , readByParse -- :: TextParser a -> ReadS a
+   , readsPrecByParsePrec -- :: (Int->TextParser a) -> Int -> ReadS a
+     -- ** Combinators specific to string input, lexed haskell-style
+-  , word	-- :: TextParser String
+-  , isWord	-- :: String -> TextParser ()
+-  , literal	-- :: String -> TextParser ()
+-  , optionalParens	-- :: TextParser a -> TextParser a
+-  , parens	-- :: Bool -> TextParser a -> TextParser a
+-  , field	-- :: Parse a => String -> TextParser a
++  , word        -- :: TextParser String
++  , isWord      -- :: String -> TextParser ()
++  , literal     -- :: String -> TextParser ()
++  , optionalParens      -- :: TextParser a -> TextParser a
++  , parens      -- :: Bool -> TextParser a -> TextParser a
++  , field       -- :: Parse a => String -> TextParser a
+   , constructors-- :: [(String,TextParser a)] -> TextParser a
+   , enumeration -- :: Show a => String -> [a] -> TextParser a
+     -- ** Parsers for literal numerics and characters
+@@ -65,7 +65,7 @@
+     parsePrec _ = optionalParens parse
+     -- | Parsing a list of items by default accepts the [] and comma syntax,
+     --   except when the list is really a character string using \"\".
+-    parseList :: TextParser [a]	-- only to distinguish [] and ""
++    parseList :: TextParser [a] -- only to distinguish [] and ""
+     parseList  = do { isWord "[]"; return [] }
+                    `onFail`
+                  do { isWord "["; isWord "]"; return [] }
+@@ -237,7 +237,7 @@
+ parseInt base radix isDigit digitToInt =
+                  do cs <- many1 (satisfy isDigit)
+                     return (foldl1 (\n d-> n*radix+d)
+-                                   (map (fromIntegral.digitToInt) cs))
++                                   (map (fromIntegral . digitToInt) cs))
+                  `adjustErr` (++("\nexpected one or more "++base++" digits"))
+ parseDec, parseOct, parseHex :: (Integral a) => TextParser a
+ parseDec = parseInt "decimal" 10 Char.isDigit    Char.digitToInt
+@@ -252,10 +252,10 @@
+                          `onFail` return [] )
+                 exp  <- exponent `onFail` return 0
+                 ( return . fromRational . (* (10^^(exp - length frac)))
+-                  . (%1) .  (\ (Right x)->x) . fst
++                  . (% 1) .  (\ (Right x) -> x) . fst
+                   . runParser parseDec ) (ds++frac)
+              `onFail`
+-             do w <- many (satisfy (not.isSpace))
++             do w <- many (satisfy (not . isSpace))
+                 case map toLower w of
+                   "nan"      -> return (0/0)
+                   "infinity" -> return (1/0)
+@@ -377,7 +377,7 @@
+ 
+ -- Basic types
+ instance Parse Int where
+- -- parse = parseByRead "Int"	-- convert from Integer, deals with minInt
++ -- parse = parseByRead "Int"   -- convert from Integer, deals with minInt
+     parse = fmap fromInteger $
+               do many (satisfy isSpace); parseSigned parseDec
+ instance Parse Integer where
+@@ -396,7 +396,7 @@
+  --                                           else fail "expected a char" }
+  -- parseList = bracket (isWord "\"") (satisfy (=='"'))
+  --                     (many (satisfy (/='"')))
+-	-- not totally correct for strings...
++        -- not totally correct for strings...
+     parseList = do { w <- word; if head w == '"' then return (init (tail w))
+                                 else fail "not a string" }
+ 
+@@ -441,7 +441,7 @@
+             parens (p>9)   (do { isWord "Just"
+                                ; fmap Just $ parsePrec 10
+                                      `adjustErrBad` ("but within Just, "++) })
+-            `adjustErr` (("expected a Maybe (Just or Nothing)\n"++).indent 2)
++            `adjustErr` (("expected a Maybe (Just or Nothing)\n"++) . indent 2)
+ 
+ instance (Parse a, Parse b) => Parse (Either a b) where
+     parsePrec p =
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijer.hs b/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijer.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijer.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijer.hs
+@@ -3,25 +3,25 @@
+ -- Module      :  Text.ParserCombinators.HuttonMeijer
+ -- Copyright   :  Graham Hutton (University of Nottingham), Erik Meijer (University of Utrecht)
+ -- Licence     :  BSD
+--- 
++--
+ -- Maintainer  :  Malcolm Wallace <Malcolm.Wallace@cs.york.ac.uk>
+ -- Stability   :  Stable
+ -- Portability :  All
+ --
+ --                  A LIBRARY OF MONADIC PARSER COMBINATORS
+--- 
++--
+ --                               29th July 1996
+--- 
++--
+ --                  Graham Hutton               Erik Meijer
+ --             University of Nottingham    University of Utrecht
+--- 
++--
+ -- This Haskell script defines a library of parser combinators, and is
+ -- taken from sections 1-6 of our article "Monadic Parser Combinators".
+ -- Some changes to the library have been made in the move from Gofer
+ -- to Haskell:
+--- 
++--
+ --    * Do notation is used in place of monad comprehension notation;
+--- 
++--
+ --    * The parser datatype is defined using "newtype", to avoid the overhead
+ --      of tagging and untagging parsers with the P constructor.
+ -----------------------------------------------------------------------------
+@@ -37,6 +37,7 @@
+ import Data.Char
+ import Control.Applicative ( Applicative(pure,(<*>)), Alternative(empty,(<|>)) )
+ import Control.Monad
++import qualified Control.Monad.Fail as Fail
+ 
+ infixr 5 +++
+ 
+@@ -52,16 +53,21 @@
+    fmap f (P p)    = P (\inp -> [(f v, out) | (v,out) <- p inp])
+ 
+ instance Applicative Parser where
+-   pure  = return
++   pure v        = P (\inp -> [(v,inp)])
+    (<*>) = ap
+ 
+ instance Monad Parser where
+    -- return      :: a -> Parser a
+-   return v        = P (\inp -> [(v,inp)])
++   return          = pure
+ 
+    -- >>=         :: Parser a -> (a -> Parser b) -> Parser b
+    (P p) >>= f     = P (\inp -> concat [papply (f v) out | (v,out) <- p inp])
+ 
++#if !MIN_VERSION_base(4,13,0)
++   fail            = Fail.fail
++#endif
++
++instance Fail.MonadFail Parser where
+    -- fail        :: String -> Parser a
+    fail _          = P (\_ -> [])
+ 
+@@ -189,7 +195,7 @@
+ 
+ comment           :: Parser ()
+ --comment            = do {string "--"; many (sat (\x -> x /= '\n')); return ()}
+---comment            = do 
++--comment            = do
+ --                       _ <- string "--"
+ --                       _ <- many (sat (\x -> x /= '\n'))
+ --                       return ()
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijerWallace.hs b/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijerWallace.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijerWallace.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/HuttonMeijerWallace.hs
+@@ -56,6 +56,7 @@
+ import Data.Char
+ import Control.Applicative ( Applicative(pure,(<*>)), Alternative(empty,(<|>)) )
+ import Control.Monad
++import qualified Control.Monad.Fail as Fail
+ 
+ infixr 5 +++
+ 
+@@ -76,18 +77,24 @@
+                        )
+ 
+ instance Applicative (Parser s t e) where
+-   pure  = return
++   pure v = P (\st inp -> Right [(v,st,inp)])
+    (<*>) = ap
+ 
+ instance Monad (Parser s t e) where
+    -- return      :: a -> Parser s t e a
+-   return v        = P (\st inp -> Right [(v,st,inp)])
++   return          = pure
+    -- >>=         :: Parser s t e a -> (a -> Parser s t e b) -> Parser s t e b
+    (P p) >>= f     = P (\st inp -> case p st inp of
+                         Right res -> foldr joinresults (Right [])
+                             [ papply' (f v) s out | (v,s,out) <- res ]
+                         Left err  -> Left err
+                        )
++
++#if !MIN_VERSION_base(4,13,0)
++   fail            = Fail.fail
++#endif
++
++instance Fail.MonadFail (Parser s t e) where
+    -- fail        :: String -> Parser s t e a
+    fail err        = P (\st inp -> Right [])
+   -- I know it's counterintuitive, but we want no-parse, not an error.
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/Base.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/Base.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/Base.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/Base.hs
+@@ -1,34 +1,35 @@
+ module Text.ParserCombinators.Poly.Base
+   ( -- * The PolyParse classes
+-    Commitment(..)	-- class of all two-level-error values
+-  , PolyParse		-- class of all monadic two-level-error parsers
++    Commitment(..)      -- class of all two-level-error values
++  , PolyParse           -- class of all monadic two-level-error parsers
+ 
+     -- * Combinators general to all parser types.
+     -- ** Simple combinators
+-  , apply	-- :: PolyParse p => p (a->b) -> p a -> p b
+-  , discard	-- :: PolyParse p => p a      -> p b -> p a
++  , apply       -- :: PolyParse p => p (a->b) -> p a -> p b
++  , discard     -- :: PolyParse p => p a      -> p b -> p a
+     -- ** Error-handling
+-  , failBad	-- :: PolyParse p => String -> p a
++  , failBad     -- :: PolyParse p => String -> p a
+   , adjustErrBad-- :: PolyParse p => p a -> (String->String) -> p a
+-  , indent	-- :: Int -> String -> String
++  , indent      -- :: Int -> String -> String
+     -- ** Choices
+-  , oneOf	-- :: PolyParse p => [p a] -> p a
++  , oneOf       -- :: PolyParse p => [p a] -> p a
+     -- ** Sequences
+-  , exactly	-- :: PolyParse p => Int -> p a -> p [a]
+-  , upto	-- :: PolyParse p => Int -> p a -> p [a]
+-  , many1	-- :: PolyParse p => p a -> p [a]
+-  , sepBy	-- :: PolyParse p => p a -> p sep -> p [a]
+-  , sepBy1	-- :: PolyParse p => p a -> p sep -> p [a]
+-  , bracketSep	-- :: PolyParse p => p bra -> p sep -> p ket -> p a -> p [a]
+-  , bracket	-- :: PolyParse p => p bra -> p ket -> p a -> p a
++  , exactly     -- :: PolyParse p => Int -> p a -> p [a]
++  , upto        -- :: PolyParse p => Int -> p a -> p [a]
++  , many1       -- :: PolyParse p => p a -> p [a]
++  , sepBy       -- :: PolyParse p => p a -> p sep -> p [a]
++  , sepBy1      -- :: PolyParse p => p a -> p sep -> p [a]
++  , bracketSep  -- :: PolyParse p => p bra -> p sep -> p ket -> p a -> p [a]
++  , bracket     -- :: PolyParse p => p bra -> p ket -> p a -> p a
+   , manyFinally -- :: PolyParse p => p a -> p z -> p [a]
+   , manyFinally'-- :: PolyParse p => p a -> p z -> p [a]
+   ) where
+ 
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ #ifdef __NHC__
+-default (Integer,Double,[])	-- hack to avoid bizarre type defaulting error
++default (Integer,Double,[])     -- hack to avoid bizarre type defaulting error
+ instance Commitment []
+ instance PolyParse []
+ #endif
+@@ -62,7 +63,7 @@
+ --   There are two additional basic combinators that we expect to be implemented
+ --   afresh for every concrete type, but which (for technical reasons)
+ --   cannot be class methods.  They are @next@ and @satisfy@.
+-class (Functor p, Monad p, Applicative p, Alternative p, Commitment p) =>
++class (Functor p, Monad p, Fail.MonadFail p, Applicative p, Alternative p, Commitment p) =>
+       PolyParse p
+ 
+ infixl 3 `apply`
+@@ -99,7 +100,7 @@
+ --   An emphasised (severe) error cannot be overridden by choice
+ --   operators.
+ failBad :: PolyParse p => String -> p a
+-failBad e = commit (fail e)
++failBad e = commit (Fail.fail e)
+ 
+ -- | @adjustErrBad@ is just like @adjustErr@ except it also raises the
+ --   severity of the error.
+@@ -108,7 +109,7 @@
+ 
+ -- | Parse the first alternative in the list that succeeds.
+ oneOf :: PolyParse p => [p a] -> p a
+-oneOf []     = fail ("failed to parse any of the possible choices")
++oneOf []     = Fail.fail ("failed to parse any of the possible choices")
+ oneOf (p:ps) = p <|> oneOf ps
+ --oneOf :: Show t => [Parser t a] -> Parser t a
+ --oneOf []     = do { n <- next
+@@ -164,7 +165,7 @@
+                   ; return (x:) `apply` many (do {sep; p})
+                   }
+          `adjustErr` ("When looking for a non-empty sequence with separators:\n\t"++)
+- 
++
+ -- | Parse a list of items, discarding the start, end, and separator
+ --   items.
+ bracketSep :: PolyParse p => p bra -> p sep -> p ket -> p a -> p [a]
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteStringChar.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteStringChar.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteStringChar.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteStringChar.hs
+@@ -23,6 +23,7 @@
+ import qualified Data.ByteString.Lazy.Char8 as BS
+ import Data.ByteString.Lazy.Char8 (ByteString)
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ -- | This @Parser@ datatype is a specialised parsing monad with error
+ --   reporting.  Whereas the standard version can be used for arbitrary
+@@ -37,14 +38,20 @@
+     fmap f (P p) = P (fmap f . p)
+ 
+ instance Monad Parser where
+-    return x     = P (\ts-> Success ts x)
+-    fail e       = P (\ts-> Failure ts e)
++    return       = pure
+     (P f) >>= g  = P (continue . f)
+       where
+         continue (Success ts x)             = let (P g') = g x in g' ts
+         continue (Committed r)              = Committed (continue r)
+         continue (Failure ts e)             = Failure ts e
+ 
++#if !MIN_VERSION_base(4,13,0)
++    fail         = Fail.fail
++#endif
++
++instance Fail.MonadFail Parser where
++    fail e       = P (\ts-> Failure ts e)
++
+ instance Commitment Parser where
+     commit (P p)         = P (Committed . squash . p)
+       where
+@@ -70,7 +77,7 @@
+             showErr (name,err) = name++":\n"++indent 2 err
+ 
+ instance Applicative Parser where
+-    pure f    = return f
++    pure x    = P (\ts-> Success ts x)
+     pf <*> px = do { f <- pf; x <- px; return (f x) }
+ #if defined(GLASGOW_HASKELL) && GLASGOW_HASKELL > 610
+     p  <*  q  = p `discard` q
+@@ -111,7 +118,7 @@
+ onFail :: Parser a -> Parser a -> Parser a
+ (P p) `onFail` (P q) = P (\ts-> continue ts $ p ts)
+   where continue ts (Failure _ _) = q ts
+-    --  continue _  (Committed r) = r	-- no, remain Committed
++    --  continue _  (Committed r) = r   -- no, remain Committed
+         continue _  r             = r
+ 
+ ------------------------------------------------------------------------
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteString.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteString.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteString.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/ByteString.hs
+@@ -23,6 +23,7 @@
+ import qualified Data.ByteString.Lazy as BS
+ import Data.ByteString.Lazy (ByteString)
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ import Data.Word
+ 
+ -- | This @Parser@ datatype is a specialised parsing monad with error
+@@ -38,14 +39,20 @@
+     fmap f (P p) = P (fmap f . p)
+ 
+ instance Monad Parser where
+-    return x     = P (\ts-> Success ts x)
+-    fail e       = P (\ts-> Failure ts e)
++    return       = pure
+     (P f) >>= g  = P (continue . f)
+       where
+         continue (Success ts x)             = let (P g') = g x in g' ts
+         continue (Committed r)              = Committed (continue r)
+         continue (Failure ts e)             = Failure ts e
+ 
++#if !MIN_VERSION_base(4,13,0)
++    fail         = Fail.fail
++#endif
++
++instance Fail.MonadFail Parser where
++    fail e       = P (\ts-> Failure ts e)
++
+ instance Commitment Parser where
+     commit (P p)         = P (Committed . squash . p)
+       where
+@@ -71,7 +78,7 @@
+             showErr (name,err) = name++":\n"++indent 2 err
+ 
+ instance Applicative Parser where
+-    pure f    = return f
++    pure x    = P (\ts-> Success ts x)
+     pf <*> px = do { f <- pf; x <- px; return (f x) }
+ #if defined(GLASGOW_HASKELL) && GLASGOW_HASKELL > 610
+     p  <*  q  = p `discard` q
+@@ -112,7 +119,7 @@
+ onFail :: Parser a -> Parser a -> Parser a
+ (P p) `onFail` (P q) = P (\ts-> continue ts $ p ts)
+   where continue ts (Failure _ _) = q ts
+-    --  continue _  (Committed r) = r	-- no, remain Committed
++    --  continue _  (Committed r) = r   -- no, remain Committed
+         continue _  r             = r
+ 
+ ------------------------------------------------------------------------
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/Lazy.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/Lazy.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/Lazy.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/Lazy.hs
+@@ -1,18 +1,18 @@
+ {-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
+ module Text.ParserCombinators.Poly.Lazy
+   ( -- * The Parser datatype
+-    Parser(P)	-- datatype, instance of: Functor, Monad, PolyParse
+-  , Result(..)	-- internal to the parser monad
+-  , runParser	-- :: Parser t a -> [t] -> (Either String a, [t])
++    Parser(P)   -- datatype, instance of: Functor, Monad, PolyParse
++  , Result(..)  -- internal to the parser monad
++  , runParser   -- :: Parser t a -> [t] -> (Either String a, [t])
+     -- ** Basic parsers
+-  , next	-- :: Parser t t
+-  , eof		-- :: Parser t ()
+-  , satisfy	-- :: (t->Bool) -> Parser t t
+-  , satisfyMsg	-- :: (t->Bool) -> String -> Parser t t
++  , next        -- :: Parser t t
++  , eof         -- :: Parser t ()
++  , satisfy     -- :: (t->Bool) -> Parser t t
++  , satisfyMsg  -- :: (t->Bool) -> String -> Parser t t
+   , onFail      -- :: Parser t a -> Parser t a -> Parser t a
+ 
+     -- ** Re-parsing
+-  , reparse	-- :: [t] -> Parser t ()
++  , reparse     -- :: [t] -> Parser t ()
+     -- * Re-export all more general combinators
+   , module Text.ParserCombinators.Poly.Base
+   , module Control.Applicative
+@@ -22,6 +22,7 @@
+ import Text.ParserCombinators.Poly.Result
+ import qualified Text.ParserCombinators.Poly.Parser as P
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ #if __GLASGOW_HASKELL__
+ import Control.Exception hiding (bracket)
+@@ -38,14 +39,18 @@
+ --   to have a different instance.
+ newtype Parser t a = P (P.Parser t a)
+ #ifdef __GLASGOW_HASKELL__
+-        deriving (Functor,Monad,Commitment)
++        deriving (Functor,Monad,Fail.MonadFail,Commitment)
+ #else
+ instance Functor (Parser t) where
+     fmap f (P p) = P (fmap f p)
+ instance Monad (Parser t) where
+     return x  = P (return x)
+-    fail e    = P (fail e)
++#ifndef __MHS__
++    fail      = Fail.fail
++#endif
+     (P f) >>= g = P (f >>= (\(P g')->g') . g)
++instance Fail.MonadFail (Parser t) where
++    fail e    = P (fail e)
+ instance Commitment (Parser t) where
+     commit (P p)   = P (commit p)
+     (P p) `adjustErr` f  = P (p `adjustErr` f)
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/Lex.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/Lex.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/Lex.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/Lex.hs
+@@ -30,11 +30,12 @@
+ import Text.ParserCombinators.Poly.Base
+ import Text.ParserCombinators.Poly.Result
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ -- | In a strict language, where creating the entire input list of tokens
+ --   in one shot may be infeasible, we can use a lazy "callback" kind of
+ --   architecture instead.  The lexer returns a single token at a time,
+---   together with a continuation.  The @next@ parser is responsible for 
++--   together with a continuation.  The @next@ parser is responsible for
+ --   pulling on the token stream, applying the continuation where necessary.
+ data LexReturn t = LexReturn t String (String->LexReturn t)
+                  | LexFinish
+@@ -54,14 +55,20 @@
+     fmap f (P p) = P (fmap f . p)
+ 
+ instance Monad (Parser t) where
+-    return x     = P (\ts-> Success ts x)
+-    fail e       = P (\ts-> Failure ts e)
++    return       = pure
+     (P f) >>= g  = P (continue . f)
+       where
+         continue (Success ts x)             = let (P g') = g x in g' ts
+         continue (Committed r)              = Committed (continue r)
+         continue (Failure ts e)             = Failure ts e
+ 
++#if !MIN_VERSION_base(4,13,0)
++    fail         = Fail.fail
++#endif
++
++instance Fail.MonadFail  (Parser t) where
++    fail e       = P (\ts-> Failure ts e)
++
+ instance Commitment (Parser t) where
+     commit (P p)         = P (Committed . squash . p)
+       where
+@@ -86,7 +93,7 @@
+                            r@(Committed _)    -> r )
+             showErr (name,err) = name ++ "\n" ++ indent 2 err
+ 
+-infixl 6 `onFail`	-- not sure about precedence 6?
++infixl 6 `onFail`       -- not sure about precedence 6?
+ 
+ -- | @p `onFail` q@ means parse p, unless p fails, in which case
+ --   parse q instead.
+@@ -101,7 +108,7 @@
+         continue _  r             = r
+ 
+ instance Applicative (Parser t) where
+-    pure f    = return f
++    pure x    = P (\ts-> Success ts x)
+     pf <*> px = do { f <- pf; x <- px; return (f x) }
+ #if defined(GLASGOW_HASKELL) && GLASGOW_HASKELL > 610
+     p  <*  q  = p `discard` q
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/Parser.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/Parser.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/Parser.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/Parser.hs
+@@ -4,22 +4,23 @@
+ --   via T.P.Poly.Plain or T.P.Poly.Lazy.
+ module Text.ParserCombinators.Poly.Parser
+   ( -- * The Parser datatype
+-    Parser(P)	-- datatype, instance of: Functor, Monad, PolyParse
+-  , Result(..)	-- internal to the Parser Monad.
++    Parser(P)   -- datatype, instance of: Functor, Monad, PolyParse
++  , Result(..)  -- internal to the Parser Monad.
+     -- ** Basic parsers
+-  , next	-- :: Parser t t
+-  , eof		-- :: Parser t ()
+-  , satisfy	-- :: (t->Bool) -> Parser t t
+-  , satisfyMsg	-- :: Show t => (t->Bool) -> String -> Parser t t
++  , next        -- :: Parser t t
++  , eof         -- :: Parser t ()
++  , satisfy     -- :: (t->Bool) -> Parser t t
++  , satisfyMsg  -- :: Show t => (t->Bool) -> String -> Parser t t
+   , onFail      -- :: Parser t a -> Parser t a -> Parser t a
+ 
+     -- ** Re-parsing
+-  , reparse	-- :: [t] -> Parser t ()
++  , reparse     -- :: [t] -> Parser t ()
+   ) where
+ 
+ import Text.ParserCombinators.Poly.Base
+ import Text.ParserCombinators.Poly.Result
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ -- | This @Parser@ datatype is a fairly generic parsing monad with error
+ --   reporting.  It can be used for arbitrary token types, not just
+@@ -31,21 +32,27 @@
+     fmap f (P p) = P (fmap f . p)
+ 
+ instance Applicative (Parser t) where
+-    pure f    = return f
++    pure x    = P (\ts-> Success ts x)
+     pf <*> px = do { f <- pf; x <- px; return (f x) }
+ #if defined(GLASGOW_HASKELL) && GLASGOW_HASKELL > 610
+     p  <*  q  = p `discard` q
+ #endif
+ 
+ instance Monad (Parser t) where
+-    return x     = P (\ts-> Success ts x)
+-    fail e       = P (\ts-> Failure ts e)
++    return       = pure
+     (P f) >>= g  = P (continue . f)
+       where
+         continue (Success ts x)             = let (P g') = g x in g' ts
+         continue (Committed r)              = Committed (continue r)
+         continue (Failure ts e)             = Failure ts e
+ 
++#if !MIN_VERSION_base(4,13,0)
++    fail         = Fail.fail
++#endif
++
++instance Fail.MonadFail (Parser t) where
++    fail e       = P (\ts-> Failure ts e)
++
+ instance Alternative (Parser t) where
+     empty     = fail "no parse"
+     p <|> q   = p `onFail` q
+@@ -76,7 +83,7 @@
+                            r@(Committed _)    -> r )
+             showErr (name,err) = name++":\n"++indent 2 err
+ 
+-infixl 6 `onFail`	-- not sure about precedence 6?
++infixl 6 `onFail`       -- not sure about precedence 6?
+ 
+ -- | @p `onFail` q@ means parse p, unless p fails, in which case
+ --   parse q instead.
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/Plain.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/Plain.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/Plain.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/Plain.hs
+@@ -1,17 +1,17 @@
+ module Text.ParserCombinators.Poly.Plain
+   ( -- * The Parser datatype
+-    Parser(P)	-- datatype, instance of: Functor, Monad, PolyParse
+-  , Result(..)	-- internal to the Parser Monad.
+-  , runParser	-- :: Parser t a -> [t] -> (Either String a, [t])
++    Parser(P)   -- datatype, instance of: Functor, Monad, PolyParse
++  , Result(..)  -- internal to the Parser Monad.
++  , runParser   -- :: Parser t a -> [t] -> (Either String a, [t])
+     -- ** Basic parsers
+-  , next	-- :: Parser t t
+-  , eof		-- :: Parser t ()
+-  , satisfy	-- :: (t->Bool) -> Parser t t
+-  , satisfyMsg	-- :: (t->Bool) -> String -> Parser t t
+-  , onFail	-- :: Parser t a -> Parser t a -> Parser t a
++  , next        -- :: Parser t t
++  , eof         -- :: Parser t ()
++  , satisfy     -- :: (t->Bool) -> Parser t t
++  , satisfyMsg  -- :: (t->Bool) -> String -> Parser t t
++  , onFail      -- :: Parser t a -> Parser t a -> Parser t a
+ 
+     -- ** Re-parsing
+-  , reparse	-- :: [t] -> Parser t ()
++  , reparse     -- :: [t] -> Parser t ()
+     -- * Re-export all more general combinators
+   , module Text.ParserCombinators.Poly.Base
+   , module Control.Applicative
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/Result.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/Result.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/Result.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/Result.hs
+@@ -1,6 +1,6 @@
+ module Text.ParserCombinators.Poly.Result
+   ( -- * The parsing result type
+-    Result(..)	-- A parsing result type, with Success, Failure, and Commitment.
++    Result(..)  -- A parsing result type, with Success, Failure, and Commitment.
+   , resultToEither
+   ) where
+ 
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/State.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/State.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/State.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/State.hs
+@@ -1,19 +1,19 @@
+ module Text.ParserCombinators.Poly.State
+   ( -- * The Parser datatype
+-    Parser(P)	-- datatype, instance of: Functor, Monad, PolyParse
+-  , Result(..)	-- internal to the parser monad
+-  , runParser	-- :: Parser s t a -> s -> [t] -> (Either String a, s, [t])
++    Parser(P)   -- datatype, instance of: Functor, Monad, PolyParse
++  , Result(..)  -- internal to the parser monad
++  , runParser   -- :: Parser s t a -> s -> [t] -> (Either String a, s, [t])
+     -- ** Basic parsers
+-  , next	-- :: Parser s t t
+-  , eof		-- :: Parser s t ()
+-  , satisfy	-- :: (t->Bool) -> Parser s t t
+-  , onFail	-- :: Parser s t a -> Parser s t a -> Parser s t a
++  , next        -- :: Parser s t t
++  , eof         -- :: Parser s t ()
++  , satisfy     -- :: (t->Bool) -> Parser s t t
++  , onFail      -- :: Parser s t a -> Parser s t a -> Parser s t a
+     -- ** State-handling
+   , stUpdate    -- :: (s->s) -> Parser s t ()
+   , stQuery     -- :: (s->a) -> Parser s t a
+   , stGet       -- :: Parser s t s
+     -- ** Re-parsing
+-  , reparse	-- :: [t] -> Parser s t ()
++  , reparse     -- :: [t] -> Parser s t ()
+     -- * Re-export all more general combinators
+   , module Text.ParserCombinators.Poly.Base
+   , module Control.Applicative
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/StateLazy.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/StateLazy.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/StateLazy.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/StateLazy.hs
+@@ -1,21 +1,21 @@
+ {-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
+ module Text.ParserCombinators.Poly.StateLazy
+   ( -- * The Parser datatype
+-    Parser(P)	-- datatype, instance of: Functor, Monad, PolyParse
+-  , Result(..)	-- internal to the parser monad
+-  , runParser	-- :: Parser s t a -> s -> [t] -> (Either String a, s, [t])
++    Parser(P)   -- datatype, instance of: Functor, Monad, PolyParse
++  , Result(..)  -- internal to the parser monad
++  , runParser   -- :: Parser s t a -> s -> [t] -> (Either String a, s, [t])
+     -- ** Basic parsers
+-  , next	-- :: Parser s t t
+-  , eof		-- :: Parser s t ()
+-  , satisfy	-- :: (t->Bool) -> Parser s t t
++  , next        -- :: Parser s t t
++  , eof         -- :: Parser s t ()
++  , satisfy     -- :: (t->Bool) -> Parser s t t
+   , onFail      -- :: Parser s t a -> Parser s t a -> Parser s t a
+-  , manyFinally	-- :: Parser s t a -> Parser s t z -> Parser s t [a]
++  , manyFinally -- :: Parser s t a -> Parser s t z -> Parser s t [a]
+     -- ** State-handling
+   , stUpdate    -- :: (s->s) -> Parser s t ()
+   , stQuery     -- :: (s->a) -> Parser s t a
+   , stGet       -- :: Parser s t s
+     -- ** Re-parsing
+-  , reparse	-- :: [t] -> Parser s t ()
++  , reparse     -- :: [t] -> Parser s t ()
+     -- * Re-export all more general combinators
+   , module Text.ParserCombinators.Poly.Base
+   , module Control.Applicative
+@@ -26,6 +26,7 @@
+ import Text.ParserCombinators.Poly.Result
+ import qualified Text.ParserCombinators.Poly.StateParser as P
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ #if __GLASGOW_HASKELL__
+ import Control.Exception hiding (bracket)
+@@ -42,14 +43,18 @@
+ --   to have a different instance.
+ newtype Parser s t a = P (P.Parser s t a)
+ #ifdef __GLASGOW_HASKELL__
+-        deriving (Functor,Monad,Commitment)
++        deriving (Functor,Monad,Fail.MonadFail,Commitment)
+ #else
+ instance Functor (Parser s t) where
+     fmap f (P p) = P (fmap f p)
+ instance Monad (Parser s t) where
+     return x  = P (return x)
+-    fail e    = P (fail e)
++#ifndef __MHS__
++    fail      = Fail.fail
++#endif
+     (P f) >>= g = P (f >>= (\(P g')->g') . g)
++instance Fail.MonadFail (Parser s t) where
++    fail e    = P (fail e)
+ instance Commitment (Parser s t) where
+     commit (P p)   = P (commit p)
+     (P p) `adjustErr` f  = P (p `adjustErr` f)
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/StateParser.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/StateParser.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/StateParser.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/StateParser.hs
+@@ -4,25 +4,26 @@
+ --   via T.P.Poly.State or T.P.Poly.StateLazy.
+ module Text.ParserCombinators.Poly.StateParser
+   ( -- * The Parser datatype
+-    Parser(P)	-- datatype, instance of: Functor, Monad, PolyParse
+-  , Result(..)	-- internal to the parser monad
++    Parser(P)   -- datatype, instance of: Functor, Monad, PolyParse
++  , Result(..)  -- internal to the parser monad
+     -- ** basic parsers
+-  , next	-- :: Parser s t t
+-  , eof		-- :: Parser s t ()
+-  , satisfy	-- :: (t->Bool) -> Parser s t t
++  , next        -- :: Parser s t t
++  , eof         -- :: Parser s t ()
++  , satisfy     -- :: (t->Bool) -> Parser s t t
+   , onFail      -- :: Parser s t a -> Parser s t a -> Parser s t a
+     -- ** State-handling
+   , stUpdate    -- :: (s->s) -> Parser s t ()
+   , stQuery     -- :: (s->a) -> Parser s t a
+   , stGet       -- :: Parser s t s
+     -- ** re-parsing
+-  , reparse	-- :: [t] -> Parser s t ()
++  , reparse     -- :: [t] -> Parser s t ()
+   ) where
+ 
+ 
+ import Text.ParserCombinators.Poly.Base
+ import Text.ParserCombinators.Poly.Result
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ -- | This @Parser@ datatype is a fairly generic parsing monad with error
+ --   reporting, and running state.
+@@ -34,21 +35,27 @@
+     fmap f (P p) = P (\s-> fmap f . p s)
+ 
+ instance Applicative (Parser s t) where
+-    pure f    = return f
++    pure x    = P (\s ts-> Success (ts,s) x)
+     pf <*> px = do { f <- pf; x <- px; return (f x) }
+ #if defined(GLASGOW_HASKELL) && GLASGOW_HASKELL > 610
+     p  <*  q  = p `discard` q
+ #endif
+ 
+ instance Monad (Parser s t) where
+-    return x     = P (\s ts-> Success (ts,s) x)
+-    fail e       = P (\s ts-> Failure (ts,s) e)
++    return       = pure
+     (P f) >>= g  = P (\s-> continue . f s)
+       where
+         continue (Success (ts,s) x)        = let (P g') = g x in g' s ts
+         continue (Committed r)             = Committed (continue r)
+         continue (Failure tss e)           = Failure tss e
+ 
++#if !MIN_VERSION_base(4,13,0)
++    fail         = Fail.fail
++#endif
++
++instance Fail.MonadFail (Parser s t) where
++    fail e       = P (\s ts-> Failure (ts,s) e)
++
+ instance Alternative (Parser s t) where
+     empty     = fail "no parse"
+     p <|> q   = p `onFail` q
+@@ -79,7 +86,7 @@
+                            r@(Committed _)  -> r )
+             showErr (name,err) = name++":\n"++indent 2 err
+ 
+-infixl 6 `onFail`	-- not sure about precedence 6?
++infixl 6 `onFail`       -- not sure about precedence 6?
+ 
+ -- | @p `onFail` q@ means parse p, unless p fails, in which case
+ --   parse q instead.
+@@ -91,7 +98,7 @@
+ (P p) `onFail` (P q) = P (\s ts-> continue s ts $ p s ts)
+       where
+         continue s ts (Failure _ _) = q s ts
+-    --  continue _ _  (Committed r)   = r	-- no, remain Committed
++    --  continue _ _  (Committed r)   = r       -- no, remain Committed
+         continue _ _  r               = r
+ 
+ ------------------------------------------------------------------------
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/StateText.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/StateText.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/StateText.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/StateText.hs
+@@ -28,6 +28,7 @@
+ import qualified Data.Text.Lazy as T
+ import Data.Text.Lazy (Text)
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ -- | This @Parser@ datatype is a specialised parsing monad with error
+ --   reporting.  Whereas the standard version can be used for arbitrary
+@@ -44,14 +45,20 @@
+     fmap f (P p) = P (\s-> fmap f . p s)
+ 
+ instance Monad (Parser s) where
+-    return x     = P (\s ts-> Success (ts,s) x)
+-    fail e       = P (\s ts-> Failure (ts,s) e)
++    return       = pure
+     (P f) >>= g  = P (\s-> continue . f s)
+       where
+         continue (Success (ts,s) x)         = let (P g') = g x in g' s ts
+         continue (Committed r)              = Committed (continue r)
+         continue (Failure ts e)             = Failure ts e
+ 
++#if !MIN_VERSION_base(4,13,0)
++    fail         = Fail.fail
++#endif
++
++instance Fail.MonadFail (Parser s) where
++    fail e       = P (\s ts-> Failure (ts,s) e)
++
+ instance Commitment (Parser s) where
+     commit (P p)         = P (\s-> Committed . squash . p s)
+       where
+@@ -77,7 +84,7 @@
+             showErr (name,err) = name++":\n"++indent 2 err
+ 
+ instance Applicative (Parser s) where
+-    pure f    = return f
++    pure x    = P (\s ts-> Success (ts,s) x)
+     pf <*> px = do { f <- pf; x <- px; return (f x) }
+ #if defined(GLASGOW_HASKELL) && GLASGOW_HASKELL > 610
+     p  <*  q  = p `discard` q
+@@ -118,7 +125,7 @@
+ onFail :: Parser s a -> Parser s a -> Parser s a
+ (P p) `onFail` (P q) = P (\s ts-> continue s ts $ p s ts)
+   where continue s ts (Failure _ _) = q s ts
+-    --  continue _ _  (Committed r) = r	-- no, remain Committed
++    --  continue _ _  (Committed r) = r -- no, remain Committed
+         continue _ _  r             = r
+ 
+ ------------------------------------------------------------------------
+diff -ruN a/polyparse-1.12/src/Text/ParserCombinators/Poly/Text.hs b/polyparse-1.12/src/Text/ParserCombinators/Poly/Text.hs
+--- a/polyparse-1.12/src/Text/ParserCombinators/Poly/Text.hs
++++ b/polyparse-1.12/src/Text/ParserCombinators/Poly/Text.hs
+@@ -24,6 +24,7 @@
+ import qualified Data.Text.Lazy as T
+ import Data.Text.Lazy (Text)
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ 
+ -- | This @Parser@ datatype is a specialised parsing monad with error
+ --   reporting.  Whereas the standard version can be used for arbitrary
+@@ -38,14 +39,20 @@
+     fmap f (P p) = P (fmap f . p)
+ 
+ instance Monad Parser where
+-    return x     = P (\ts-> Success ts x)
+-    fail e       = P (\ts-> Failure ts e)
++    return       = pure
+     (P f) >>= g  = P (continue . f)
+       where
+         continue (Success ts x)             = let (P g') = g x in g' ts
+         continue (Committed r)              = Committed (continue r)
+         continue (Failure ts e)             = Failure ts e
+ 
++#if !MIN_VERSION_base(4,13,0)
++    fail         = Fail.fail
++#endif
++
++instance Fail.MonadFail Parser where
++    fail e       = P (\ts-> Failure ts e)
++
+ instance Commitment Parser where
+     commit (P p)         = P (Committed . squash . p)
+       where
+@@ -71,7 +78,7 @@
+             showErr (name,err) = name++":\n"++indent 2 err
+ 
+ instance Applicative Parser where
+-    pure f    = return f
++    pure x    = P (\ts-> Success ts x)
+     pf <*> px = do { f <- pf; x <- px; return (f x) }
+ #if defined(GLASGOW_HASKELL) && GLASGOW_HASKELL > 610
+     p  <*  q  = p `discard` q
+@@ -112,7 +119,7 @@
+ onFail :: Parser a -> Parser a -> Parser a
+ (P p) `onFail` (P q) = P (\ts-> continue ts $ p ts)
+   where continue ts (Failure _ _) = q ts
+-    --  continue _  (Committed r) = r	-- no, remain Committed
++    --  continue _  (Committed r) = r   -- no, remain Committed
+         continue _  r             = r
+ 
+ ------------------------------------------------------------------------

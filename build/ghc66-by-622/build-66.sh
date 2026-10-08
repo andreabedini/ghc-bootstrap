@@ -18,6 +18,8 @@ if [ "${FRESH:-0}" = 1 ]; then
   echo "fresh tree: $G, patch applied ($(rg -c '^\+\+\+' "$R/ghc66/ghc-6.6-by-622.patch") files)"
 fi
 export TMPDIR="$B/tmp"
+# The side package.conf (parsec and the stub packages), as ghc622/nix/boot.nix writes it.
+sh "$R/ghc622/tools/side-package-conf.sh" "$I" > "$I/package.conf"
 # The machine's own GHC (ghcup, cabal) must not be found by configure or make.
 clean=$(printf '%s' "$PATH" | tr ':' '\n' | grep -v -e '\.ghcup' -e '\.cabal' | paste -sd: -)
 export PATH="$I/bin:$R/build/happy-mhs:$clean"

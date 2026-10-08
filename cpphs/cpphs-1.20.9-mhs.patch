@@ -1,0 +1,179 @@
+cpphs 1.20.9, the Hackage release, as MicroHs builds it: the edits that
+  hackage-trustees/malcolm-wallace-universe 3ec065411afb (the cpphs submodule
+  MicroHs 0.16.8.0 pins) makes to its .hs sources. defaultTimeLocale comes
+  from MicroHs's TimeCompat; composition dots get spaces ("(==s) . fst",
+  which MicroHs would otherwise read as a record field); trailing blanks go.
+  Apply with -p1 in the directory holding cpphs-1.20.9/.
+
+diff -ruN a/cpphs-1.20.9/cpphs.hs b/cpphs-1.20.9/cpphs.hs
+--- a/cpphs-1.20.9/cpphs.hs
++++ b/cpphs-1.20.9/cpphs.hs
+@@ -31,7 +31,7 @@
+ 
+   args <- getArgs
+   args <- return $ if "--cpp" `elem` args then convertArgs args else args
+-  
++
+   prog <- getProgName
+   when ("--version" `elem` args)
+        (do putStrLn (prog++" "++version)
+@@ -49,7 +49,7 @@
+       ins  = infiles  options
+       outs = outfiles options
+       out = listToMaybe outs
+-  
++
+   when (isLeft parsedArgs)
+        (do putStrLn $ "Unknown option "++fromLeft parsedArgs
+                       ++", for valid options try "++prog++" --help\n"
+@@ -88,7 +88,7 @@
+ convertArgs xs = f (ConvertArgs False True "-" "-") xs
+     where
+         flg = "DUI"
+-    
++
+         f e (['-',r]:x:xs) | r `elem` flg = ('-':r:x) : f e xs
+         f e (x@('-':r:_):xs) | r `elem` flg = x : f e xs
+         f e ("-o":x:xs) = ('-':'O':x) : f e xs
+@@ -106,11 +106,10 @@
+         f e ("-version":xs) = "--version" : f e xs
+         f e (('-':x):xs) = f e xs -- strip all other flags
+         f e (x:xs) = f (if infile e == "-" then e{infile=x} else e{outfile=x}) xs
+-        
++
+         f e [] = ["--hashes" | not (traditional e)] ++
+                  ["--strip" | traditional e && strip e] ++
+                  ["--strip-eol" | not (traditional e) && strip e] ++
+                  [infile e] ++
+                  ["-O" ++ outfile e | outfile e /= "-"]
+ 
+-
+diff -ruN a/cpphs-1.20.9/Language/Preprocessor/Cpphs/CppIfdef.hs b/cpphs-1.20.9/Language/Preprocessor/Cpphs/CppIfdef.hs
+--- a/cpphs-1.20.9/Language/Preprocessor/Cpphs/CppIfdef.hs
++++ b/cpphs-1.20.9/Language/Preprocessor/Cpphs/CppIfdef.hs
+@@ -3,7 +3,7 @@
+ -- Module      :  CppIfdef
+ -- Copyright   :  1999-2004 Malcolm Wallace
+ -- Licence     :  LGPL
+--- 
++--
+ -- Maintainer  :  Malcolm Wallace <Malcolm.Wallace@cs.york.ac.uk>
+ -- Stability   :  experimental
+ -- Portability :  All
+@@ -236,7 +236,7 @@
+     fragment = many1 (satisfy (`notElem`",)"))
+     convert "defined" [arg] =
+       case lookupST arg st of
+-        Nothing | all isDigit arg    -> return arg 
++        Nothing | all isDigit arg    -> return arg
+         Nothing                      -> return "0"
+         Just (a@AntiDefined{})       -> return "0"
+         Just (a@SymbolReplacement{}) -> return "1"
+diff -ruN a/cpphs-1.20.9/Language/Preprocessor/Cpphs/HashDefine.hs b/cpphs-1.20.9/Language/Preprocessor/Cpphs/HashDefine.hs
+--- a/cpphs-1.20.9/Language/Preprocessor/Cpphs/HashDefine.hs
++++ b/cpphs-1.20.9/Language/Preprocessor/Cpphs/HashDefine.hs
+@@ -10,7 +10,7 @@
+ --
+ -- What structures are declared in a \#define.
+ -----------------------------------------------------------------------------
+- 
++
+ module Language.Preprocessor.Cpphs.HashDefine
+   ( HashDefine(..)
+   , ArgOrText(..)
+diff -ruN a/cpphs-1.20.9/Language/Preprocessor/Cpphs/MacroPass.hs b/cpphs-1.20.9/Language/Preprocessor/Cpphs/MacroPass.hs
+--- a/cpphs-1.20.9/Language/Preprocessor/Cpphs/MacroPass.hs
++++ b/cpphs-1.20.9/Language/Preprocessor/Cpphs/MacroPass.hs
+@@ -30,9 +30,9 @@
+ import System.IO.Unsafe (unsafeInterleaveIO)
+ import Control.Monad    ((=<<))
+ --import System.Time       (getClockTime, toCalendarTime, formatCalendarTime)
+---import System.Locale     (defaultTimeLocale)
+ import Data.Time.Clock  (getCurrentTime)
+-import Data.Time.Format (formatTime, defaultTimeLocale)
++import Data.Time.Format (formatTime)
++import TimeCompat       (defaultTimeLocale)
+ 
+ noPos :: Posn
+ noPos = newfile "preDefined"
+@@ -167,7 +167,7 @@
+                             Just (args,ws') ->
+                                 if length args /= length (arguments hd) then
+                                      emit x $ macroProcess pr layout lang st ws
+-                                else do args' <- mapM (fmap (concat.onlyRights)
++                                else do args' <- mapM (fmap (concat . onlyRights)
+                                                        . macroProcess pr layout
+                                                                         lang st)
+                                                       args
+diff -ruN a/cpphs-1.20.9/Language/Preprocessor/Cpphs/Options.hs b/cpphs-1.20.9/Language/Preprocessor/Cpphs/Options.hs
+--- a/cpphs-1.20.9/Language/Preprocessor/Cpphs/Options.hs
++++ b/cpphs-1.20.9/Language/Preprocessor/Cpphs/Options.hs
+@@ -24,7 +24,7 @@
+ import Data.List (isPrefixOf)
+ 
+ -- | Cpphs options structure.
+-data CpphsOptions = CpphsOptions 
++data CpphsOptions = CpphsOptions
+     { infiles   :: [FilePath]
+     , outfiles  :: [FilePath]
+     , defines   :: [(String,String)]
+diff -ruN a/cpphs-1.20.9/Language/Preprocessor/Cpphs/ReadFirst.hs b/cpphs-1.20.9/Language/Preprocessor/Cpphs/ReadFirst.hs
+--- a/cpphs-1.20.9/Language/Preprocessor/Cpphs/ReadFirst.hs
++++ b/cpphs-1.20.9/Language/Preprocessor/Cpphs/ReadFirst.hs
+@@ -3,7 +3,7 @@
+ -- Module      :  ReadFirst
+ -- Copyright   :  2004 Malcolm Wallace
+ -- Licence     :  LGPL
+--- 
++--
+ -- Maintainer  :  Malcolm Wallace <Malcolm.Wallace@cs.york.ac.uk>
+ -- Stability   :  experimental
+ -- Portability :  All
+diff -ruN a/cpphs-1.20.9/Language/Preprocessor/Cpphs/RunCpphs.hs b/cpphs-1.20.9/Language/Preprocessor/Cpphs/RunCpphs.hs
+--- a/cpphs-1.20.9/Language/Preprocessor/Cpphs/RunCpphs.hs
++++ b/cpphs-1.20.9/Language/Preprocessor/Cpphs/RunCpphs.hs
+@@ -30,7 +30,7 @@
+   let bools  = boolopts options
+       preInc = case preInclude options of
+                  [] -> ""
+-                 is -> concatMap (\f->"#include \""++f++"\"\n") is 
++                 is -> concatMap (\f->"#include \""++f++"\"\n") is
+                        ++ "#line 1 \""++cleanPath filename++"\"\n"
+ 
+   pass1 <- cppIfdef filename (defines options) (includes options) bools
+@@ -57,7 +57,7 @@
+   let bools  = boolopts options
+       preInc = case preInclude options of
+                  [] -> ""
+-                 is -> concatMap (\f->"#include \""++f++"\"\n") is 
++                 is -> concatMap (\f->"#include \""++f++"\"\n") is
+                        ++ "#line 1 \""++cleanPath filename++"\"\n"
+   (pass2,syms) <-
+       if macros bools then do
+diff -ruN a/cpphs-1.20.9/Language/Preprocessor/Cpphs/SymTab.hs b/cpphs-1.20.9/Language/Preprocessor/Cpphs/SymTab.hs
+--- a/cpphs-1.20.9/Language/Preprocessor/Cpphs/SymTab.hs
++++ b/cpphs-1.20.9/Language/Preprocessor/Cpphs/SymTab.hs
+@@ -3,7 +3,7 @@
+ -- Module      :  SymTab
+ -- Copyright   :  2000-2004 Malcolm Wallace
+ -- Licence     :  LGPL
+--- 
++--
+ -- Maintainer  :  Malcolm Wallace <Malcolm.Wallace@cs.york.ac.uk>
+ -- Stability   :  Stable
+ -- Portability :  All
+@@ -36,11 +36,11 @@
+ 
+ emptyST           = itgen maxHash []
+ insertST (s,v) ss = itiap (hash s) ((s,v):)    ss id
+-deleteST  s    ss = itiap (hash s) (filter ((/=s).fst)) ss id
+-lookupST  s    ss = let vs = filter ((==s).fst) ((itind (hash s)) ss)
++deleteST  s    ss = itiap (hash s) (filter ((/=s) . fst)) ss id
++lookupST  s    ss = let vs = filter ((==s) . fst) ((itind (hash s)) ss)
+                     in if null vs then Nothing
+                        else (Just . snd . head) vs
+-definedST s    ss = let vs = filter ((==s).fst) ((itind (hash s)) ss)
++definedST s    ss = let vs = filter ((==s) . fst) ((itind (hash s)) ss)
+                     in (not . null) vs
+ flattenST      ss = itfold (map snd) (++) ss
+ 

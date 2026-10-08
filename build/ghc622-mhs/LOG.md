@@ -22,7 +22,7 @@ run it on 6.2.2's libraries/base to .hi + .hc, compile a .hc against build/rts62
 - libraries/base: copy of build/rts622/ghc-6.2.2/libraries/base (pristine tarball
   extraction left alone); GHC/PrimopWrappers.hs touched empty as the Makefile does
   when BootingFromHc.
-- base-order.py -> base-order.txt: 143 modules, import graph after gcc -E with the
+- ghc622/tools/base-order.py -> base-order.txt: 143 modules, import graph after gcc -E with the
   driver's defines (so __HUGS__/__NHC__ blocks add no edges), SOURCE imports dropped,
   implicit Prelude edge unless -fno-implicit-prelude in the file.
 - run-base.sh: per module `ghc -B<topdir> -v1 -C -fglasgow-exts -cpp -Iinclude
@@ -158,7 +158,7 @@ rows failed:
 - `System.Directory`, `System.Random`, `Text.Regex`: each imports one of
   `System.Time`, `System.CPUTime`, `Text.Regex.Posix`, which are `.hsc`
   sources. There is no `hsc2hs` in the chain (it is `ghc/utils/hsc2hs/Main.hs`,
-  Haskell 98, so mhs should manage it) and `base-order.py` only lists
+  Haskell 98, so mhs should manage it) and `ghc622/tools/base-order.py` only lists
   `.hs`/`.lhs`, so the four `.hsc` modules are not in the order file at all.
 - `GHC/PrimopWrappers.hs` was the empty file the Makefile touches when
   `BootingFromHc=YES`; GHC reads an empty file as `module Main` and asks for

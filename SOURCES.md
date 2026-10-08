@@ -82,7 +82,7 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | Hadrian's 18 bootstrap dependencies (Hackage tarballs and revised `.cabal` files: shake 0.19.8, QuickCheck 2.14.3, ...) | `ghc98/plan-bootstrap-9_4_4.json`, copied from `ghc-9.8.4/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
 | `happy-1.16.tar.gz`, `alex-2.1.0.tar.gz` (Hackage) | `ghc66/happy116.nix`, `ghc66/alex210.nix` | in the files |
 | `gmp-6.1.2.tar.xz` (`ftp.gnu.org/gnu/gmp/`) | `gmp612/default.nix` | `sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=` |
-| `hugs98-plus-Sep2006.tar.gz`, MicroHs, cpphs 1.20.9 | `hugs/default.nix`, `mhs/default.nix`, `cpphs/default.nix` | in the files |
+| `hugs98-plus-Sep2006.tar.gz`, `MicroHs-0.16.8.0`, `cpphs-1.20.9.tar.gz` and `polyparse-1.12.tar.gz` (Hackage) | `hugs/default.nix`, `mhs/default.nix`, `cpphs/default.nix` | in the files |
 
 GMP 6.1.2 is the GMP every compiler before 8.0 links against: GMP 6.2's lazy
 `mpz_init` breaks their Integer (DECISIONS.md D52). The host's GMP serves

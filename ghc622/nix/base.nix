@@ -1,6 +1,6 @@
 # libraries/base compiled by stage 1, the way build/Makefile's `base` target
 # does it: build/mk/compile-base.sh for each of the 147 modules in
-# ghc622/base/base-rebuild-order.txt (retrying with -fno-strictness
+# the order of tools/base-rebuild-order.sh (retrying with -fno-strictness
 # when the MicroHs stack or heap runs out, and checking every .hi decodes),
 # the Makefile's HC2O_BASE for .hc -> .o, build/ghc622-mhs/build-cbits.sh
 # and build-libbase.sh. Before that, the five generated modules the tarball
@@ -26,9 +26,11 @@ let
         -include string.h ${tree}/ghc/utils/unlit/unlit.c -o $out
   '';
 
-  # GHC 6.2.2's hsc2hs compiled by mhs, from build/hsc2hs-mhs's copy (Parser
-  # instances split for the post-AMP Prelude, build/hsc2hs-mhs/FINDINGS.md).
-  # Main.hs includes ../../includes/config.h, hence the tarball layout.
+  # GHC 6.2.2's hsc2hs compiled by mhs: the tarball's sources with
+  # hsc2hs/Main.hs.patch (Parser instances split for the post-AMP Prelude,
+  # build/hsc2hs-mhs/FINDINGS.md) and the Config.hs its Makefile writes
+  # (tools/hsc2hs-src.sh). Main.hs includes ../../includes/config.h, hence
+  # the tarball layout.
   hsc2hs = runCommandCC "ghc-6.2.2-hsc2hs"
     {
       nativeBuildInputs = [ mhs cpphs ];
@@ -36,8 +38,7 @@ let
     }
     ''
       mkdir -p ghc/utils
-      cp -r ${../hsc2hs/src} ghc/utils/hsc2hs
-      chmod -R u+w ghc
+      sh ${../tools/hsc2hs-src.sh} ${tree} ${../hsc2hs/Main.hs.patch} ghc/utils/hsc2hs
       ln -s ${inc} ghc/includes
       cd ghc/utils/hsc2hs
       mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i${../hsc2hs/shims} \
@@ -89,7 +90,11 @@ stdenv.mkDerivation {
         -package-name base -O "$@" $src > $log 2>&1
     }
     mkdir -p ../../logs ../../obj
-    for m in $(cat ${../base/base-rebuild-order.txt}); do
+    # The compile order: tools/base-rebuild-order.sh (base-order.py's import
+    # graph, then base/after-hsc2hs.txt).
+    sh ${../tools}/base-rebuild-order.sh . ${inc} ${../base/after-hsc2hs.txt} > $NIX_BUILD_TOP/base-order.txt
+    test $(wc -l < $NIX_BUILD_TOP/base-order.txt) = 147
+    for m in $(cat $NIX_BUILD_TOP/base-order.txt); do
       p=$(echo $m | tr . /); log=../../logs/$m.log
       if [ -f $p.lhs ]; then src=$p.lhs; else src=$p.hs; fi
       export TMPDIR=$NIX_BUILD_TOP/tmp/$m; mkdir -p $TMPDIR

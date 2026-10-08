@@ -22,10 +22,12 @@ TREE="$R/build/ghc-6.2.2-run1/ghc/compiler"
 INCDIR="$R/build/ghc-6.2.2-run1/ghc/includes"
 HSBOOT="$R/ghc622/hsboot"
 EXTRA_SHIMS="$R/ghc622/shims"
-GEN="$R/ghc622/gen"
+GEN="$W/gen"   # main/Config.hs, from the configured tree reproduce-6.2.2.sh leaves (TREE622)
 export PATH="$M/bin:$PATH"
 export TMPDIR="$W/tmp"
 mkdir -p "$TMPDIR"
+sh "$R/ghc622/tools/config-hs.sh" "${TREE622:-$R/build/repro-622/src/ghc-6.2.2}" \
+  "$R/ghc622/gen/config-hs.mk" "$GEN"
 ulimit -s unlimited 2>/dev/null || ulimit -s 65536
 
 # The five defines the perl driver passes to cpp for every Haskell source

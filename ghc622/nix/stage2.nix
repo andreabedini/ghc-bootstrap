@@ -28,7 +28,7 @@ let
   hidict = ../tools/hidict.py;
   ghc1 = "${stage1}/bin/ghc";
 
-  # Config.hs is ghc622/gen's with the booter's version (LOG.md).
+  # Config.hs is tree.config's with the booter's version (LOG.md).
   src = runCommand "ghc-6.2.2-stage2-src" { } ''
     mkdir $out
     tar xjf ${tree.src} -C $out --strip-components=1 \
@@ -39,10 +39,21 @@ let
     cp ${tree.primops}/primops.txt $C/prelude/
     cp ${tree.primops}/primop-*.hs-incl $C/
     sed 's/^cBooterVersion        = "4.08.2"$/cBooterVersion        = "6.2.2"/' \
-      ${../gen/Config.hs} > $C/main/Config.hs
+      ${tree.config}/Config.hs > $C/main/Config.hs
     grep -q '"6.2.2"' $C/main/Config.hs
     rm -r $out/ghc/includes
     cp -r --no-preserve=mode ${tree}/ghc/includes $out/ghc/includes
+  '';
+
+  # The 220 modules of the compiler proper in dependency order:
+  # tools/make-order.py over the source, with the import scanner it shares
+  # with phase2 (phase2/build-order.py, phase0/feature-scan.py).
+  order = runCommand "ghc-6.2.2-stage2-order" { nativeBuildInputs = [ python3 ]; } ''
+    mkdir -p r/phase0 r/phase2
+    cp ${../../phase0/feature-scan.py} r/phase0/feature-scan.py
+    cp ${../../phase2/build-order.py} r/phase2/build-order.py
+    GHC_BOOTSTRAP_ROOT=$PWD/r python3 ${../tools/make-order.py} ${src}/ghc/compiler > $out
+    test $(wc -l < $out) = 220
   '';
 
   # build/ghc622-stage2/topdir: an "installed" layout. $1 = the directory
@@ -92,10 +103,11 @@ let
     installPhase = "mkdir $out; cp *.hi *.hc libHShaskell98.a $out/";
   };
 
-  # The 220 modules of ghc622/stage2/order.txt, build/mk/compile-stage2.sh
+  # The 220 modules in `order`, build/mk/compile-stage2.sh
   # per module: the Makefile's flags and per-file extras, the flags.tsv seed,
   # the -O -> -O -fno-strictness -> -O0 ladder on a runtime death, panic or
-  # timeout, fixups/ (Ctype.lhs, which the stage-1 compiler cannot read),
+  # timeout, the fixups (stage2/fixups/*.patch applied to the source by
+  # tools/make-fixups.sh: Ctype.lhs, which the stage-1 compiler cannot read),
   # and hidict.py on every .hi.
   #
   # In three chunks of about 45 minutes (by the 2026-09-15 run's times), each
@@ -122,6 +134,7 @@ let
       ${if prev == null then "" else "cp -r --no-preserve=mode ${prev}/${stage}/. ${stage}/; cp ${prev}/logs/* logs/"}
       cp -r --no-preserve=mode ${src}/ghc src
       SRC=$PWD/src/compiler
+      ${lib.optionalString fixups "FIX=$PWD/fixups; sh ${../tools/make-fixups.sh} $SRC ${../stage2/fixups} $FIX"}
       idirs=
       for d in utils basicTypes types hsSyn prelude rename typecheck deSugar coreSyn \
                specialise simplCore stranal stgSyn simplStg codeGen absCSyn main \
@@ -151,13 +164,13 @@ let
           grep -q -e 'ERR:' -e panic -e impossible -e exhausted -e 'stack overflow' \
                   -e Killed -e Segmentation -e 'out of memory' $log
       }
-      sed -n '${toString from},${toString to}p' ${../stage2/order.txt} > chunk.txt
+      sed -n '${toString from},${toString to}p' ${order} > chunk.txt
       test $(wc -l < chunk.txt) = ${toString (to - from + 1)}
       while read -r m path; do
         dir=$(dirname $path); hc=$odir/$dir/$m.hc; hi=$odir/$dir/$m.hi; log=$PWD/logs/$m.log
         export TMPDIR=$NIX_BUILD_TOP/tmp/$m; mkdir -p $TMPDIR
         extra=$(extra_flags $path)
-        srcf=$path${lib.optionalString fixups "; [ -f ${../stage2/fixups}/$path ] && srcf=${../stage2/fixups}/$path"}
+        srcf=$path${lib.optionalString fixups "; [ -f $FIX/$path ] && srcf=$FIX/$path"}
         case $path in parser/Parser.hs) opt=-Onot ;; *) opt=-O ;; esac
         seed=$(awk -F'\t' -v m=$m '$1==m {print $2}' ${flags} | tail -1)
         case $seed in *-fno-strictness*) opt="-O -fno-strictness" ;; -O0) opt=-O0 ;; esac

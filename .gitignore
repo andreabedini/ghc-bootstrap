@@ -58,6 +58,11 @@
 /build/happy-1.16/
 /build/happy-1.19.5/
 /build/hsc2hs-mhs/ghc/
+/build/ghc66-by-622/ghc622-inst/package.conf
+/build/ghc622-stage2/fixups/
+/build/ghc622-mhs/gen/
+/build/ghc622-mhs/base-rebuild-order.txt
+/build/ghc622-stage2/order.txt
 /build/ghc622-mhs/libraries/
 /build/ghc622-stage2/src/
 /build/ghc622-stage2/libraries/

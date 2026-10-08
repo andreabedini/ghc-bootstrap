@@ -16,7 +16,8 @@ of the project, not a variant of "building hsc". A separate phase directory
 keeps the numbering unambiguous and gives the reproduction script, the
 regeneration recipes and this file one home. The 6.2.2 inputs that already
 live elsewhere are left where the probe script expects them
-(`ghc622/hsboot`, `ghc622/gen`, `ghc622/shims`);
+(`ghc622/hsboot`, `ghc622/shims`; `Config.hs` is generated into
+`build/repro-622/gen`);
 section 5 records how each was made.
 
 ```
@@ -59,7 +60,7 @@ build on it. `dest/ghc` has exactly the shape the probe script consumes:
 TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
   sh build/probe-ordered-622.sh repro build/repro-622/ghc/compiler \
      build/repro-622/ghc/includes build/repro-622/order-6.2.2.txt \
-     ghc622/hsboot ghc622/gen
+     ghc622/hsboot build/repro-622/gen
 ```
 
 ## 3. Verification
@@ -262,19 +263,19 @@ import of TypeRep). The 6.0 set was hand-converted from `.hi-boot-6`
 (`phase2/hiboot2hsboot.py` reads the GHC-4 flavour); 30 of 32 carry over
 verbatim (`build/rebase622/FINDINGS.md` section 4).
 
-**`ghc622/gen/Config.hs`**: the `$(CONFIG_HS)` rule of
-`ghc/compiler/Makefile:180-227` transcribed, i.e. `phase2/gen-6.0/Config.hs`
-with `cProjectVersion "6.2.2"`, `cProjectVersionInt "602"`,
-`cProjectPatchLevel "2"` (`ghc/mk/version.mk:39-41`); the other 33 fields
-are unchanged. It is a transcription with chosen values, not configure
-output: `make -C ghc/compiler main/Config.hs` in the configured tree emits the
-same 36 fields but with `cGhcUnregisterised "NO"` (that flag lives in
-`mk/build.mk`, which we do not write), the utility dirs filled in
-(`cGHC_UNLIT_DIR_REL "utils/unlit"`, ...), `cGHC_PERL "/usr/bin/perl"`,
-`cCONTEXT_DIFF "diff -C 1"`, `cEnableWin32DLLs ""` and whatever booter
-configure saw. None of those is read on the path the probe exercises; the
-checked-in file states an unregisterised x86-64 build, which is what the tree
-is configured for.
+**`main/Config.hs`** (step 9b, `ghc622/tools/config-hs.sh`): what
+`make -C ghc/compiler main/Config.hs` writes in the configured tree, the
+`$(CONFIG_HS)` rule of `ghc/compiler/Makefile:180-227`, with the variables in
+`ghc622/gen/config-hs.mk` read after the Makefile. Left to configure alone the
+rule writes `cGhcUnregisterised "NO"` (that flag lives in `mk/build.mk`, which
+we do not write), the utility dirs filled in (`cGHC_UNLIT_DIR_REL
+"utils/unlit"`, ...), `cGHC_PERL "/usr/bin/perl"`, `cCONTEXT_DIFF "diff -C 1"`,
+`cEnableWin32DLLs ""` and whatever booter configure saw; the overrides pin
+those, and the values configure probes on the host, to an unregisterised
+x86-64 build booted by 4.08.2. The result is byte for byte the transcription
+that was checked in until 2026-10-08 (`phase2/gen-6.0/Config.hs` with
+`cProjectVersion "6.2.2"`, `cProjectVersionInt "602"`, `cProjectPatchLevel
+"2"`), less its comment.
 
 **`build/order-6.2.2.txt`**: `phase2/build-order.py ghc/compiler` minus the
 `ilxGen/tests` programs; the script regenerates it (`dest/order-6.2.2.txt`)
@@ -307,7 +308,7 @@ classify. Then:
     TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
       sh build/probe-ordered-622.sh <label> build/repro-622/ghc/compiler \
          build/repro-622/ghc/includes build/repro-622/order-6.2.2.txt \
-         ghc622/hsboot ghc622/gen
+         ghc622/hsboot build/repro-622/gen
 ```
 
 For "Layout", after the phase3 lines:

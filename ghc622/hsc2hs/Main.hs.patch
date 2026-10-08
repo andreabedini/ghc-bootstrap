@@ -1,0 +1,57 @@
+GHC 6.2.2 hsc2hs -- mhs: the Parser instances split into Functor/Applicative/
+  Monad/MonadFail/Alternative for the post-AMP Prelude (edits marked -- mhs,
+  build/hsc2hs-mhs/FINDINGS.md). Apply with -p1 in ghc/utils/hsc2hs.
+
+--- a/Main.hs
++++ b/Main.hs
+@@ -21,6 +21,7 @@
+ import System        (getProgName, getArgs, ExitCode(..), exitWith, system)
+ import Directory     (removeFile,doesFileExist)
+ import Monad         (MonadPlus(..), liftM, liftM2, when, unless)
++import Control.Applicative (Alternative(..))             -- mhs
+ import Char          (isAlpha, isAlphaNum, isSpace, isDigit, toUpper, intToDigit, ord)
+ import List          (intersperse, isSuffixOf)
+ import IO            (hPutStr, hPutStrLn, stderr)
+@@ -171,8 +172,16 @@
+     '\n' -> SourcePos name (line + 1)
+     _    -> pos
+ 
++-- mhs: Functor/Applicative superclasses, return = pure, fail in MonadFail,
++-- Alternative under MonadPlus: the post-AMP class layout mhs's Prelude has.
++instance Functor Parser where
++    fmap f m = m >>= \a -> return (f a)
++
++instance Applicative Parser where
++    pure a = Parser $ \pos s -> Success pos [] s a
++    mf <*> ma = mf >>= \f -> ma >>= \a -> return (f a)
++
+ instance Monad Parser where
+-    return a = Parser $ \pos s -> Success pos [] s a
+     Parser m >>= k =
+         Parser $ \pos s -> case m pos s of
+             Success pos' out1 s' a -> case k a of
+@@ -181,15 +190,21 @@
+                         Success pos'' (out1++out2) imp'' b
+                     Failure pos'' msg -> Failure pos'' msg
+             Failure pos' msg -> Failure pos' msg
++
++instance MonadFail Parser where                          -- mhs
+     fail msg = Parser $ \pos _ -> Failure pos msg
+ 
+-instance MonadPlus Parser where
+-    mzero                     = fail "mzero"
+-    Parser m `mplus` Parser n =
++instance Alternative Parser where                        -- mhs
++    empty = fail "mzero"
++    Parser m <|> Parser n =
+         Parser $ \pos s -> case m pos s of
+             success@(Success _ _ _ _) -> success
+             Failure _ _               -> n pos s
+ 
++instance MonadPlus Parser where
++    mzero = empty                                        -- mhs
++    mplus = (<|>)                                        -- mhs
++
+ getPos :: Parser SourcePos
+ getPos = Parser $ \pos s -> Success pos [] s pos
+ 

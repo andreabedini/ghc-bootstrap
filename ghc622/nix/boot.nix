@@ -31,8 +31,7 @@ stdenv.mkDerivation {
   buildPhase = ''
     ulimit -s unlimited
     mkdir -p $out/bin $out/libraries/parsec
-    sed "s|/home/andrea/code/haskell/ghc-bootstrap/build/ghc66-by-622/ghc622-inst|$out|" \
-      ${../boot/package.conf} > $out/package.conf
+    sh ${../tools/side-package-conf.sh} $out > $out/package.conf
     grep -q "$out/libraries/parsec" $out/package.conf
     cat > $out/bin/ghc <<EOF
     #!${stdenv.shell}

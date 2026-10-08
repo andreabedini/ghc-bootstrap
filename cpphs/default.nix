@@ -11,18 +11,25 @@
 # behaves the same: both preprocess every .hs/.lhs/.pp file of GHC 6.2.2 with
 # the chain's three flag sets to identical output (1,458 runs, 2026-09-30),
 # except for the source path in cpphs's own #error message.
-{ stdenv, fetchFromGitHub, mhs }:
+{ stdenv, fetchurl, mhs }:
 stdenv.mkDerivation {
   pname = "cpphs";
   version = "1.20.9";
-  # MicroHs's cpphssrc/malcolm-wallace-universe submodule, at the commit
-  # MicroHs 0.16.8.0 pins.
-  src = fetchFromGitHub {
-    owner = "hackage-trustees";
-    repo = "malcolm-wallace-universe";
-    rev = "3ec065411afb499f4c73d74be0e70e2454d0ed29";
-    hash = "sha256-3okIU2zCS3wtF/CSsPTKRNfB8gh/grEOWK0YOMEUsPc=";
-  };
+  # The Hackage releases of cpphs and of polyparse, the parser library it
+  # needs, with the edits MicroHs's cpphs submodule makes to their sources
+  # (hackage-trustees/malcolm-wallace-universe 3ec065411afb), as patches.
+  srcs = [
+    (fetchurl {
+      url = "https://hackage.haskell.org/package/cpphs-1.20.9/cpphs-1.20.9.tar.gz";
+      sha256 = "978df2ae7143f2ddf9b1354370373ed104357845401b50001dca1c1cd30c0b1f";
+    })
+    (fetchurl {
+      url = "https://hackage.haskell.org/package/polyparse-1.12/polyparse-1.12.tar.gz";
+      sha256 = "f54c63584ace968381de4a06bd7328b6adc3e1a74fd336e18449e0dd7650be15";
+    })
+  ];
+  sourceRoot = ".";
+  patches = [ ./cpphs-1.20.9-mhs.patch ./polyparse-1.12-mhs.patch ];
   nativeBuildInputs = [ mhs ];
   hardeningDisable = [ "all" ];
   buildPhase = ''

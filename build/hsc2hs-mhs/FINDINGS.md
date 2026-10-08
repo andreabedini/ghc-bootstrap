@@ -18,8 +18,8 @@ layout, so Main.hs's `#include "../../includes/config.h"` resolves unchanged),
 ## 1. Building hsc2hs
 
 ```
-cd ghc622/hsc2hs/src
-mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i../../../shims -i ghc622/shims-h98 Main -o hsc2hs-bin
+cd build/hsc2hs-mhs/ghc/utils/hsc2hs   # written by build.sh: tarball + ghc622/hsc2hs/Main.hs.patch
+mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i$R/ghc622/hsc2hs/shims -i$R/ghc622/shims-h98 Main -o hsc2hs-bin
 ```
 
 - `-D__GLASGOW_HASKELL__=622` (not the compiler build's 408): Main.hs imports
@@ -142,8 +142,8 @@ GHCi-only: it is an ordinary module of base whose `.o` goes into `libHSbase.a`
 - New files in the tree: `System/{CPUTime,Time}.hs`,
   `System/Posix/Signals.hs`, `Text/Regex/Posix.hs` (generated), their
   `.hi`/`.hc`, and `.hi`/`.hc` for the three importers; seven `.o` in `hcobj/`.
-- Tarball extractions untouched; the only edited source is the Main.hs copy
-  under `ghc622/hsc2hs/src`.
+- Tarball extractions untouched; the only edited source is Main.hs, kept as
+  `ghc622/hsc2hs/Main.hs.patch` against the tarball's.
 
 ## 7. Open
 

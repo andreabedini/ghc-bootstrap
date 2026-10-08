@@ -208,7 +208,7 @@ Typechecking the tree with mhs (about an hour; `phase4/FINDINGS.md` section 2):
 TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
   sh build/probe-ordered-622.sh <label> build/repro-622/ghc/compiler \
      build/repro-622/ghc/includes build/repro-622/order-6.2.2.txt \
-     ghc622/hsboot ghc622/gen
+     ghc622/hsboot build/repro-622/gen
 ```
 
 From the typechecked tree to the self-hosting compiler, the chain is one
@@ -271,7 +271,9 @@ ghc622/ ghc66/ ... ghc914/
                       in nix/ (ghc622.tree, .stage1, .stage2, ...); patches/ (the series
                       0001-0026), shims/ shims-ghc/ shims-h98/, hsboot/, gen/, tools/,
                       and the inputs of each stage (stage1/, base/, stage2/, rts/,
-                      hsc2hs/, boot/, test/)
+                      hsc2hs/, test/); generated files (Config.hs, the module
+                      orders, fixups, package.conf) are made by tools/ in the
+                      build; the stage-2 order also reads phase2's import scanner
 common/               what several links share: shims/ (ghc-on-mhs, used by happy and
                       6.2.2), test/ (T3, GmpZero), hadrian-ghc.nix (the Hadrian rungs)
 phase0/               surveying candidate compilers; the Hugs -> MicroHs seed (feature-scan.py)

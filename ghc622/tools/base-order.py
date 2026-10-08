@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Topological build order for libraries/base (GHC 6.2.2) from its import lines.
 
-Modules: every .hs/.lhs under the ALL_DIRS of libraries/base/Makefile.
+Modules: every .hs/.lhs under the ALL_DIRS of libraries/base/Makefile,
+except those hsc2hs writes (an X.hs beside an X.hsc).
 Edges: `import [qualified] M` lines; `{-# SOURCE #-}` imports are dropped
 (they are satisfied by .hi-boot files, as GHC's own build does).
 Modules outside the package (GHC.Prim, wired-in) are ignored.
@@ -25,6 +26,8 @@ for d in dirs:
     p = os.path.join(root, d)
     if not os.path.isdir(p): continue
     for f in sorted(os.listdir(p)):
+        if f.endswith(".hs") and os.path.exists(os.path.join(p, f[:-3] + ".hsc")):
+            continue   # hsc2hs output: compiled after hsc2hs, in base/after-hsc2hs.txt's order
         if f.endswith(".hs") or f.endswith(".lhs"):
             m = (d.replace("/", ".") + "." if d else "") + f.rsplit(".", 1)[0]
             mods[m] = os.path.join(p, f)

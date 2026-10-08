@@ -32,7 +32,7 @@ and gcc, linked against build/rts622 and the stage-1-built base).
   and ghc-usage.txt copied from build/ghc622-mhs/topdir; includes ->
   src/.../ghc/includes; rts -> build/rts622; libraries/base -> the stage-1
   built base (read only).
-- order.txt (make-order.py, 220 modules): phase2/build-order.py over the
+- order.txt (ghc622/tools/make-order.py, 220 modules): phase2/build-order.py over the
   pristine tree minus ghci/ilxGen/javaGen/nativeGen and HsGeneric, DsMeta,
   TcSplice, Convert (Makefile EXCLUDED_SRCS without GHCI), plus one edge the
   textual scan misses: HsVersions.h `import qualified FastString` unless
@@ -376,7 +376,7 @@ Outstanding before or at the resume:
   the mhs inputs as prerequisites), the 147 base modules, the 30 haskell98
   modules, the 220 stage-2 modules, their objects, the archives, the link,
   and `test/Hello.hc`. `build/mk/gen-deps.py` writes `build/mk/deps.mk` with
-  the real import edges (base-order.py's cpp'd scan for base; build-order.py
+  the real import edges (ghc622/tools/base-order.py's cpp'd scan for base; build-order.py
   + the HsVersions.h FastString edge for the compiler), so a changed module
   rebuilds exactly its importers. Per-module recipes are
   `build/mk/compile-{base,h98,stage2}.sh`, the loop bodies of run-base.sh,

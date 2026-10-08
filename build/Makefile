@@ -116,9 +116,19 @@ LIBS_STAMP := $(S2)/topdir/libs.stamp
 
 include $(MK)/deps.mk
 
-$(MK)/deps.mk: $(MK)/gen-deps.py $(G)/base/base-rebuild-order.txt $(G2)/order.txt
+$(MK)/deps.mk: $(MK)/gen-deps.py $(M1)/base-rebuild-order.txt $(S2)/order.txt
 	python3 $(MK)/gen-deps.py > $@.tmp && mv $@.tmp $@
 deps: $(MK)/deps.mk
+
+# The two module orders, generated (ghc622/tools; as ghc622/nix/base.nix and stage2.nix do).
+$(M1)/base-rebuild-order.txt: $(G)/tools/base-rebuild-order.sh $(G)/tools/base-order.py $(G)/base/after-hsc2hs.txt
+	sh $(G)/tools/base-rebuild-order.sh $(BASE) $(INC1) $(G)/base/after-hsc2hs.txt > $@.tmp && mv $@.tmp $@
+$(S2)/order.txt: $(G)/tools/make-order.py $(R)/phase2/build-order.py
+	GHC_BOOTSTRAP_ROOT=$(R) python3 $(G)/tools/make-order.py $(SRC2) > $@.tmp && mv $@.tmp $@
+
+# Stage 2's fixups: ghc622/stage2/fixups/<path>.patch applied to SRC2/<path>.
+$(S2)/fixups/%: $(G2)/fixups/%.patch $(SRC2)/%
+	sh $(G)/tools/make-fixups.sh $(SRC2) $(G2)/fixups $(S2)/fixups
 
 $(M1)/lib/libHSbase.a $(M1)/lib/libHSbase_cbits.a &: $(BASE_OBJS) $(wildcard $(M1)/cbitsobj/*.o) $(M1)/build-libbase.sh
 	sh $(M1)/build-libbase.sh
