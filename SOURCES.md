@@ -36,12 +36,6 @@ the patch). `phase0/bootstrap-seed.sh` expects it at `../MicroHs` and builds
 `MicroHs/bin/mhs` and `MicroHs/bin/cpphs`, which every later phase uses.
 `generated/hmhs.c` and `mhs.conf` inside it are build outputs.
 
-## `nhc98/`
-
-A clone of a local mirror (`../haskell-implementations/nhc98.git`, commit
-`f88aaa63934e196a58af832c4a1a73dade1517ad`, "Import from 1.22"). Consulted
-for `BOOTSTRAP-ANALYSIS.md` only; nothing in the chain uses it.
-
 ## `build/downloads/`
 
 The happy release tarballs surveyed for the happy sub-bootstrap (D4-D10):
