@@ -30,7 +30,7 @@ flowchart LR
 
 ## 2. Phase 0: the seed, Hugs to a self-hosting mhs
 
-From `mhs/default.nix` and `phase0/bootstrap-seed.sh`. The Nix build deletes
+From `mhs/default.nix` and `mhs/bootstrap-seed.sh`. The Nix build deletes
 MicroHs's shipped `generated/*.c` before anything runs; the `build/` scripts
 use the shipped `mhs.c`, and D1 is the check that the two compilers agree.
 

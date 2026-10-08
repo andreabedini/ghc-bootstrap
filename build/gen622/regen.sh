@@ -20,7 +20,7 @@ GENPOC_SRC=$B/ghc-6.2.2/ghc/utils/genprimopcode/Main.hs   # pristine 6.2.2 tarba
 export PATH="$R/MicroHs/bin:$PATH"
 export TMPDIR="$G/tmp"; mkdir -p "$TMPDIR"
 export HAPPY_DATADIR="$B/happy-mhs/datadir"   # portable HappyTemplate (happy 1.19.5)
-HAPPY=$B/happy-mhs/happy-mhs2                 # the fixpoint-verified happy (phase2/FINDINGS.md)
+HAPPY=$B/happy-mhs/happy-mhs2                 # the fixpoint-verified happy (notes/phase2/FINDINGS.md)
 
 # ---- genprimopcode: 6.2.2's own utils/genprimopcode/Main.hs, compiled by mhs -------
 # Main.hs imports the H98 modules Monad/Char/List/Maybe/System (ghc622/shims-h98)

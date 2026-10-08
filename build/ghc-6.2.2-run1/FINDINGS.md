@@ -6,7 +6,7 @@ dead ILX/Java backends and one shadowed module. Stop condition (a) reached.*
 
 Tree `build/ghc-6.2.2-run1/ghc/{compiler,includes,utils}`, log
 `build/ghc-6.2.2-run1/LOG.md`, results `build/probe-6.2.2-run1-final.tsv`,
-patch `build/6.2.2-run1.patch`, script `build/probe-ordered-622.sh`.
+patch `build/6.2.2-run1.patch`, script `ghc622/tools/probe-ordered.sh`.
 
 ## 1. Setup decisions
 
@@ -23,7 +23,7 @@ patch `build/6.2.2-run1.patch`, script `build/probe-ordered-622.sh`.
   the info table because there is no TABLES_NEXT_TO_CODE); 6.0-run2 and lexer622
   generated it without those flags and have 2. Kept 3: it is the value an unregisterised
   x86_64 build uses. It only feeds code-generation constants; typechecking is unaffected.
-- **cpp defines**: identical to `build/probe-ordered-slit.sh`:
+- **cpp defines**: identical to `notes/probes/probe-ordered-slit.sh`:
   `-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__
   -D__CONCURRENT_HASKELL__ -DOMIT_NATIVE_CODEGEN`. `__GLASGOW_HASKELL__=408` kept:
   HsVersions.h maps GLAEXTS/DATA_BITS/UNSAFE_IO/... to the pre-hierarchical names the
@@ -113,7 +113,7 @@ Tree (`ghc/compiler`, all commented `-- ... mhs ...` / `/* mhs ... */`):
 Outside the compiler tree: `ghc/utils/ghc-pkg` + symlink; `ghc/includes/config.h`,
 `DerivedConstants.h`; shims CForeign.hs, Foreign.hs, StringBuffer.hs, THSyntax.hs;
 hsboot TcMatches, DataCon; `Config.hs` (`ghc622/tools/config-hs.sh`); `build/order-6.2.2.txt`,
-`build/order-6.2.2-pass2.txt`, `build/order-side{1,2,3}.txt`; `build/probe-ordered-622.sh`.
+`build/order-6.2.2-pass2.txt`, `build/order-side{1,2,3}.txt`; `ghc622/tools/probe-ordered.sh`.
 
 Tree-wide scans run to pre-empt the classes hit (all negative after the fixes above):
 `#include` targets missing from the tree (only the primop includes); `#error`
@@ -147,11 +147,11 @@ the three regenerated parsers (now excluded).
 
 ## 5. What next
 
-1. Fold the patch into `phase2/patches` style (one concern per patch) together with
-   gen622's and lexer622's recipes; add `probe-ordered-622.sh`, the order files and
+1. Fold the patch into `notes/phase2/patches` style (one concern per patch) together with
+   gen622's and lexer622's recipes; add `ghc622/tools/probe-ordered.sh`, the order files and
    `gen-6.2.2` to the reproduction steps.
 2. Link: the mhs codegen output exists for Main (`out.comb` per invocation); build a
-   real `ghc` binary with mhs (as `build/compile-ghc.sh` did for 4.08.2's hsc) and run
+   real `ghc` binary with mhs (as `notes/probes/compile-ghc.sh` did for 4.08.2's hsc) and run
    it on a Prelude module to find the runtime-behaviour gaps (unsafeInterleaveIO
    semantics, FastString/StringBuffer shims, the lazy-Int `FastInt`).
 3. Then the 6.2.2 libraries (`libraries/base` with 6.2.2's own `.hc` route) against

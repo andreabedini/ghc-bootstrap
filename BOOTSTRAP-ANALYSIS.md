@@ -99,13 +99,13 @@ to a GHC".
 > produces a native MicroHs that reaches a byte-identical fixpoint, and that emits byte-identical
 > output to the compiler built from MicroHs's shipped pre-generated C. The pre-generated
 > combinator file is therefore no longer in the trusted base.
-> Details: [`phase0/FINDINGS.md`](phase0/FINDINGS.md); reproduce with `phase0/bootstrap-seed.sh`.
+> Details: [`notes/phase0/FINDINGS.md`](notes/phase0/FINDINGS.md); reproduce with `mhs/bootstrap-seed.sh`.
 
 ## Plan
 
 Combine approaches 3 and 4; treat 1 as separable work that pays off regardless.
 
-### Phase 0 — verify the seed (days) — **DONE, see `phase0/FINDINGS.md`**
+### Phase 0 — verify the seed (days) — **DONE, see `notes/phase0/FINDINGS.md`**
 
 Build Hugs from source, then `make bin/hmhs` in MicroHs; confirm the Hugs-generated `hmhs.c`
 yields a compiler that fixpoints against `make bootstrap`. Success gives an auditable root:
@@ -113,7 +113,7 @@ C compiler + Hugs source -> working Haskell compiler. Failure is itself high-val
 off-the-beaten-path target that may have rotted, and the fix is small and worth upstreaming.
 
 Outcome: it had rotted. Hugs builds clean on GCC 16 with three mechanical fixes
-(`phase0/build-hugs.sh`); MicroHs's shim needed a one-line fix; then it stops at pattern
+(`hugs/build-hugs.sh`); MicroHs's shim needed a one-line fix; then it stops at pattern
 guards. **The next task is to implement pattern guards in Hugs** — `parser.y:616` and
 `parser.y:875` need the existing `quals` production, and `machine.c:buildGuards`/`makeTests`
 need fall-through for a failing guard pattern. Contained C work in one or two files, and much
@@ -122,7 +122,7 @@ mutual recursion itself via `.hs-boot`.
 
 ### Phase 1 — pick the target GHC empirically (a few weekends) — **DONE, twice**
 
-> **Status.** Measured 2026-09-02 (`phase1/FINDINGS.md`, D2): 4.08.2 scored
+> **Status.** Measured 2026-09-02 (`notes/phase1/FINDINGS.md`, D2): 4.08.2 scored
 > best on every axis that matters to mhs (smallest source, 3 modern-extension
 > hits against 21 for 6.0, no library gap, no shipped generated code), so the
 > plan's hypothesis that a newer GHC would score far better was wrong. What
@@ -144,11 +144,11 @@ unregisterised / via-C backend so its output needs only gcc. (Modern GHC still h
 ### Phase 2 — the compat layer, as two separate problems — **DONE**
 
 > **Status.** Both halves exist for both targets: the shims in
-> `phase1/shims-*` and `ghc622/shims`, and the patch series in
-> `phase2`+`phase3` (30 patches, 4.08.2) and `phase4` (26 patches, 6.2.2),
+> `common/shims`, `ghc622/shims-*` and `ghc622/shims`, and the patch series in
+> `notes/phase2`+`notes/phase3` (30 patches, 4.08.2) and `ghc622/patches` (26 patches, 6.2.2),
 > each checked to reproduce its working tree from the pristine tarball.
 > Flattening was indeed unnecessary: mhs reads the `.hs-boot` files converted
-> from GHC's `.hi-boot` (`phase2/hiboot2hsboot.py`).
+> from GHC's `.hi-boot` (`notes/phase2/hiboot2hsboot.py`).
 
 1. A `ghc-on-mhs` shim package providing what the old compiler's modules import from its own
    `base`/RTS, implemented over MicroHs's `lib/`.
@@ -173,7 +173,7 @@ native GHC that self-hosts. Then we are on the chain.
 
 ### Phase 4 — fill the Guix gap, 6.10.4 -> 7.8.4 (parallel, independent) — **not started**
 
-> **Status.** Untouched. Note that `phase4/` in this repo is *not* this
+> **Status.** Untouched. Note that `notes/phase4/` in this repo is *not* this
 > phase: it holds the 6.2.2 reproduction (README "Layout"). Entering at 6.2.2
 > rather than 4.08.2 also skips the first two hops of Guix's chain.
 

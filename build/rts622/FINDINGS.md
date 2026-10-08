@@ -44,7 +44,7 @@ libraries). Left as is.
 
 `ghc/includes/config.h` is not written by configure; `ghc/includes/Makefile`'s
 `$(H_CONFIG)` rule prepends the platform defines to `mk/config.h`. Transcribed
-by hand (as `phase2/mkconfig.sh` did): 283 defines, including
+by hand (as `notes/phase2/mkconfig.sh` did): 283 defines, including
 `#define x86_64_TARGET_ARCH 1`. `ghc/includes/gmp.h` is copied from
 `ghc/rts/gmp/gmp.h` exactly as that Makefile does (the bundled GMP 4-era
 header; the link uses the system `libgmp`, and the `__mpz_struct` layout is
@@ -122,7 +122,7 @@ them.
 `createAdjustor` ends in `#else barf("adjustor creation not supported on this
 platform")` (Adjustor.c:485) and `freeHaskellFunctionPtr` in `#else
 ASSERT(0)` (line 549); both compile and link on x86_64 as they are. The
-`phase3/rts-x86_64-stubs.c` file is not needed. (`foreign export dynamic` is
+`notes/phase3/rts-x86_64-stubs.c` file is not needed. (`foreign export dynamic` is
 still absent on x86_64 in 6.2.2, but it is absent honestly.)
 
 **Not a C error but a build-system gap: `AutoApply.hc`.** `ghc/rts/Makefile`

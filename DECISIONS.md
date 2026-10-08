@@ -9,7 +9,7 @@ Detail lives in the phase findings; this file is the index of *choices*.
 *Phase 0, 2026-09-02.* Verified end to end: Hugs runs the MicroHs compiler,
 which emits C for itself; the result reaches a byte-identical fixpoint and
 matches the compiler built from MicroHs's shipped seed (diverse double
-compilation). Details: [`phase0/FINDINGS.md`](phase0/FINDINGS.md).
+compilation). Details: [`notes/phase0/FINDINGS.md`](notes/phase0/FINDINGS.md).
 
 **Overturned by:** nothing so far. This is the one fully-verified link.
 
@@ -21,7 +21,7 @@ the source of 6.10.4 (77,734 vs 157,890 lines), has 3 modern-extension hits vs
 239, needs no external packages, and ships no generated Haskell. 6.10.4's only
 advantage — RTS coupling concentrated in `GHC.Exts` rather than 18 `Prel*`
 modules — does not pay for 80,000 extra lines and a Cabal dependency.
-Details: [`phase1/FINDINGS.md`](phase1/FINDINGS.md).
+Details: [`notes/phase1/FINDINGS.md`](notes/phase1/FINDINGS.md).
 
 **Overturned by:** discovering that `mhs` rejects something structural in
 4.08.2 that a later GHC avoids. Nothing found yet; the `mhs`-side check has not
@@ -148,7 +148,7 @@ exists, it must regenerate both byte-identically.
 Generated parsers go in `build/ghc-parsers/` and reach the compiler through
 `mhs -i`, not by being copied into `ghc-4.08.2/ghc/compiler/parser/`. Shims go in
 `common/shims/`. Source changes, when they become unavoidable, go in a numbered
-patch series against the unmodified tarball, as `phase0/patches/` already does
+patch series against the unmodified tarball, as `hugs/patches/` and `mhs/patches/` already do
 for Hugs and MicroHs.
 
 This is what `BOOTSTRAP-ANALYSIS.md` means by keeping the result auditable
@@ -284,10 +284,10 @@ parser as a stray `\`. 20 of GHC 4.08.2's `.lhs` files have such a line.
 GHC's own `unlit` tolerates trailing whitespace, so `mhs` is the stricter of the
 two and arguably the one that is wrong. Fixing `mhs` would be a two-line change
 — but `mhs` is the *verified seed*, and changing it invalidates Phase 0's
-fixpoint and DDC results until `phase0/bootstrap-seed.sh` is re-run.
+fixpoint and DDC results until `mhs/bootstrap-seed.sh` is re-run.
 
 So the fix goes on the GHC side, as
-`phase2/patches/0001-ghc-unlit-trailing-space.patch` — 20 files, 224 lines, and
+`notes/phase2/patches/0001-ghc-unlit-trailing-space.patch` — 20 files, 224 lines, and
 every hunk is a deleted trailing space. It is the most auditable kind of patch
 there is, and it leaves the project's one fully-verified artifact untouched.
 
@@ -313,7 +313,7 @@ behind master) that solves Phase 0's blocker the *other* way: instead of adding
 pattern guards to Hugs, it hand-rewrites MicroHs's own pattern guards into
 `case` expressions (43 in `src/` on master, 1 on that branch).
 
-Our choice — `phase0/patches/0002`, 292 lines of Hugs `parser.y` — is the better
+Our choice — `hugs/patches/0002`, 292 lines of Hugs `parser.y` — is the better
 artifact for a bootstrap argument: it fixes the *seed compiler* once, for every
 program it will ever compile, rather than contorting the program being compiled,
 and it does not need redoing each time MicroHs grows a new pattern guard. Master
@@ -418,7 +418,7 @@ Two details worth keeping:
   **The general lesson for a mechanical patch series:** a regex that deletes
   text must never be allowed to span a line, because the failure mode is not a
   patch that does not apply — it is a patch that applies and quietly changes the
-  meaning of the program. Every patch in `phase2/patches/` is worth reading as a
+  meaning of the program. Every patch in `notes/phase2/patches/` is worth reading as a
   diff for exactly this reason.
 - **`Char(..)` no longer names a constructor.** `Ctype.lhs` imports
   `PrelBase(Char#, Char(..))` for `C#`. In the shim `C#` is a pattern synonym,
@@ -481,9 +481,9 @@ nothing. Reach for it before reaching for a mechanism.
 
 **Also invalidated by this:** the enriched `IdInfo.hs-boot` and `CoreSyn.hs-boot`
 written to support the wrong theory turned out to be unnecessary and were
-removed; only `phase2/hsboot/Type.hs-boot` is genuinely needed (D22a below).
-The topological build order (`phase2/build-order.py`,
-`phase2/build-order.txt`, `build/build-ghc.sh`) was also written for this
+removed; only `notes/phase2/hsboot/Type.hs-boot` is genuinely needed (D22a below).
+The topological build order (`ghc622/tools/build-order.py`,
+`notes/phase2/build-order.txt`, `notes/probes/build-ghc.sh`) was also written for this
 theory. It is **kept** — it mirrors what GHC's own `mkdependHS` does, it is
 useful for building incrementally and resuming, and it costs nothing — but it
 was not the fix.
@@ -494,7 +494,7 @@ was not the fix.
 `.hi-boot` files are interfaces, so GHC's `PprType.hi-boot` can name
 `Type.PredType` without creating a build edge. `mhs`'s `.hs-boot` files are real
 modules, so the same reference imports `Type` and re-forms the cycle
-`Type -SOURCE-> PprType -> Type`. `phase2/hsboot/Type.hs-boot` declares
+`Type -SOURCE-> PprType -> Type`. `notes/phase2/hsboot/Type.hs-boot` declares
 `PredType` abstractly so `PprType.hs-boot` can SOURCE-import `Type` instead.
 The converter learned to emit `{-# SOURCE #-}` between boot modules for the
 same reason.
@@ -618,7 +618,7 @@ Abstract C plus a 36,649-byte interface. The output is GHC's own unregisterised
 via-C form — `INFO_TABLE`, `IFN_`, `ARGS_CHK`, `JMP_`, 712 closures — and the
 interface is GHC 4.08's `__interface` format.
 
-Details and the exact pipeline: [`phase3/FINDINGS.md`](phase3/FINDINGS.md).
+Details and the exact pipeline: [`notes/phase3/FINDINGS.md`](notes/phase3/FINDINGS.md).
 
 **Not yet established:** that the C is *correct*. It has not been compiled by
 gcc or run. Given that this phase has already produced two bugs which typechecked
@@ -639,7 +639,7 @@ C compiler + Hugs source -> mhs -> hsc -> PrelBase.hc -> gcc -> PrelBase.o
 Every link in that chain was built from source by the link before it, and the
 only pre-existing binary is a C compiler.
 
-Needed one more patch to GHC's own headers (`phase3/patches/0019`): `CLOSURE_TBL`
+Needed one more patch to GHC's own headers (`notes/phase3/patches/0019`): `CLOSURE_TBL`
 defines a table as `const StgClosure *[]` while `EDCP_` declares it without the
 `const`, which 1999 gcc accepted and modern gcc rejects.
 
@@ -750,7 +750,7 @@ driver flag, not an `hsc` flag: it names a C header to inject into the generated
 ### D30 — Two more header/encoding warts in the 4.08.2 tree
 *2026-09-02.*
 
-**`writeMutVarzh` (`phase3/patches/0021`).** `PrimOps.h:648` reads
+**`writeMutVarzh` (`notes/phase3/patches/0021`).** `PrimOps.h:648` reads
 
 ```c
 #define writeMutVarzh(a,v)       (P_)(((StgMutVar *)(a))->var)=(v)
@@ -793,7 +793,7 @@ x86-64 an implicitly-declared function returning a pointer is assumed to return
 one — D24 again.
 
 The tarball ships `configure` and `mk/config.h.in` with all 177 probes, so the
-fix is to run GHC's own machinery rather than guess values. `phase2/mkconfig.sh`
+fix is to run GHC's own machinery rather than guess values. `notes/phase2/mkconfig.sh`
 now does that, then transcribes `ghc/includes/Makefile`'s `$(H_CONFIG)` rule to
 prepend the platform defines. Result: 153 defines instead of 49, including
 `HAVE_TM_ZONE 1`, `TYPE_TIMEZONE time_t`, `SIZEOF_VOID_P 8`.
@@ -1108,7 +1108,7 @@ and the link.
 ---
 
 ### D40 — The RTS compiles: 45/45
-*2026-09-02.* `phase3/build-rts.sh` builds `ghc/rts/*.c` plus `hooks/*.c` — the
+*2026-09-02.* `notes/phase3/build-rts.sh` builds `ghc/rts/*.c` plus `hooks/*.c` — the
 `SRCS_RTS_C` of `ghc/rts/Makefile`, minus the Windows-only `RtsDllMain.c` and
 the `parallel/` directory, which belongs to the "mp" way. 45 objects, 168
 defined symbols including `main`, `GarbageCollect`, `initStorage`, `newCAF`.
@@ -1185,7 +1185,7 @@ Two gaps were filled rather than found:
   Float ones. The header already aliases the *decode* direction
   (`decodeFloatzh_fast` -> `decodeDoublezh_fast`); the encode direction was
   simply left out. Added the matching aliases.
-- **The adjustor** (`phase3/rts-x86_64-stubs.c`). `Adjustor.c` implements
+- **The adjustor** (`notes/phase3/rts-x86_64-stubs.c`). `Adjustor.c` implements
   `createAdjThunk`/`freeHaskellFunctionPtr` only for i386 and sparc, with the
   comment "Heavily arch-specific, I'm afraid..". These generate machine code at
   runtime so a Haskell closure can be passed to C as a function pointer. x86-64
@@ -1320,8 +1320,8 @@ would largely disappear.
 dependency order from `build-order.py`, sharing the `-C` cache (D22: any other
 shape mis-binds boot modules). Same shim set, same cpp defines for both trees.
 4.08.2 is the control: phase 2 built `hsc` from it, so a correct harness must
-score near 100% on it. Scripts: `phase2/probe-ordered.sh`,
-`phase2/scan-classify.py`. Raw data: `build/probe-{4.08.2,6.0b}.tsv`.
+score near 100% on it. Scripts: `notes/phase2/probe-ordered.sh`,
+`notes/phase2/scan-classify.py`. Raw data: `build/probe-{4.08.2,6.0b}.tsv`.
 Measured on 6.0; no 6.2 tarball here, but 6.0 is one minor release earlier and
 structurally identical for this question.
 
@@ -1371,18 +1371,18 @@ Recorded because the first three "results" of this probe were pure artefact:
 2. `-DHscIfaceFileVersion` is a per-module define in `ghc/compiler/Makefile`;
    without it `Constants.lhs` fails and ~140 modules cascade.
 3. 6.0's `main/Config.hs` is generated by the Makefile and absent from the
-   tarball; transcribed into `phase2/gen-6.0/Config.hs`.
+   tarball; transcribed into `notes/phase2/gen-6.0/Config.hs`.
 4. The driver's five `@HsSourceCppOpts` defines were missing, so `HsVersions.h`
    expanded `FMAP` to `map` instead of `fmap` and 62 modules failed to
    typecheck. These were already reconstructed in phase 3 (D32) and not carried
    over — the same lesson as the whole project: with GHC, the Makefile and the
    perl driver *are* part of the compiler.
-5. Four hand-repaired `.hs-boot` files in `phase2/hsboot/` were clobbered by
+5. Four hand-repaired `.hs-boot` files in `notes/phase2/hsboot/` were clobbered by
    generated ones; the broken `InstEnv.hs-boot` alone took out 69 modules.
 
 Control trajectory as these were fixed: 9/153 -> 28/96 -> 42/115 -> 190/195.
 
-**Process note.** `phase2/probe-ordered.sh` was edited while a shell was still
+**Process note.** `notes/phase2/probe-ordered.sh` was edited while a shell was still
 executing it. sh reads scripts incrementally, so the trailing summary line was
 parsed from a shifted offset and died with "unexpected EOF". The loop had been
 parsed whole and ran correctly — all 195 rows are present and uniform — but the
@@ -1654,7 +1654,7 @@ the native compiler reproduces the stage-1 compiler's `.hc` output for base
 
 **Decision.** None beyond D48. The resume is `FRESH=0` on the same order
 (`results.tsv` is the cache), after relinking the stage-1 compiler with the
-`GetImports` edit and adding that hunk to `phase4/series.conf` so
+`GetImports` edit and adding that hunk to `ghc622/series.conf` so
 `make-patch.sh` accepts the tree again.
 
 **Overturned by:** nothing; there is no decision here to overturn.

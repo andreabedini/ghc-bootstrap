@@ -123,7 +123,7 @@ deps: $(MK)/deps.mk
 # The two module orders, generated (ghc622/tools; as ghc622/nix/base.nix and stage2.nix do).
 $(M1)/base-rebuild-order.txt: $(G)/tools/base-rebuild-order.sh $(G)/tools/base-order.py $(G)/base/after-hsc2hs.txt
 	sh $(G)/tools/base-rebuild-order.sh $(BASE) $(INC1) $(G)/base/after-hsc2hs.txt > $@.tmp && mv $@.tmp $@
-$(S2)/order.txt: $(G)/tools/make-order.py $(R)/phase2/build-order.py
+$(S2)/order.txt: $(G)/tools/make-order.py $(R)/ghc622/tools/build-order.py
 	GHC_BOOTSTRAP_ROOT=$(R) python3 $(G)/tools/make-order.py $(SRC2) > $@.tmp && mv $@.tmp $@
 
 # Stage 2's fixups: ghc622/stage2/fixups/<path>.patch applied to SRC2/<path>.

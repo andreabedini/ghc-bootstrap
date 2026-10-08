@@ -1,6 +1,6 @@
 # GHC 6.2.2 parser/Lexer.hs and StringBuffer under mhs
 
-Result: `build/lexer622/Lexer.hs` compiles with mhs (`sh build/lexer622/compile.sh Lexer`,
+Result: `build/lexer622/Lexer.hs` compiles with mhs (`sh notes/probes/lexer622-compile.sh Lexer`,
 rc=0, ~80 s cold / ~25 s warm), and a token-dump driver built from it lexes a
 sample program, a 79-file corpus and the cpp-stripped Lexer.hs itself with the
 expected tokens and spans. READY is touched.
@@ -19,8 +19,8 @@ expected tokens and spans. READY is touched.
 | `driver/Main.hs` | token-dump driver (`work/lexdump`), verification only |
 
 Directory search order used: `build/lexer622` (Lexer.hs, StringBuffer.hs), `shims/` (empty),
-`overlay/`, `phase2/hsboot-6.0-run2`, `build/shims-6.0-run2`, `common/shims{,-ghc,-h98}`,
-`phase2/gen-6.0`, then every subdirectory of `build/rebase622/try622`.
+`overlay/`, `notes/phase2/hsboot-6.0-run2`, `build/shims-6.0-run2`, `common/shims{,-ghc,-h98}`,
+`notes/phase2/gen-6.0`, then every subdirectory of `build/rebase622/try622`.
 
 ## Approach: (1) hand-convert the shipped -g output
 
@@ -121,7 +121,7 @@ copied function by function, with these documented differences:
 
 ## Verification
 
-1. `sh build/lexer622/compile.sh Lexer` -> rc=0 (only the pre-existing cpphs
+1. `sh notes/probes/lexer622-compile.sh Lexer` -> rc=0 (only the pre-existing cpphs
    warning about `FiniteMap.lhs:35`). A negative test -- a copy of Lexer.hs
    with an appended type error placed first on the -i path -- fails with the
    error located in `GenericTemplate.hs`, proving it is this Lexer.hs that

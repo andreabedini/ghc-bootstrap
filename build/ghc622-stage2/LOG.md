@@ -32,7 +32,7 @@ and gcc, linked against build/rts622 and the stage-1-built base).
   and ghc-usage.txt copied from build/ghc622-mhs/topdir; includes ->
   src/.../ghc/includes; rts -> build/rts622; libraries/base -> the stage-1
   built base (read only).
-- order.txt (ghc622/tools/make-order.py, 220 modules): phase2/build-order.py over the
+- order.txt (ghc622/tools/make-order.py, 220 modules): ghc622/tools/build-order.py over the
   pristine tree minus ghci/ilxGen/javaGen/nativeGen and HsGeneric, DsMeta,
   TcSplice, Convert (Makefile EXCLUDED_SRCS without GHCI), plus one edge the
   textual scan misses: HsVersions.h `import qualified FastString` unless
@@ -70,7 +70,7 @@ and gcc, linked against build/rts622 and the stage-1-built base).
    `#if defined(__MHS__)` branch using `readBinaryFile` (as `readBinMem` in
    utils/Binary.hs already does), comment `-- mhs`; **relink deferred** until
    the loop is done (one compiler process at a time); `build/6.2.2-run1.patch`
-   must be regenerated then, and `sh phase4/make-patch.sh` rerun.
+   must be regenerated then, and `sh ghc622/make-patch.sh` rerun.
    (b) to unblock now: `fixups/parser/Ctype.lhs`, the pristine file with each
    byte >127 spelled `\xNN` (comments only; `diff` shows 95 comment lines and
    nothing else), compiled by hand with the loop's flags (compile-one.sh) into
@@ -105,8 +105,8 @@ Outstanding before or at the resume:
 
 - The stage-1 fix (a) to `GetImports.hs` is in `build/ghc-6.2.2-run1` but
   the stage-1 binary `build/ghc622-mhs/ghc` (10:04) was not relinked, and
-  `phase4/make-patch.sh` has not been rerun (it will stop on the new hunk
-  until `series.conf` classifies it; `phase4/FINDINGS.md` section 8).
+  `ghc622/make-patch.sh` has not been rerun (it will stop on the new hunk
+  until `series.conf` classifies it; `notes/phase4/FINDINGS.md` section 8).
 - Resume: `FRESH=0` on the same order with `run-compiler.sh`; `Ctype`
   compiles from `fixups/` until the stage-1 binary carries fix (a).
 - Then `build-hc-stage2.sh` over the rest, `link-stage2.sh` (untested),
@@ -171,7 +171,7 @@ Outstanding before or at the resume:
   Fix, permanent and in the generator, not a fixups/ workaround: new
   `ghc622/tools/fix-generated-parsers.sh` applies all three rewrites (OPTIONS_GHC,
   the two imports, the parentheses) and is called by
-  `phase4/regen-generated.sh` and `build/gen622/regen.sh` after each happy
+  `ghc622/tools/regen-generated.sh` and `build/gen622/regen.sh` after each happy
   run; applied to the three parsers in this tree and in
   `build/ghc-6.2.2-run1` (the reproduce script's reference), which are now
   identical again -- the run1 copies had never received fixes 2 and 3
@@ -189,7 +189,7 @@ Outstanding before or at the resume:
   `#include` writes `#line 1 "missing file: ..."` and exits 0 (verified on a
   two-line file), so 226/235 never noticed. TcForeign is on Main's path
   (TcRnDriver imports it). Generated it as the Makefile does, with the
-  mkDerivedConstants recipe of phase4/reproduce-6.2.2.sh (gcc -include
+  mkDerivedConstants recipe of ghc622/reproduce-6.2.2.sh (gcc -include
   stdio.h -DNO_REGS -DUSE_MINIINTERPRETER, unresolved symbols ignored): 43
   lines of OFFSET_*/TSO_*/BDESCR_* defines, installed in this tree's
   ghc/includes and in build/ghc-6.2.2-run1/ghc/includes; step 5b added to
@@ -310,7 +310,7 @@ Outstanding before or at the resume:
 - Chosen fix: option (a) of the entry above. The tree the series is
   generated from, build/ghc-6.2.2-run1/ghc/compiler/utils/Binary.hs, now
   writes the pristine wire format and ghc622/patches/0004 was regenerated
-  from it with phase4/make-patch.sh (series applies exactly, reproduces the
+  from it with ghc622/make-patch.sh (series applies exactly, reproduces the
   tree; 259 hunks, 26 patches). FastString: `putFS` writes the Int length
   then the Latin-1 bytes, erroring on a char > 255 as the original's
   UnicodeStr case does; `getFS` reads length + bytes into mkFastString.

@@ -13,9 +13,8 @@
 /result
 /result-*
 
-# ---- phase0: the Hugs extraction and its install prefix ----
-/phase0/hugs98-plus-Sep2006/
-/phase0/prefix/
+# ---- the Hugs extraction and install prefix before 2026-10-08 (now build/hugs) ----
+/phase0/
 
 # ---- build/: only hand-written inputs and result tables are tracked ----
 /build/**
@@ -38,24 +37,17 @@
 !/build/Makefile
 !/build/hsc2hs-mhs/hsc2hs
 !/build/happy-mhs/datadir/HappyTemplate
-!/build/ppwrap/cpphs
 !/build/ghc66-by-622/ghc622-inst/bin/ghc
 !/build/ghc66-by-622/ghc622-inst/bin/ghc-pkg
 
 # ...except inside tarball extractions and patched copies of them
-/build/downloads/
-/build/ghc-4.08.2/
-/build/ghc-6.0/
-/build/ghc-6.0-run2/
-/build/ghc-6.0-slit/
+/build/hugs/
 /build/ghc-6.2.2/
 /build/ghc-6.2.2-run1/ghc/
-/build/rebase622/ghc-6.0/
 /build/rebase622/ghc-6.2.2/
 /build/rebase622/try622/
 /build/rts622/ghc-6.2.2/
 /build/repro-622/
-/build/happy-1.16/
 /build/happy-1.19.5/
 /build/hsc2hs-mhs/ghc/
 /build/ghc66-by-622/ghc622-inst/package.conf

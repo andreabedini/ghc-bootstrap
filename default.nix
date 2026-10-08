@@ -3,8 +3,8 @@
 # reads; a compiler that takes several steps exposes them as attributes of
 # the finished compiler.
 #
-#   nix-build -A hugs      Hugs 98 (Sep 2006), patched            (phase0/build-hugs.sh)
-#   nix-build -A mhs       MicroHs, generation 1 run under Hugs   (phase0/bootstrap-seed.sh)
+#   nix-build -A hugs      Hugs 98 (Sep 2006), patched            (hugs/build-hugs.sh)
+#   nix-build -A mhs       MicroHs, generation 1 run under Hugs   (mhs/bootstrap-seed.sh)
 #   nix-build -A cpphs     cpphs 1.20.9 from source, by mhs       (cpphs/default.nix)
 #   nix-build -A happy     happy 1.19.5 compiled by mhs           (build/fixpoint-happy.sh)
 #   nix-build -A ghc622    GHC 6.2.2, compiled by mhs, then by itself to a fixed point,

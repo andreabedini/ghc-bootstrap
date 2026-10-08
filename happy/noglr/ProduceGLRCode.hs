@@ -2,7 +2,7 @@
 --
 -- happy's LALR path is all the bootstrap needs: GHC 4.08.2's Parser.y and
 -- ParseIface.y are ordinary LALR grammars, and `--glr` is never used. The real
--- ProduceGLRCode.lhs does not compile under mhs (see phase2/FINDINGS.md,
+-- ProduceGLRCode.lhs does not compile under mhs (see notes/phase2/FINDINGS.md,
 -- "open questions": mhs resolves an `fmap` at the function functor rather than
 -- at Maybe), and rather than patch happy's source for a feature we do not use,
 -- this module shadows it on the include path.

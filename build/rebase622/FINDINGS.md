@@ -182,7 +182,7 @@ fixed all still occur at the same places (they applied cleanly).
 
 ## 4. Supporting files
 
-### hs-boot (phase2/hsboot-6.0-run2/, 32 files)
+### hs-boot (notes/phase2/hsboot-6.0-run2/, 32 files)
 
 All 32 modules exist in 6.2.2. 6.2.2 ships .hi-boot/-5/-6 for the same 26
 modules as 6.0 (CgBindery CgExpr CgRetConv CgUsages ClosureInfo CoreSyn
@@ -192,7 +192,7 @@ TcType TcUnify TyCon TypeRep TysWiredIn) minus Var (6.0 had Var.hi-boot*,
 6.2.2 has none). No new boot modules. The SOURCE-imported module set is
 identical in both trees (28 names incl. A/PrelErr from ilxGen tests).
 
-phase2/hiboot2hsboot.py reads the GHC-4 .hi-boot flavour, so the run2 set was
+notes/phase2/hiboot2hsboot.py reads the GHC-4 .hi-boot flavour, so the run2 set was
 effectively hand-converted from .hi-boot-6 (all 21 regenerable files differ
 from script output). .hi-boot-6 changed 6.0 -> 6.2.2 in four modules:
 
@@ -240,14 +240,14 @@ import GhcCompat) applied with fuzz 2 and is correct.
 
 The $(CONFIG_HS) rule in ghc/compiler/Makefile (6.2.2 lines 180-227) emits the
 same 36 fields as 6.0 (+cILX2IL/cILASM only with GhcWithIlx), and 6.2.2 sources
-use only names from that set. phase2/gen-6.0/Config.hs carries over with value
+use only names from that set. notes/phase2/gen-6.0/Config.hs carries over with value
 changes: cProjectVersion = "6.2.2", cProjectVersionInt = "602",
 cProjectPatchLevel = "2" (ghc/mk/version.mk); cHscIfaceFileVersion stays "6";
 cBooterVersion is whatever we claim.
 
 ## 5. 6.2.2 build order (build-order-6.2.2.txt)
 
-phase2/build-order.py is generic (tree arg, skips nativeGen, drops SOURCE edges)
+ghc622/tools/build-order.py is generic (tree arg, skips nativeGen, drops SOURCE edges)
 and ran unchanged: 266 entries, no cycles reported. As for 6.0 that includes
 the 25 ilxGen/tests programs (life test* yes yes2) and Main, so 241 real
 modules vs 239 for 6.0 (+DsArrows, TcArrows, Lexer, -Lex). Nothing excluded

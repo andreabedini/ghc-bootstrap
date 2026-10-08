@@ -3,15 +3,15 @@
 Two series, one per tarball. Neither edits a source in place: each is applied
 to a clean extraction and checked to reproduce the working tree.
 
-- **GHC 4.08.2**, 30 patches in `phase2/patches` and `phase3/patches` (the
+- **GHC 4.08.2**, 30 patches in `notes/phase2/patches` and `notes/phase3/patches` (the
   retired first chain, DECISIONS.md D1–D42). Sections 1–4 below.
 - **GHC 6.2.2**, 26 patches in `ghc622/patches` (the current entry point,
   D45–D48). Section 5; the per-patch table and the tooling that derives the
-  series from the tree are in `phase4/FINDINGS.md` section 4.
+  series from the tree are in `notes/phase4/FINDINGS.md` section 4.
 
 ## The 4.08.2 series
 
-30 patches against a pristine `ghc-4.08.2-src.tar.bz2`. Applying all of them to
+30 patches against the pristine GHC 4.08.2 source release. Applying all of them to
 a clean extraction reproduces the working tree byte for byte.
 
 They fall into four groups, and the groups are the interesting part: only one of
@@ -108,4 +108,4 @@ source: `-fwrapv` and `-std=gnu89` on every `.hc` compile (D48), and the
 **One edit is not yet in the series.** `main/GetImports.hs` reads source
 through a text handle, which under the MicroHs runtime decodes UTF-8 and
 dies on `Ctype.lhs`; the `__MHS__` branch made during stage 2 is in the
-tree only (D49, `phase4/FINDINGS.md` section 8).
+tree only (D49, `notes/phase4/FINDINGS.md` section 8).

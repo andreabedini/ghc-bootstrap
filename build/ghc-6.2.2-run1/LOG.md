@@ -17,7 +17,7 @@ One line per module: error, fix. Setup edits first.
 - hsboot-6.2.2-run1: copy of hsboot-6.0-run2; TcMatches.hs-boot tcGRHSs -> tcGRHSsPat (no HsMatchContext arg); DataCon.hs-boot + dataConInstOrigArgTys (imports TypeRep SOURCE).
 - Config.hs (now generated, ghc622/tools/config-hs.sh): 6.2.2 / 602 / "2"; other 33 fields unchanged (Makefile CONFIG_HS rule emits the same set).
 - build/order-6.2.2.txt: 235 modules = build-order-6.2.2.txt minus PrelNum, Foo, Test17/18/19/1_nostdlib, life, test*, yes, yes2 (31 non-modules).
-- build/probe-ordered-622.sh: same defines as probe-ordered-slit.sh (see header): __GLASGOW_HASKELL__=408, no HscIfaceFileVersion, OMIT_NATIVE_CODEGEN, no GHCI.
+- ghc622/tools/probe-ordered.sh: same defines as probe-ordered-slit.sh (see header): __GLASGOW_HASKELL__=408, no HscIfaceFileVersion, OMIT_NATIVE_CODEGEN, no GHCI.
 
 ## Run 1 (FRESH=1)
 

@@ -5,13 +5,13 @@
 #
 #  hs  : mhs -o ghc.c   whole-program C emission of Main, reusing the probe's
 #        -C cache (copied to build/ghc622-mhs/.mhscache; a cold cache costs ~1h).
-#        Same cpp defines, -i and -I flags as build/probe-ordered-622.sh.
+#        Same cpp defines, -i and -I flags as ghc622/tools/probe-ordered.sh.
 #  comb: mhs -o ghc.comb  (same compile, a quarter of the output text; the
 #        .c route needs ~13 min in one process and the sandbox kills a
 #        foreground command at 10, so this is the route that is used)
 #  c   : comb2c.py ghc.comb -> ghc-data.c  (byte-identical to mhs -o ghc.c)
 #  cc  : gcc ghc-data.c ffi.c + MicroHs runtime (main.c, eval.c) + stubs.c -> ghc
-#        (as build/compile-ghc.sh / D41 did for 4.08.2's hsc).
+#        (as notes/probes/compile-ghc.sh / D41 did for 4.08.2's hsc).
 #
 # Run under sh (word-splitting of $INC), with ulimit -s unlimited.
 set -u
@@ -31,7 +31,7 @@ sh "$R/ghc622/tools/config-hs.sh" "${TREE622:-$R/build/repro-622/src/ghc-6.2.2}"
 ulimit -s unlimited 2>/dev/null || ulimit -s 65536
 
 # The five defines the perl driver passes to cpp for every Haskell source
-# (see probe-ordered-622.sh header for why __GLASGOW_HASKELL__=408 is kept).
+# (see ghc622/tools/probe-ordered.sh header for why __GLASGOW_HASKELL__=408 is kept).
 HSCPP="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__"
 INC="-i$HSBOOT -i$EXTRA_SHIMS -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98 -i$GEN"
 for d in "$TREE"/*/; do

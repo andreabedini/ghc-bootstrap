@@ -23,7 +23,7 @@ H="$R/build/hsc2hs-mhs"
 export TMPDIR="$H/tmp"; mkdir -p "$TMPDIR"
 export PATH="$R/MicroHs/bin:$PATH"          # mhs and its cpphs
 # The tarball's sources with ghc622/hsc2hs/Main.hs.patch and the Makefile's
-# Config.hs, from the configured tree phase4/reproduce-6.2.2.sh leaves (TREE622).
+# Config.hs, from the configured tree ghc622/reproduce-6.2.2.sh leaves (TREE622).
 sh "$R/ghc622/tools/hsc2hs-src.sh" "${TREE622:-$R/build/repro-622/src/ghc-6.2.2}" \
   "$R/ghc622/hsc2hs/Main.hs.patch" "$H/ghc/utils/hsc2hs"
 cd "$H/ghc/utils/hsc2hs"

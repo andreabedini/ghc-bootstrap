@@ -13,6 +13,8 @@
 set -eu
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"; B="$R/build/happy-mhs"; S="$R/build/happy-1.19.5/src"
+# happy 1.19.5 from its release tarball (SOURCES.md), extracted if missing.
+[ -d "$R/build/happy-1.19.5" ] || tar xzf "$R/happy-1.19.5.tar.gz" -C "$R/build"
 export PATH="$M/bin:$PATH"
 export HAPPY_DATADIR="$B/datadir"
 
@@ -49,10 +51,3 @@ for n in Parser AttrGrammarParser; do
   fi
 done
 [ "$ok" = yes ] && echo "  => happy is reproducible inside the chain (D7 discharged)"
-
-echo
-echo "== regenerate GHC 4.08.2's parsers with the in-chain happy =="
-cd "$R/build/ghc-4.08.2/ghc/compiler"
-"$B/happy-mhs2" parser/Parser.y     -o "$R/build/ghc-parsers/Parser.hs"
-"$B/happy-mhs2" rename/ParseIface.y -o "$R/build/ghc-parsers/ParseIface.hs"
-wc -l "$R/build/ghc-parsers"/*.hs

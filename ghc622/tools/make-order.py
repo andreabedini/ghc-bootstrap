@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Module order for the stage-2 build of GHC 6.2.2's compiler proper.
 
-phase2/build-order.py's import scan, restricted to the directories the
+build-order.py's import scan, restricted to the directories the
 Makefile compiles for a no-GHCi, no-NCG build (ghci, ilxGen, javaGen,
 nativeGen dropped; HsGeneric, DsMeta, TcSplice, Convert excluded as in
 EXCLUDED_SRCS), plus one edge the textual scan cannot see: HsVersions.h
@@ -12,8 +12,9 @@ and saw this; the mhs probe's shims hid it).
     python3 make-order.py <compiler-src-dir> > order.txt     (module<TAB>path)
 """
 import importlib.util, sys, re, os
-R = os.environ["GHC_BOOTSTRAP_ROOT"]; tree = sys.argv[1]
-spec = importlib.util.spec_from_file_location("bo", R + "/phase2/build-order.py")
+tree = sys.argv[1]
+spec = importlib.util.spec_from_file_location(
+    "bo", os.path.join(os.path.dirname(os.path.abspath(__file__)), "build-order.py"))
 bo = importlib.util.module_from_spec(spec); spec.loader.exec_module(bo)
 deps, defined = bo.scan(tree, skip_dirs=("nativeGen", "ilxGen", "javaGen", "ghci"))
 excl = {"HsGeneric", "DsMeta", "TcSplice", "Convert"}

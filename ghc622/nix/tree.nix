@@ -1,6 +1,6 @@
 # GHC 6.2.2's source tree in the shape the chain compiles: the configured
 # tree with the generated files dropped in, the HTYPE block appended inside
-# config.h's include guard, and the ghc-pkg link. phase4/reproduce-6.2.2.sh
+# config.h's include guard, and the ghc-pkg link. ghc622/reproduce-6.2.2.sh
 # steps 6-8. The output is the whole source root ($out/ghc/compiler is what
 # mhs compiles, $out/ghc/rts what the RTS build starts from).
 { stdenv
@@ -61,7 +61,7 @@ let
   # configured for an unregisterised x86-64 build, with the three headers
   # GHC's ghc/includes/Makefile makes: config.h (without the HTYPE block, which
   # is appended last), DerivedConstants.h and NativeDefs.h.
-  # phase4/reproduce-6.2.2.sh steps 1-5b.
+  # ghc622/reproduce-6.2.2.sh steps 1-5b.
   ghc622-configured = stdenv.mkDerivation {
     pname = "ghc-6.2.2-configured";
     version = "6.2.2";
@@ -109,7 +109,7 @@ let
 
   # prelude/primops.txt and the ten tables ghc/compiler/Makefile makes from it.
   # cpphs, not gcc's cpp: only cpphs --noline --strip reproduces the file
-  # (phase4/regen-generated.sh). It reads config.h through MachDeps.h, hence
+  # (ghc622/tools/regen-generated.sh). It reads config.h through MachDeps.h, hence
   # the configured tree.
   ghc622-primops = runCommand "ghc-6.2.2-primops"
     { nativeBuildInputs = [ cpphs ghc622-genprimopcode ]; }

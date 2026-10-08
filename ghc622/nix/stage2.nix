@@ -46,13 +46,9 @@ let
   '';
 
   # The 220 modules of the compiler proper in dependency order:
-  # tools/make-order.py over the source, with the import scanner it shares
-  # with phase2 (phase2/build-order.py, phase0/feature-scan.py).
+  # tools/make-order.py over the source (with tools/build-order.py's scan).
   order = runCommand "ghc-6.2.2-stage2-order" { nativeBuildInputs = [ python3 ]; } ''
-    mkdir -p r/phase0 r/phase2
-    cp ${../../phase0/feature-scan.py} r/phase0/feature-scan.py
-    cp ${../../phase2/build-order.py} r/phase2/build-order.py
-    GHC_BOOTSTRAP_ROOT=$PWD/r python3 ${../tools/make-order.py} ${src}/ghc/compiler > $out
+    python3 ${../tools}/make-order.py ${src}/ghc/compiler > $out
     test $(wc -l < $out) = 220
   '';
 

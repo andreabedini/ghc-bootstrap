@@ -9,7 +9,7 @@ stage<n>/ and obj-stage<n>/, linked as ghc-stage<n>) and stage 5 (compiled by
 ghc-stage4 into stage5/, interfaces and Abstract C only).
 
 Edges come from the same scanners the order files came from: ghc622/tools/base-order.py's
-cpp'd import scan for base, phase2/build-order.py's scan (plus the HsVersions.h
+cpp'd import scan for base, ghc622/tools/build-order.py's scan (plus the HsVersions.h
 `import qualified FastString` edge of ghc622/tools/make-order.py) for the compiler. SOURCE
 imports are not edges. Only edges inside each package are emitted; a stage-2
 module depends on the libraries through $(LIBS_STAMP). The compile scripts and
@@ -103,7 +103,7 @@ for m in h98_mods:
 emit()
 
 # ---------------------------------------------------------------- stage 2
-spec = importlib.util.spec_from_file_location("bo", R + "/phase2/build-order.py")
+spec = importlib.util.spec_from_file_location("bo", R + "/ghc622/tools/build-order.py")
 bo = importlib.util.module_from_spec(spec); spec.loader.exec_module(bo)
 deps2, defined = bo.scan(SRC2, skip_dirs=("nativeGen", "ilxGen", "javaGen", "ghci"))
 order2 = []

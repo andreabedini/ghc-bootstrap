@@ -15,7 +15,7 @@ already has.
 The chain, each link built from source by the link before it:
 
 ```
-C compiler + Hugs source     (Hugs patched for pattern guards, phase0/patches)
+C compiler + Hugs source     (Hugs patched for pattern guards, hugs/patches)
    -> mhs                    (Hugs runs the MicroHs compiler, which emits C for itself)
    -> cpphs, happy, hsc2hs   (compiled by mhs; cpphs only in the Nix build, see below)
    -> ghc                    (GHC 6.2.2's compiler proper, compiled by mhs)
@@ -35,7 +35,7 @@ What the chain takes from the host, stated precisely:
     which is weaker than diverse double compilation.
   - **The `mhs` binary, checked.** The scripts under `build/` run
     `MicroHs/bin/mhs`, and that binary was compiled from MicroHs's shipped
-    `generated/mhs.c` (step 4 of `phase0/bootstrap-seed.sh`), not from
+    `generated/mhs.c` (step 4 of `mhs/bootstrap-seed.sh`), not from
     Hugs's output. MicroHs has the stronger check: compiling MicroHs, the
     Hugs-built compiler and the one built from the shipped seed emit
     byte-identical C (D1, rechecked 2026-09-30 against the Nix build). So
@@ -43,7 +43,7 @@ What the chain takes from the host, stated precisely:
     not that binary. The Nix build (`default.nix`) uses the Hugs-derived one.
   - **cpphs, now checked.** `MicroHs/bin/cpphs`, which the `build/` scripts
     run, is MicroHs's shipped `generated/cpphs.c` compiled by gcc
-    (`phase2/FINDINGS.md`). mhs runs it on every module that uses CPP, which
+    (`notes/phase2/FINDINGS.md`). mhs runs it on every module that uses CPP, which
     includes most of the GHC 6.2.2 sources stage 1 compiles. From stage 2 on,
     GHC's own `-cpp` uses gcc. The Nix build (`cpphs/default.nix`) builds cpphs
     from source with mhs instead: gcc's traditional cpp stands in for the
@@ -142,7 +142,7 @@ outside Nix and takes `-N`.
 | those `.hc` compiled by gcc | 147/147 `.o` (`-fwrapv` is mandatory) |
 | `ghc/rts` unregisterised x86-64 | 78/78 objects, `libHSrts.a` |
 | base cbits, `libHSbase.a` | built, no patches |
-| `hsc2hs`, built with mhs | builds after 17 changed lines in a copy of its `Main.hs` (the `Parser` instances; `build/hsc2hs-mhs/FINDINGS.md`), not in the `phase4` series |
+| `hsc2hs`, built with mhs | builds after 17 changed lines in a copy of its `Main.hs` (the `Parser` instances; `build/hsc2hs-mhs/FINDINGS.md`), not in the `ghc622/patches` series |
 | Link of a Haskell program | zero undefined symbols |
 | **Run** | **`putStrLn "hello"` prints and exits 0**; 12 programs (GC, Integer, Double, I/O, exceptions, `forkIO`, arrays, time/dir/random/regex) build and pass, rechecked 2026-09-23 against the current base and RTS |
 | `libraries/haskell98` compiled by it | 30/30 to `.o`, `libHShaskell98.a` |
@@ -173,18 +173,19 @@ setup for `stdout` and dies on a 64-bit assumption in the 1999 runtime
 Sources are pristine tarballs plus patches — nothing is edited in place, and the
 invariant is checked, not assumed.
 
-The scripts under `build/` and `phase0`–`phase3` find the checkout through
+The scripts under `build/` and `notes/` find the checkout through
 `GHC_BOOTSTRAP_ROOT`, which `mise.toml` sets to the repository root. Run them
 under mise (`mise activate` in the shell, or `mise exec -- sh build/...`);
-without it they stop at once with `GHC_BOOTSTRAP_ROOT: not set`. The
-`phase4` scripts are relative to the working directory and need nothing.
+without it they stop at once with `GHC_BOOTSTRAP_ROOT: not set`. The scripts
+in the link directories (`hugs/`, `mhs/`, `ghc622/`) find the repository from
+their own location and need nothing.
 
 ### GHC 6.2.2, the current entry point (D45–D48)
 
 The compiler tree, from the pristine `ghc-6.2.2-src.tar.bz2`:
 
 ```sh
-sh phase4/reproduce-6.2.2.sh            # -> build/repro-622/ghc, 3-4 minutes
+sh ghc622/reproduce-6.2.2.sh            # -> build/repro-622/ghc, 3-4 minutes
 ```
 
 One script: 26 patches (`ghc622/patches`, one concern each), GHC's own
@@ -196,17 +197,17 @@ alex lexer's `Addr#` tables decoded into boxed arrays. The result is checked
 against the working tree with `diff -r`: identical up to the tabs in
 `config.h`'s 28-line prologue and, since this machine's kernel headers
 started defining `EFTYPE` on 2026-09-10, one probed value, `CONST_EFTYPE`
-(rerun 2026-09-23, `phase4/FINDINGS.md` section 3). The series is derived from the working tree,
-not the other way round: `sh phase4/make-patch.sh` regenerates it and fails
-on any hunk it cannot classify. `phase4/FINDINGS.md` records the provenance
+(rerun 2026-09-23, `notes/phase4/FINDINGS.md` section 3). The series is derived from the working tree,
+not the other way round: `sh ghc622/make-patch.sh` regenerates it and fails
+on any hunk it cannot classify. `notes/phase4/FINDINGS.md` records the provenance
 of every input, including the ones the script does not produce (the shims,
 the boot files, `Config.hs`).
 
-Typechecking the tree with mhs (about an hour; `phase4/FINDINGS.md` section 2):
+Typechecking the tree with mhs (about an hour; `notes/phase4/FINDINGS.md` section 2):
 
 ```sh
 TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
-  sh build/probe-ordered-622.sh <label> build/repro-622/ghc/compiler \
+  sh ghc622/tools/probe-ordered.sh <label> build/repro-622/ghc/compiler \
      build/repro-622/ghc/includes build/repro-622/order-6.2.2.txt \
      ghc622/hsboot build/repro-622/gen
 ```
@@ -235,23 +236,9 @@ run one program with the stage-1 compiler:
 
 ### GHC 4.08.2 (retired chain, D1–D42)
 
-```sh
-tar xjf ghc-4.08.2-src.tar.bz2 -C <dir>
-cd <dir>/ghc-4.08.2
-for p in phase2/patches/*.patch phase3/patches/*.patch; do patch -p1 -i "$p"; done
-```
-
-30 patches. Applying them to a clean extraction reproduced the working tree
-byte for byte when last checked (2026-09-02, D43). Then:
-
-```sh
-phase2/mkconfig.sh              # runs GHC's own configure, writes ghc/includes/config.h
-build/compile-ghc.sh            # build hsc with mhs
-phase3/build-prelude.sh         # ghc/lib/std      -> .hi .hc .o
-phase3/build-hslibs-lang.sh     # hslibs/lang      -> .hi .hc .o
-phase3/build-rts.sh             # ghc/rts          -> .o
-phase3/build-cbits.sh           # cbits            -> .o
-```
+The first route, retired when the 1999 runtime proved unfixable on x86-64
+(D42), is recorded in `notes/phase2` and `notes/phase3`: its 30 patches,
+build scripts and findings.
 
 ## Layout
 
@@ -266,27 +253,28 @@ hugs/ mhs/ cpphs/ happy/ gmp612/
 ghc622/ ghc66/ ... ghc914/
                       each link's derivation (default.nix) and every file it reads:
                       patches, shims, boot files, build tables, test programs;
-                      ghc66/ and ghc94/ hold steps (ghc66.happy116, ghc94.alex327, ...)
+                      ghc66/ and ghc94/ hold steps (ghc66.happy116, ghc94.alex327, ...).
+                      The same links without Nix: hugs/build-hugs.sh,
+                      mhs/bootstrap-seed.sh (with the check against MicroHs's shipped C),
+                      ghc622/reproduce-6.2.2.sh
   ghc622/             GHC 6.2.2, the entry point since D45: default.nix and the steps
                       in nix/ (ghc622.tree, .stage1, .stage2, ...); patches/ (the series
-                      0001-0026), shims/ shims-ghc/ shims-h98/, hsboot/, gen/, tools/,
-                      and the inputs of each stage (stage1/, base/, stage2/, rts/,
-                      hsc2hs/, test/); generated files (Config.hs, the module
-                      orders, fixups, package.conf) are made by tools/ in the
-                      build; the stage-2 order also reads phase2's import scanner
+                      0001-0026, generated from series.conf by make-patch.sh), shims/
+                      shims-ghc/ shims-h98/, hsboot/, gen/, tools/, and the inputs of
+                      each stage (stage1/, base/, stage2/, rts/, hsc2hs/, test/);
+                      generated files (Config.hs, the module orders, fixups,
+                      package.conf) are made by tools/ in the build
 common/               what several links share: shims/ (ghc-on-mhs, used by happy and
                       6.2.2), test/ (T3, GmpZero), hadrian-ghc.nix (the Hadrian rungs)
-phase0/               surveying candidate compilers; the Hugs -> MicroHs seed (feature-scan.py)
-phase1/               ghc-on-mhs: import inventory, happy analysis
-phase2/               building hsc: patches 0001-0024, build order, cpp pipeline
-phase3/               building the 4.08.2 libraries and runtime: patches 0019-0030
-  patches/            source changes, one concern per patch
-  build-*.sh          the build steps
-  FINDINGS.md         what each phase established
-phase4/               GHC 6.2.2 without Nix: reproduce-6.2.2.sh, make-patch.sh and
-                      series.conf (which generate ghc622/patches), the regeneration
-                      recipes; FINDINGS.md records the provenance of every non-patch input
-build/                everything built, plus the 6.2.2 work not yet folded into phase4:
+notes/                how the chain was found, kept as evidence (DECISIONS.md cites it):
+  phase0/             surveying candidate compilers (feature-scan.py); the seed findings
+  phase1/             ghc-on-mhs: import inventory, happy analysis
+  phase2/             the 4.08.2 compiler (hsc): patches 0001-0024, hs-boot sets for
+                      4.08.2 and 6.0, cpp pipeline
+  phase3/             the 4.08.2 libraries and runtime: patches 0019-0030, build steps
+  phase4/             FINDINGS.md: the 6.2.2 reproduction and the provenance of every
+                      non-patch input
+build/                the manual 6.2.2 work tree (Makefile, scripts, results), and outputs:
   Makefile            the 6.2.2 chain from stage 1 to stage 5, one dependency graph
   mk/                 its per-module recipes and the generated dependency rules
   ghc-6.2.2-run1/     the compiler tree mhs typechecks (the reference reproduce-6.2.2.sh diffs against)
@@ -317,7 +305,7 @@ On the 6.2.2 chain, as of 2026-09-23:
    applies all 26 patches exactly, but on this machine it now writes
    `CONST_EFTYPE 134` where the reference tree has `-1`, because
    kernel-headers 7.2.4 (installed 2026-09-10) define `EFTYPE`
-   (`phase4/FINDINGS.md` section 3).
+   (`notes/phase4/FINDINGS.md` section 3).
 3. **Nine compiler modules do not typecheck under mhs**, none on `Main`'s
    path (the probe of D46): `PrimPacked` (shadowed by the FastString shim),
    five GHCi bytecode modules plus `InteractiveUI` (`GHC.Ptr`; GHCI is off),

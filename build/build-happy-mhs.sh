@@ -4,6 +4,8 @@ set -u
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 M="$R/MicroHs"
 S="$R/build/happy-1.19.5/src"
+# happy 1.19.5 from its release tarball (SOURCES.md), extracted if missing.
+[ -d "$R/build/happy-1.19.5" ] || tar xzf "$R/happy-1.19.5.tar.gz" -C "$R/build"
 export PATH="$M/bin:$PATH"
 export HAPPY_DATADIR="$R/build/happy-1.19.5/templates"
 INC="-i$R/happy/noglr -i$R/common/shims -i$R/happy/shim -i$S"

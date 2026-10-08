@@ -23,7 +23,7 @@ stdenv.mkDerivation {
   buildPhase = ''
     runHook preBuild
     TREE=${tree}/ghc/compiler
-    # __GLASGOW_HASKELL__=408: see build/probe-ordered-622.sh.
+    # __GLASGOW_HASKELL__=408: see ghc622/tools/probe-ordered.sh.
     hscpp="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__"
     inc="-i${../hsboot} -i${../shims} -i${../../common/shims}
          -i${../shims-ghc} -i${../shims-h98} -i${tree.config}"
