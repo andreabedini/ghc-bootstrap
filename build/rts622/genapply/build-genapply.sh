@@ -19,6 +19,6 @@ mkdir -p tmp
 cp "$G/ghc/utils/genapply/GenApply.hs" .
 PATH="$M/bin:$PATH" TMPDIR="$D/tmp" \
   "$M/bin/mhs" -XCPP -D__GLASGOW_HASKELL__=622 -DNO_REGS \
-     -I"$G/ghc/utils/genapply" -i. -ishim GenApply.hs -ogenapply
+     -I"$G/ghc/utils/genapply" -i. -i"$R/ghc622/rts/genapply-shim" GenApply.hs -ogenapply
 ./genapply > AutoApply.hc
 echo "genapply: wrote $D/AutoApply.hc ($(wc -l < AutoApply.hc) lines)"

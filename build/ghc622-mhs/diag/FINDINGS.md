@@ -21,7 +21,7 @@ is archiving them); the rebuilt set is produced beside them:
 - check afterwards: `sh diag/scan-hi.sh libraries/base-rebuild diag/ifaces-rebuild`
 
 Patch for the shim: `diag/faststring-intern.patch` (applies to both
-`build/shims-6.2.2-run1/FastString.hs` and `phase1/shims-ghc/FastString.hs`).
+`ghc622/shims/FastString.hs` and `ghc622/shims-ghc/FastString.hs`).
 
 **Outcome (10:50):** rebuild done, 10:06-10:34 for the 143-module order plus
 a 3-minute resume pass for the seven modules outside it: **147 OK / 0 FAIL**
@@ -34,7 +34,7 @@ duplicated name in any of the 147 interfaces**. The old
 
 *2026-09-10, `build/ghc622-mhs/diag`. Result: **the "space blow-ups" in
 `Data.Complex`, `Data.Graph` and `System.Console.GetOpt` are one bug, in
-`build/shims-6.2.2-run1/FastString.hs`, not in the compiler and not in the
+`ghc622/shims/FastString.hs`, not in the compiler and not in the
 modules.** The shim's `intern` could hand two different strings the same
 unique; five of the 137 finished interfaces carry such a collision, and any
 `-O` importer that inlines one of the collided names loops in the simplifier
@@ -110,8 +110,8 @@ Every one of them is a *derived* OccName (`OccName.mk_deriv`: `"$w" ++ str`,
 
 ## 3. Root cause: re-entrant `intern` in the FastString shim
 
-`build/shims-6.2.2-run1/FastString.hs` (and the identical
-`phase1/shims-ghc/FastString.hs`) replaces GHC's hash-consed ByteArray
+`ghc622/shims/FastString.hs` (and the identical
+`ghc622/shims-ghc/FastString.hs`) replaces GHC's hash-consed ByteArray
 FastString with an interned `String`:
 
 ```haskell
@@ -197,8 +197,8 @@ intern s = unsafePerformIO $ do
 forceString s = foldr seq () s `seq` return ()
 ```
 
-Files: `build/shims-6.2.2-run1/FastString.hs` (the one the 6.2.2 binary is
-linked from), `phase1/shims-ghc/FastString.hs` (the 4.08.2 chain's copy: same
+Files: `ghc622/shims/FastString.hs` (the one the 6.2.2 binary is
+linked from), `ghc622/shims-ghc/FastString.hs` (the 4.08.2 chain's copy: same
 code, same latent bug; the 4.08.2 `hsc` built from it was not relinked here).
 No compiler-tree edit, so `build/6.2.2-run1.patch` is unchanged.
 
@@ -240,7 +240,7 @@ meanwhile (`System.CPUTime`, `System.Time`, `System.Posix.Signals`,
 tree and all seven compile. `Control.Parallel.Strategies` also has a source
 in the tree but is in neither order file and was not built.
 
-Not redone: the 4.08.2 `hsc` linked from `phase1/shims-ghc/FastString.hs` has
+Not redone: the 4.08.2 `hsc` linked from `ghc622/shims-ghc/FastString.hs` has
 the same latent bug; the shim copy is fixed, the binary is not relinked.
 `build/6.2.2-run1.patch` is unchanged (no compiler-tree edit).
 
@@ -305,4 +305,4 @@ cheaply for anything using `Rational`; with `GHC.List` at position 4 and
 - The intern-table pattern (`readIORef`, then a lookup that forces user
   data, then `writeIORef`) is the thing to look for in any other shim that
   hands out identities from `unsafePerformIO`; a grep found no second
-  instance in `build/shims-6.2.2-run1`, `phase1/shims*`.
+  instance in `ghc622/shims`, `common/shims*`.

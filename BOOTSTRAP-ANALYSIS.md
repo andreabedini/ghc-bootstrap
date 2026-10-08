@@ -94,7 +94,7 @@ to a GHC".
 > **Update, after running Phase 0 (2026-09-02).** The claim above was first too strong, then
 > too weak. MicroHs's Hugs path did not run on master: it died on **pattern guards**, which Hugs
 > does not implement, in ~200 places. That feature is now implemented
-> (`phase0/patches/0002-hugs-pattern-guards.patch`), along with a MicroHs shim patch and a raise
+> (`hugs/patches/0002-hugs-pattern-guards.patch`), along with a MicroHs shim patch and a raise
 > of two Hugs stack limits. **The seed now works and has been verified**: C compiler + Hugs source
 > produces a native MicroHs that reaches a byte-identical fixpoint, and that emits byte-identical
 > output to the compiler built from MicroHs's shipped pre-generated C. The pre-generated
@@ -144,7 +144,7 @@ unregisterised / via-C backend so its output needs only gcc. (Modern GHC still h
 ### Phase 2 — the compat layer, as two separate problems — **DONE**
 
 > **Status.** Both halves exist for both targets: the shims in
-> `phase1/shims-*` and `build/shims-6.2.2-run1`, and the patch series in
+> `phase1/shims-*` and `ghc622/shims`, and the patch series in
 > `phase2`+`phase3` (30 patches, 4.08.2) and `phase4` (26 patches, 6.2.2),
 > each checked to reproduce its working tree from the pristine tarball.
 > Flattening was indeed unnecessary: mhs reads the `.hs-boot` files converted

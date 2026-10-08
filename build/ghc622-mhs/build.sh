@@ -20,9 +20,9 @@ M="$R/MicroHs"
 W="$R/build/ghc622-mhs"
 TREE="$R/build/ghc-6.2.2-run1/ghc/compiler"
 INCDIR="$R/build/ghc-6.2.2-run1/ghc/includes"
-HSBOOT="$R/phase2/hsboot-6.2.2-run1"
-EXTRA_SHIMS="$R/build/shims-6.2.2-run1"
-GEN="$R/phase2/gen-6.2.2"
+HSBOOT="$R/ghc622/hsboot"
+EXTRA_SHIMS="$R/ghc622/shims"
+GEN="$R/ghc622/gen"
 export PATH="$M/bin:$PATH"
 export TMPDIR="$W/tmp"
 mkdir -p "$TMPDIR"
@@ -31,7 +31,7 @@ ulimit -s unlimited 2>/dev/null || ulimit -s 65536
 # The five defines the perl driver passes to cpp for every Haskell source
 # (see probe-ordered-622.sh header for why __GLASGOW_HASKELL__=408 is kept).
 HSCPP="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__"
-INC="-i$HSBOOT -i$EXTRA_SHIMS -i$R/phase1/shims -i$R/phase1/shims-ghc -i$R/phase1/shims-h98 -i$GEN"
+INC="-i$HSBOOT -i$EXTRA_SHIMS -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98 -i$GEN"
 for d in "$TREE"/*/; do
   [ -d "$d" ] && INC="$INC -i${d%/}"
 done
@@ -62,7 +62,7 @@ fi
 if [ "$step" = c ] || [ "$step" = all ]; then
   # .comb -> the same C array `mhs -o ghc.c` would emit (see comb2c.py).
   echo "== comb2c  ($(date))"
-  python3 "$W/comb2c.py" "$W/ghc.comb" "$W/ghc-data.c" || exit 1
+  python3 "$R/ghc622/stage1/comb2c.py" "$W/ghc.comb" "$W/ghc-data.c" || exit 1
   echo "== ghc-data.c: $(wc -c < "$W/ghc-data.c") bytes"
 fi
 
@@ -84,9 +84,9 @@ if [ "$step" = cc ] || [ "$step" = all ]; then
   sed 's/^#define WANT_OVERFLOW 1/#define WANT_OVERFLOW 0  \/* mhs: GHC needs wrap-around Int *\//' \
       "$M/src/runtime/unix/config.h" > "$W/rtconf/config.h"
   cc -w -O3 -I"$W/rtconf" -I"$M/src/runtime" -I"$M/src/runtime/unix" -D__MHS__ \
-     -include "$W/stubs.h" \
-     "$M/src/runtime/main.c" "$M/src/runtime/eval.c" "$W/stubs.c" \
-     "$W/ghc-data.c" "$W/ffi.c" \
+     -include "$R/ghc622/stage1/stubs.h" \
+     "$M/src/runtime/main.c" "$M/src/runtime/eval.c" "$R/ghc622/stage1/stubs.c" \
+     "$W/ghc-data.c" "$R/ghc622/stage1/ffi.c" \
      -lm -o "$W/ghc" || exit 1
   ls -la "$W/ghc"
 fi

@@ -31,7 +31,7 @@ fallback and never opened.
 An extraction of `MicroHs-0.16.8.0.tar.gz`, the latest release
 (`https://github.com/augustss/MicroHs/archive/refs/tags/v0.16.8.0.tar.gz`,
 sha256 `7b014251b6dfc332b16a49457797c8f1b32d88633dff5b550132cee8558492f7`,
-kept in the repo root), with `phase0/patches/0001-microhs-hugs-shim.patch`
+kept in the repo root), with `mhs/patches/0001-microhs-hugs-shim.patch`
 applied to its `hugs/` shim tree (five files). `phase0/bootstrap-seed.sh`
 expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
 `MicroHs/bin/cpphs`, which every later phase uses. `generated/hmhs.c` and
@@ -62,27 +62,27 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 
 | input | derivation | hash |
 |---|---|---|
-| `ghc-6.2.2-src.tar.bz2`, `ghc-6.6-src.tar.bz2`, `ghc-6.10.4-src.tar.bz2` | `nix/ghc622/tree.nix`, `nix/ghc66/ghc.nix`, `nix/ghc610` | as in the table above |
-| `ghc-6.12.3-src.tar.bz2` | `nix/ghc612` | `sha256-bL2+QVAR8sfRXk2FB1jY05P3Bhe4jLMjfSxgK7YOXmg=` |
-| `ghc-7.4.2-src.tar.bz2` | `nix/ghc74` | `sha256-8u4SiaM8xwU5KHEphBrMfq8WESu2DFm1pu6RiHv9g20=` |
-| `ghc-7.8.4-src.tar.xz` | `nix/ghc78` | `sha256-wxnNlK2yhBd+0ObSFUbtC5AK2EuGuHwGqZ6sNRUpgsQ=` |
-| `ghc-8.0.2-src.tar.xz` | `nix/ghc80` | `sha256-EWJUU+HQaGs/pnOZiPcOysg2ytwwufDItJ75CR1hGLE=` |
-| `ghc-8.4.4-src.tar.xz` | `nix/ghc84` | `sha256-ERF3NaWOUHxIHAnz85rloxTp+/SfwxCVKPmep5WQBLI=` |
-| `ghc-8.8.4-src.tar.xz` | `nix/ghc88` | `sha256-8FBeOLIjX/nxCQtR9E1sjv03EGjlprtCoqbYtntf/C0=` |
-| `ghc-9.0.2-src.tar.xz` | `nix/ghc90` | `sha256-FA5CuWNGMi0aOesXYCvNx24pICitSmkoayMLqxiKkZc=` |
-| `ghc-9.4.8-src.tar.xz` | `nix/ghc94` | `sha256-C/QH62f+PjwksPTI3qjLY+B/Y8oPds8gWFZRQ1B6uF4=` |
-| `ghc-9.8.4-src.tar.xz` | `nix/ghc98` | `sha256-F+gYjzyKXC9z+0410BAy6NwliDXsh21SyK2O49JLL8U=` |
-| `happy-1.20.1.1.tar.gz`, `alex-3.2.7.4.tar.gz` (Hackage) | `nix/ghc94/happy120.nix`, `nix/ghc94/alex327.nix` | in the files |
-| `src/Parser.ly`, `src/AttrGrammarParser.ly` at the `1.20.1.1` tag of github.com/haskell/happy (the Hackage tarball ships only the generated parsers) | `nix/ghc94/happy120.nix` | in the file |
-| `ghc-9.12.4-src.tar.xz` | `nix/ghc912` | `sha256-AtHuUICs8A4TW5OyOPCQFbBv8nJUzeWWac9XxCwr7kM=` |
-| `ghc-9.14.1-src.tar.xz` | `nix/ghc914` | `sha256-KoN3nJr4ZVSjKJ8nh6ONaqg9ANE2qp+SA2HdaTwQHnc=` |
-| Hadrian's bootstrap dependencies for a 9.8 boot compiler (26 Hackage tarballs and `.cabal` files: shake 0.19.8, Cabal 3.14.1.1, alex 3.5.2.0, ...) | `nix/ghc912/plan-bootstrap-9_8_4.json`, copied from `ghc-9.12.4/hadrian/bootstrap/`, used by 9.12.4 and 9.14.1 | the plan's `src_sha256` and `cabal_sha256` fields |
-| Hadrian's bootstrap dependencies for a 9.12 boot compiler | `nix/ghc914/plan-bootstrap-9_12_2.json`, copied from `ghc-9.14.1/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
-| `hp2ps-C-gnu17.patch` (Fedora's copy of GHC !13863, the C23 fix for `utils/hp2ps/Utilities.c`) | `nix/ghc98/hp2ps-C-gnu17.patch` | in the repository |
-| Hadrian's 18 bootstrap dependencies (Hackage tarballs and revised `.cabal` files: shake 0.19.8, QuickCheck 2.14.3, ...) | `nix/ghc98/plan-bootstrap-9_4_4.json`, copied from `ghc-9.8.4/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
-| `happy-1.16.tar.gz`, `alex-2.1.0.tar.gz` (Hackage) | `nix/ghc66/happy116.nix`, `nix/ghc66/alex210.nix` | in the files |
-| `gmp-6.1.2.tar.xz` (`ftp.gnu.org/gnu/gmp/`) | `nix/gmp612.nix` | `sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=` |
-| `hugs98-plus-Sep2006.tar.gz`, MicroHs, cpphs 1.20.9 | `nix/hugs.nix`, `nix/mhs.nix`, `nix/cpphs.nix` | in the files |
+| `ghc-6.2.2-src.tar.bz2`, `ghc-6.6-src.tar.bz2`, `ghc-6.10.4-src.tar.bz2` | `ghc622/nix/tree.nix`, `ghc66/ghc.nix`, `ghc610` | as in the table above |
+| `ghc-6.12.3-src.tar.bz2` | `ghc612` | `sha256-bL2+QVAR8sfRXk2FB1jY05P3Bhe4jLMjfSxgK7YOXmg=` |
+| `ghc-7.4.2-src.tar.bz2` | `ghc74` | `sha256-8u4SiaM8xwU5KHEphBrMfq8WESu2DFm1pu6RiHv9g20=` |
+| `ghc-7.8.4-src.tar.xz` | `ghc78` | `sha256-wxnNlK2yhBd+0ObSFUbtC5AK2EuGuHwGqZ6sNRUpgsQ=` |
+| `ghc-8.0.2-src.tar.xz` | `ghc80` | `sha256-EWJUU+HQaGs/pnOZiPcOysg2ytwwufDItJ75CR1hGLE=` |
+| `ghc-8.4.4-src.tar.xz` | `ghc84` | `sha256-ERF3NaWOUHxIHAnz85rloxTp+/SfwxCVKPmep5WQBLI=` |
+| `ghc-8.8.4-src.tar.xz` | `ghc88` | `sha256-8FBeOLIjX/nxCQtR9E1sjv03EGjlprtCoqbYtntf/C0=` |
+| `ghc-9.0.2-src.tar.xz` | `ghc90` | `sha256-FA5CuWNGMi0aOesXYCvNx24pICitSmkoayMLqxiKkZc=` |
+| `ghc-9.4.8-src.tar.xz` | `ghc94` | `sha256-C/QH62f+PjwksPTI3qjLY+B/Y8oPds8gWFZRQ1B6uF4=` |
+| `ghc-9.8.4-src.tar.xz` | `ghc98` | `sha256-F+gYjzyKXC9z+0410BAy6NwliDXsh21SyK2O49JLL8U=` |
+| `happy-1.20.1.1.tar.gz`, `alex-3.2.7.4.tar.gz` (Hackage) | `ghc94/happy120.nix`, `ghc94/alex327.nix` | in the files |
+| `src/Parser.ly`, `src/AttrGrammarParser.ly` at the `1.20.1.1` tag of github.com/haskell/happy (the Hackage tarball ships only the generated parsers) | `ghc94/happy120.nix` | in the file |
+| `ghc-9.12.4-src.tar.xz` | `ghc912` | `sha256-AtHuUICs8A4TW5OyOPCQFbBv8nJUzeWWac9XxCwr7kM=` |
+| `ghc-9.14.1-src.tar.xz` | `ghc914` | `sha256-KoN3nJr4ZVSjKJ8nh6ONaqg9ANE2qp+SA2HdaTwQHnc=` |
+| Hadrian's bootstrap dependencies for a 9.8 boot compiler (26 Hackage tarballs and `.cabal` files: shake 0.19.8, Cabal 3.14.1.1, alex 3.5.2.0, ...) | `ghc912/plan-bootstrap-9_8_4.json`, copied from `ghc-9.12.4/hadrian/bootstrap/`, used by 9.12.4 and 9.14.1 | the plan's `src_sha256` and `cabal_sha256` fields |
+| Hadrian's bootstrap dependencies for a 9.12 boot compiler | `ghc914/plan-bootstrap-9_12_2.json`, copied from `ghc-9.14.1/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
+| `hp2ps-C-gnu17.patch` (Fedora's copy of GHC !13863, the C23 fix for `utils/hp2ps/Utilities.c`) | `ghc98/hp2ps-C-gnu17.patch` | in the repository |
+| Hadrian's 18 bootstrap dependencies (Hackage tarballs and revised `.cabal` files: shake 0.19.8, QuickCheck 2.14.3, ...) | `ghc98/plan-bootstrap-9_4_4.json`, copied from `ghc-9.8.4/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
+| `happy-1.16.tar.gz`, `alex-2.1.0.tar.gz` (Hackage) | `ghc66/happy116.nix`, `ghc66/alex210.nix` | in the files |
+| `gmp-6.1.2.tar.xz` (`ftp.gnu.org/gnu/gmp/`) | `gmp612/default.nix` | `sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=` |
+| `hugs98-plus-Sep2006.tar.gz`, MicroHs, cpphs 1.20.9 | `hugs/default.nix`, `mhs/default.nix`, `cpphs/default.nix` | in the files |
 
 GMP 6.1.2 is the GMP every compiler before 8.0 links against: GMP 6.2's lazy
 `mpz_init` breaks their Integer (DECISIONS.md D52). The host's GMP serves

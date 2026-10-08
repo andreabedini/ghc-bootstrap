@@ -19,7 +19,7 @@ expected tokens and spans. READY is touched.
 | `driver/Main.hs` | token-dump driver (`work/lexdump`), verification only |
 
 Directory search order used: `build/lexer622` (Lexer.hs, StringBuffer.hs), `shims/` (empty),
-`overlay/`, `phase2/hsboot-6.0-run2`, `build/shims-6.0-run2`, `phase1/shims{,-ghc,-h98}`,
+`overlay/`, `phase2/hsboot-6.0-run2`, `build/shims-6.0-run2`, `common/shims{,-ghc,-h98}`,
 `phase2/gen-6.0`, then every subdirectory of `build/rebase622/try622`.
 
 ## Approach: (1) hand-convert the shipped -g output

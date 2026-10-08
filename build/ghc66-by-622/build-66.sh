@@ -14,8 +14,8 @@ L="$B/logs${TREE:+-$(basename "$T")}"; mkdir -p "$L" "$B/tmp"
 if [ "${FRESH:-0}" = 1 ]; then
   rm -rf "$G"; mkdir -p "$T"
   tar xjf "$R/ghc-6.6-src.tar.bz2" -C "$T" || exit 1
-  (cd "$T" && patch -p0 < "$B/ghc-6.6-by-622.patch") > "$L/patch.log" 2>&1 || { cat "$L/patch.log"; exit 1; }
-  echo "fresh tree: $G, patch applied ($(rg -c '^\+\+\+' "$B/ghc-6.6-by-622.patch") files)"
+  (cd "$T" && patch -p0 < "$R/ghc66/ghc-6.6-by-622.patch") > "$L/patch.log" 2>&1 || { cat "$L/patch.log"; exit 1; }
+  echo "fresh tree: $G, patch applied ($(rg -c '^\+\+\+' "$R/ghc66/ghc-6.6-by-622.patch") files)"
 fi
 export TMPDIR="$B/tmp"
 # The machine's own GHC (ghcup, cabal) must not be found by configure or make.

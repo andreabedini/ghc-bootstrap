@@ -360,7 +360,7 @@ cd phase0
 export PATH=$PWD/prefix/bin:$PATH
 runhugs -98 tests/PatternGuards.hs    # pattern-guard test suite
 cd ../MicroHs
-git apply ../phase0/patches/0001-microhs-hugs-shim.patch
+git apply ../mhs/patches/0001-microhs-hugs-shim.patch
 make mhs.conf
 ulimit -s unlimited
 make generated/hmhs.c bin/hmhs

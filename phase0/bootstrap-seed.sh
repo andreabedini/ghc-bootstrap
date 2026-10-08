@@ -17,7 +17,7 @@ export PATH
 cd "$MHS"
 # MicroHs/ is a release extraction, not a clone, so git apply would resolve
 # paths against the enclosing repository and skip them; use patch, once.
-SHIM=$HERE/patches/0001-microhs-hugs-shim.patch
+SHIM=$HERE/../mhs/patches/0001-microhs-hugs-shim.patch
 patch -p1 -R -s -f --dry-run <"$SHIM" >/dev/null 2>&1 || patch -p1 -s <"$SHIM"
 make mhs.conf
 

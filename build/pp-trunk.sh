@@ -6,7 +6,7 @@ set -u
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 T=$(cd "$1" && pwd); LABEL=$2; shift 2
 # HSBOOT / SHIMS / INCDIR override the defaults, so a second tree copy can be probed.
-INC="-i${HSBOOT:-$R/phase2/hsboot-6.0b} -i${SHIMS:-$R/build/shims-6.0} -i$R/phase1/shims -i$R/phase1/shims-ghc -i$R/phase1/shims-h98 -i$R/phase2/gen-6.0"
+INC="-i${HSBOOT:-$R/phase2/hsboot-6.0b} -i${SHIMS:-$R/build/shims-6.0} -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98 -i$R/phase2/gen-6.0"
 for d in "$T"/*/; do [ -d "$d" ] && INC="$INC -i${d%/}"; done
 INC="$INC -i$T -I$T -I${INCDIR:-$R/build/ghc-6.0-slit/ghc/includes}"
 HSCPP="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__ -DOMIT_NATIVE_CODEGEN -DHscIfaceFileVersion=6"

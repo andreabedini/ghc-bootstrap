@@ -36,16 +36,16 @@ patch `build/6.2.2-run1.patch`, script `build/probe-ordered-622.sh`.
 - **Order**: `build/order-6.2.2.txt` = `build/rebase622/build-order-6.2.2.txt` minus the
   31 non-modules (PrelNum, Foo, Test17/18/19/1_nostdlib, life, test*, yes, yes2):
   235 modules. nativeGen excluded as before.
-- **Config**: `phase2/gen-6.2.2/Config.hs` = gen-6.0 with cProjectVersion "6.2.2",
+- **Config**: `ghc622/gen/Config.hs` = gen-6.0 with cProjectVersion "6.2.2",
   cProjectVersionInt "602", cProjectPatchLevel "2" (`ghc/mk/version.mk`); the
   `$(CONFIG_HS)` rule emits the same 36 fields, nothing else differs.
-- **Shims** `build/shims-6.2.2-run1` = shims-6.0-run2 plus: `CForeign.hs` (re-export
+- **Shims** `ghc622/shims` = shims-6.0-run2 plus: `CForeign.hs` (re-export
   Foreign.C); `Foreign.hs` (PrelForeign + Foreign.Ptr/Marshal.Utils/Marshal.Array/
-  Storable, shadows phase1/shims-ghc/Foreign.hs which only had ForeignObj);
+  Storable, shadows ghc622/shims-ghc/Foreign.hs which only had ForeignObj);
   lexer622's `StringBuffer.hs` (the 11-function 6.2.2 API); `Language/Haskell/
   THSyntax.hs` replaced by 6.2.2's `libraries/haskell-src` version with the same three
   edits as before (old kept as `THSyntax.hs.60`).
-- **Boot files** `phase2/hsboot-6.2.2-run1` = hsboot-6.0-run2 with `TcMatches.hs-boot`
+- **Boot files** `ghc622/hsboot` = hsboot-6.0-run2 with `TcMatches.hs-boot`
   (tcGRHSs -> tcGRHSsPat) and `DataCon.hs-boot` (+ dataConInstOrigArgTys, imports
   TypeRep SOURCE).
 - **Generated files** taken from `build/gen622` (Parser.hs, ParserCore.hs,
@@ -112,7 +112,7 @@ Tree (`ghc/compiler`, all commented `-- ... mhs ...` / `/* mhs ... */`):
 
 Outside the compiler tree: `ghc/utils/ghc-pkg` + symlink; `ghc/includes/config.h`,
 `DerivedConstants.h`; shims CForeign.hs, Foreign.hs, StringBuffer.hs, THSyntax.hs;
-hsboot TcMatches, DataCon; `phase2/gen-6.2.2/Config.hs`; `build/order-6.2.2.txt`,
+hsboot TcMatches, DataCon; `ghc622/gen/Config.hs`; `build/order-6.2.2.txt`,
 `build/order-6.2.2-pass2.txt`, `build/order-side{1,2,3}.txt`; `build/probe-ordered-622.sh`.
 
 Tree-wide scans run to pre-empt the classes hit (all negative after the fixes above):

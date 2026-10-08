@@ -17,7 +17,7 @@ export PATH="$M/bin:$PATH"
 # every subdirectory of the compiler is a source root, plus our shims
 # Generated parsers live outside the tree so the tarball stays pristine
 # (see D11): patches, not edits in place.
-INC="-i$R/phase1/shims -i$R/build/ghc-parsers"
+INC="-i$R/common/shims -i$R/build/ghc-parsers"
 for d in "$TREE"/*/; do
   [ -d "$d" ] && INC="$INC -i${d%/}"
 done

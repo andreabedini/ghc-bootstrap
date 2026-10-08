@@ -30,7 +30,7 @@ flowchart LR
 
 ## 2. Phase 0: the seed, Hugs to a self-hosting mhs
 
-From `nix/mhs.nix` and `phase0/bootstrap-seed.sh`. The Nix build deletes
+From `mhs/default.nix` and `phase0/bootstrap-seed.sh`. The Nix build deletes
 MicroHs's shipped `generated/*.c` before anything runs; the `build/` scripts
 use the shipped `mhs.c`, and D1 is the check that the two compilers agree.
 
@@ -49,7 +49,7 @@ flowchart TB
 
 ## 3. The mhs-built tools, each closed by a fixed point
 
-From `nix/cpphs.nix` and `nix/happy.nix`.
+From `cpphs/default.nix` and `happy/default.nix`.
 
 ```mermaid
 flowchart LR
@@ -68,9 +68,9 @@ flowchart LR
 
 ## 4. GHC 6.2.2 as the Nix derivation graph
 
-Edges are the inputs of each `nix/ghc622/*.nix`; stdenv, python3, perl and
+Edges are the inputs of each `ghc622/*.nix`; stdenv, python3, perl and
 gmp are omitted, and an edge into a box stands for one into each derivation
-in it. `nix/ghc622/default.nix` says why there are this many steps. This
+in it. `ghc622/default.nix` says why there are this many steps. This
 one is D2 with the TALA layout, not Mermaid: the source is
 `diagrams/ghc622-derivations.d2`, and the render command is in its header.
 
@@ -96,7 +96,7 @@ flowchart LR
 
 ## 6. The road past 6.2.2
 
-Every rung below is built (`nix/ghcNN`, DECISIONS.md D52-D54). The floor
+Every rung below is built (`ghcNN/`, DECISIONS.md D52-D54). The floor
 under each release is the minimum boot compiler its `configure.ac` accepts
 (read 2026-10-01); it is configure's check only, and 9.14.1 showed it can
 be stale: its configure says 9.6, its stage-0 build needs 9.10's

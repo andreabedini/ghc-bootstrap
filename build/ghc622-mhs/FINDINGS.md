@@ -219,7 +219,7 @@ Tree (`build/ghc-6.2.2-run1/ghc/compiler`, all commented `-- ... mhs ...`):
 | `coreSyn/CoreUtils.lhs` | `hashExpr` without `abs` | 5 |
 | `ghc/includes/config.h` | + 34 `HTYPE_*` defines (generated file, not the tarball's) | 7 |
 
-Shims: `build/shims-6.2.2-run1/Exception.hs` -- `ExitCode` import, the
+Shims: `ghc622/shims/Exception.hs` -- `ExitCode` import, the
 `ExitException` constructor, its `Show` case, the `fromSome` case, and `throw`
 re-throwing the bare `ExitCode`.
 

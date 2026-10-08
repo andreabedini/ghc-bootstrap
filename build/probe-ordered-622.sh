@@ -11,11 +11,11 @@
 # 6.2.2 decisions (2026-09-09):
 #  * -D__GLASGOW_HASKELL__=408 is kept. HsVersions.h maps GLAEXTS/DATA_BITS/
 #    UNSAFE_IO/... to the pre-hierarchical names (GlaExts, Bits, IOExts) under
-#    __GLASGOW_HASKELL__ < 504, which is what phase1/shims* and shims-6.2.2-run1
+#    __GLASGOW_HASKELL__ < 504, which is what common/shims* and shims-6.2.2-run1
 #    provide; the >= 504 branches want GHC.Exts/GHC.IOBase/GHC.Handle.
 #    Consequence in 6.2.2: SysTools takes its "< 603" branch (private rawSystem,
 #    imports CForeign + Foreign(withMany, withArray0, nullPtr, Ptr)), hence the
-#    CForeign.hs and Foreign.hs shims in build/shims-6.2.2-run1.
+#    CForeign.hs and Foreign.hs shims in ghc622/shims.
 #  * No -DHscIfaceFileVersion: 6.2.2 (like 6.0) reads it from Config.hs
 #    (cHscIfaceFileVersion = "6", ghc/mk/version.mk); no cpp reference remains
 #    in the compiler sources (rg confirms only Makefile:192 mentions it).
@@ -38,9 +38,9 @@ DEFS="${DEFS:-}"
 HSCPP="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__"
 export PATH="$M/bin:$PATH"
 
-# EXTRA_SHIMS: a directory searched before phase1/shims-ghc, so a tree-specific
+# EXTRA_SHIMS: a directory searched before ghc622/shims-ghc, so a tree-specific
 # shim (6.0 needs LitString in FastString) can shadow the 4.08.2 one.
-INC="-i$HSBOOT${EXTRA_SHIMS:+ -i$EXTRA_SHIMS} -i$R/phase1/shims -i$R/phase1/shims-ghc -i$R/phase1/shims-h98"
+INC="-i$HSBOOT${EXTRA_SHIMS:+ -i$EXTRA_SHIMS} -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98"
 for d in "$@"; do INC="$INC -i$(cd "$d" && pwd)"; done
 for d in "$TREE"/*/; do
   [ -d "$d" ] && INC="$INC -i${d%/}"

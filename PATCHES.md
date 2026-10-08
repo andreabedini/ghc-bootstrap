@@ -5,7 +5,7 @@ to a clean extraction and checked to reproduce the working tree.
 
 - **GHC 4.08.2**, 30 patches in `phase2/patches` and `phase3/patches` (the
   retired first chain, DECISIONS.md D1–D42). Sections 1–4 below.
-- **GHC 6.2.2**, 26 patches in `phase4/patches` (the current entry point,
+- **GHC 6.2.2**, 26 patches in `ghc622/patches` (the current entry point,
   D45–D48). Section 5; the per-patch table and the tooling that derives the
   series from the tree are in `phase4/FINDINGS.md` section 4.
 
@@ -80,7 +80,7 @@ That is the whole of it. **One patch out of thirty is about bootstrapping.** The
 other 29 are a 1999 program meeting a 2026 toolchain and a machine word twice
 the size it expects.
 
-## 5. The 6.2.2 series (`phase4/patches`, 26 patches, 257 hunks, 102 files)
+## 5. The 6.2.2 series (`ghc622/patches`, 26 patches, 257 hunks, 102 files)
 
 Same tree of concerns, different proportions. 6.2.2 knows x86-64 exists, so
 the group that dominated 4.08.2 is gone; what remains is almost entirely the
@@ -97,7 +97,7 @@ Haskell of 2004 meeting the Haskell mhs implements.
 Again one patch in the series is about bootstrapping.
 
 **Nothing about x86-64.** The two RTS patches (58 cast-as-lvalue sites, one
-`static`/`extern` mismatch) live in `build/rts622/patches` and are the "C
+`static`/`extern` mismatch) live in `ghc622/rts/patches` and are the "C
 that stopped being legal" class, not the 64-bit class; configure accepted
 the triple unaided (`build/rts622/FINDINGS.md`). The 4.08.2 series had 18
 defects in `Int.lhs`/`Word.lhs` alone under `WORD_SIZE_IN_BYTES == 8`.

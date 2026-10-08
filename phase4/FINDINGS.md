@@ -16,7 +16,7 @@ of the project, not a variant of "building hsc". A separate phase directory
 keeps the numbering unambiguous and gives the reproduction script, the
 regeneration recipes and this file one home. The 6.2.2 inputs that already
 live elsewhere are left where the probe script expects them
-(`phase2/hsboot-6.2.2-run1`, `phase2/gen-6.2.2`, `build/shims-6.2.2-run1`);
+(`ghc622/hsboot`, `ghc622/gen`, `ghc622/shims`);
 section 5 records how each was made.
 
 ```
@@ -40,7 +40,7 @@ of which configure is ~50 s and the mhs build of genprimopcode ~50 s):
 | step | what | provenance |
 |---|---|---|
 | 1 | `tar xjf ghc-6.2.2-src.tar.bz2` into `dest/src`, sha256 checked | section 3 |
-| 2 | `patch -p1 -N` with `phase4/patches/*.patch`; any fuzz or offset is an error | section 4 |
+| 2 | `patch -p1 -N` with `ghc622/patches/*.patch`; any fuzz or offset is an error | section 4 |
 | 3 | `./configure --enable-hc-boot --enable-hc-boot-unregisterised --host/--build/--target=x86_64-unknown-linux` with `PATH=/usr/bin:/bin` | `build/rts622/FINDINGS.md` section 1 |
 | 4 | `make -C ghc/includes config.h` -- GHC's own `$(H_CONFIG)` rule (platform defines + `mk/config.h`) | section 3 |
 | 5 | `gcc -O2 -w -include stdio.h -DNO_REGS -DUSE_MINIINTERPRETER -Ighc/includes -Wl,--unresolved-symbols=ignore-all mkDerivedConstants.c`, run -> `DerivedConstants.h` | `build/ghc-6.2.2-run1/LOG.md`, `build/lexer622/FINDINGS.md` |
@@ -56,10 +56,10 @@ RTS work in `build/rts622` starts from the same tree, so a later phase can
 build on it. `dest/ghc` has exactly the shape the probe script consumes:
 
 ```sh
-TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/build/shims-6.2.2-run1 \
+TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
   sh build/probe-ordered-622.sh repro build/repro-622/ghc/compiler \
      build/repro-622/ghc/includes build/repro-622/order-6.2.2.txt \
-     phase2/hsboot-6.2.2-run1 phase2/gen-6.2.2
+     ghc622/hsboot ghc622/gen
 ```
 
 ## 3. Verification
@@ -134,7 +134,7 @@ system for lack of memory while another agent was linking; the recorded run
 
 ## 4. The patch series
 
-`phase4/patches/0001-0025`, 249 hunks over 101 files under `ghc/compiler`,
+`ghc622/patches/0001-0025`, 249 hunks over 101 files under `ghc/compiler`,
 each with a header naming the mhs limitation. Everything else in the tree is
 generated (section 2) or pristine. Same content as `build/6.2.2-run1.patch`
 (187 three-line-context hunks), split by concern:
@@ -221,11 +221,11 @@ extractions in `build/rts622/ghc-6.2.2`, `build/rebase622/ghc-6.2.2` and
 **Tools from earlier in the chain** (all built without GHC): `MicroHs/bin/mhs`
 and `MicroHs/bin/cpphs` (phase0/phase1), `build/happy-mhs/happy-mhs2` with
 `build/happy-mhs/datadir` (the fixpoint-verified happy, `phase2/FINDINGS.md`),
-`phase1/shims-h98` (for genprimopcode), system `gcc`, `make`, `patch`,
+`ghc622/shims-h98` (for genprimopcode), system `gcc`, `make`, `patch`,
 `python3`. `genprimopcode` is compiled during the run from the tarball's own
 `ghc/utils/genprimopcode/Main.hs` plus `genprimopcode-Main.hs.patch` (one
 `not.dodgy` -> `not . dodgy`) and the Parsec slice shim
-`build/shims-6.2.2-run1/Parsec.hs`.
+`ghc622/shims/Parsec.hs`.
 
 **`ghc/includes/config.h`** -- configure + the `$(H_CONFIG)` rule (section 3).
 
@@ -241,10 +241,10 @@ every line it touches against the pristine text.
 **`ghc/utils/ghc-pkg`** -- pristine (7 files, unedited); `main/Packages.lhs`
 `#include`s `../utils/ghc-pkg/Package.hs`, hence the symlink.
 
-**`build/shims-6.2.2-run1`** (not produced by the script; the probe's
+**`ghc622/shims`** (not produced by the script; the probe's
 `EXTRA_SHIMS`): `build/shims-6.0-run2` plus `CForeign.hs` (re-exports
 Foreign.C; SysTools' `< 603` branch), `Foreign.hs` (PrelForeign + Foreign.Ptr/
-Marshal.Utils/Marshal.Array/Storable; shadows `phase1/shims-ghc/Foreign.hs`),
+Marshal.Utils/Marshal.Array/Storable; shadows `ghc622/shims-ghc/Foreign.hs`),
 `StringBuffer.hs` (the 118-line shim for 6.2.2's 11-function API, identical to
 `build/lexer622/StringBuffer.hs`), and `Language/Haskell/THSyntax.hs` =
 6.2.2's `libraries/haskell-src/Language/Haskell/THSyntax.hs` with four edits
@@ -253,7 +253,7 @@ instead of `Control.Monad.Trans`; `Functor`/`Applicative Q`; `MonadFail Q`);
 the 6.0 version is kept beside it as `THSyntax.hs.60`. `diff -r` against
 `shims-6.0-run2` shows exactly these four entries.
 
-**`phase2/hsboot-6.2.2-run1`** (32 files): `phase2/hsboot-6.0-run2` with two
+**`ghc622/hsboot`** (32 files): `phase2/hsboot-6.0-run2` with two
 edits, both from 6.2.2's own `.hi-boot-6` files: `TcMatches.hs-boot`
 (`tcGRHSs :: HsMatchContext Name -> RenamedGRHSs -> ...` became
 `tcGRHSsPat :: RenamedGRHSs -> ...`) and `DataCon.hs-boot` (adds
@@ -262,7 +262,7 @@ import of TypeRep). The 6.0 set was hand-converted from `.hi-boot-6`
 (`phase2/hiboot2hsboot.py` reads the GHC-4 flavour); 30 of 32 carry over
 verbatim (`build/rebase622/FINDINGS.md` section 4).
 
-**`phase2/gen-6.2.2/Config.hs`**: the `$(CONFIG_HS)` rule of
+**`ghc622/gen/Config.hs`**: the `$(CONFIG_HS)` rule of
 `ghc/compiler/Makefile:180-227` transcribed, i.e. `phase2/gen-6.0/Config.hs`
 with `cProjectVersion "6.2.2"`, `cProjectVersionInt "602"`,
 `cProjectPatchLevel "2"` (`ghc/mk/version.mk:39-41`); the other 33 fields
@@ -294,7 +294,7 @@ For "Reproducing", after the 4.08.2 block:
     sh phase4/reproduce-6.2.2.sh            # -> build/repro-622/ghc
 
 One script, from the pristine ghc-6.2.2-src.tar.bz2 (sha256 a0fe7eb8...852):
-25 patches (phase4/patches, one concern each), GHC's own configure and
+25 patches (ghc622/patches, one concern each), GHC's own configure and
 config.h rule, DerivedConstants.h from mkDerivedConstants.c with the
 unregisterised flags, the three parsers and ten primop tables regenerated with
 our happy and an mhs-built genprimopcode, and the alex lexer's Addr# tables
@@ -304,10 +304,10 @@ is derived from the working tree, not the other way round:
 `sh phase4/make-patch.sh` regenerates it and fails on any hunk it cannot
 classify. Then:
 
-    TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/build/shims-6.2.2-run1 \
+    TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
       sh build/probe-ordered-622.sh <label> build/repro-622/ghc/compiler \
          build/repro-622/ghc/includes build/repro-622/order-6.2.2.txt \
-         phase2/hsboot-6.2.2-run1 phase2/gen-6.2.2
+         ghc622/hsboot ghc622/gen
 ```
 
 For "Layout", after the phase3 lines:
@@ -334,14 +334,14 @@ reproduces" the tree.
 `ghc/includes/config.h` also gained 34 `HTYPE_*` defines: configure's
 `FPTOOLS_CHECK_HTYPE` probes are K&R C that gcc 16 rejects, so the rule's
 output left them `#undef`. `reproduce-6.2.2.sh` now compiles and runs
-`phase4/gen-htypes.c` (a copy of `build/ghc622-mhs/gen-htypes.c`) and appends
+`ghc622/tools/gen-htypes.c` (a copy of `build/ghc622-mhs/gen-htypes.c`) and appends
 its output after the DerivedConstants step. The counts "25 patches / 249
 hunks / 101 files" earlier in this file describe the series before this
 addendum.
 
 Not in the series, by design: the FastString shim fix (`intern` forces its
-argument before touching the table; `build/shims-6.2.2-run1/FastString.hs`
-and `phase1/shims-ghc/FastString.hs`, patch in
+argument before touching the table; `ghc622/shims/FastString.hs`
+and `ghc622/shims-ghc/FastString.hs`, patch in
 `build/ghc622-mhs/diag/faststring-intern.patch`) lives in the shims, which are
 inputs to the build rather than part of the pristine tree.
 
@@ -354,7 +354,7 @@ reads a module's source through a text-mode handle to find its imports, and
 under the MicroHs runtime that decodes UTF-8 and dies on the Latin-1
 `parser/Ctype.lhs`; the branch reads bytes with `readBinaryFile`, as
 `readBinMem` in `utils/Binary.hs` already does. The edit is in the tree and
-in neither `phase4/patches` nor `series.conf`, so `make-patch.sh` will stop
+in neither `ghc622/patches` nor `series.conf`, so `make-patch.sh` will stop
 on it as unclassified, which is the designed failure. It belongs with 0026
 (class `RUNTIME`) or as a 0027 of its own. `build/6.2.2-run1.patch` (08:12)
 and the linked `build/ghc622-mhs/ghc` (10:04) both predate the edit (11:43).

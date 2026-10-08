@@ -1,4 +1,4 @@
--- Haskell 98's IO module (phase1/shims-h98/IO.hs re-exports MicroHs's
+-- Haskell 98's IO module (ghc622/shims-h98/IO.hs re-exports MicroHs's
 -- System.IO), plus what GHC 6.0's Binary.hs uses and MicroHs's System.IO lacks.
 module IO(module System.IO, module System.IO.Error,
           hIsEOF, hSeek, hFileSize) where

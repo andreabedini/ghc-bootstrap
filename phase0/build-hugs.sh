@@ -24,7 +24,7 @@ set -eu
 
 SRC=${1:-hugs98-plus-Sep2006}
 PREFIX=${2:-$PWD/prefix}
-PATCHES=$PWD/patches
+PATCHES=$(cd "$(dirname "$0")/../hugs/patches" && pwd)
 
 PERMISSIVE_CC="gcc -std=gnu89 -fcommon -fpermissive -w"
 

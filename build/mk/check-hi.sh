@@ -5,4 +5,4 @@
 # read). Prints a three-line summary. Used after every compile in build/mk.
 #   sh build/mk/check-hi.sh <file.hi> [Module.Name]   (entry 0 must be the module)
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
-exec python3 "$R/build/ghc622-mhs/test/hidict.py" "$1" 0 ${2:+"$2"}
+exec python3 "$R/ghc622/tools/hidict.py" "$1" 0 ${2:+"$2"}

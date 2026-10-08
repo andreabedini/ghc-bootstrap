@@ -1,5 +1,5 @@
---- a/build/shims-6.2.2-run1/FastString.hs
-+++ b/build/shims-6.2.2-run1/FastString.hs
+--- a/ghc622/shims/FastString.hs
++++ b/ghc622/shims/FastString.hs
 @@ -50,13 +50,31 @@
  
  intern :: String -> Int

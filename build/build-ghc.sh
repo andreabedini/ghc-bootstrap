@@ -19,7 +19,7 @@ T="$R/build/ghc-4.08.2/ghc/compiler"
 ORDER="$R/phase2/build-order.txt"
 export PATH="$M/bin:$PATH"
 
-INC="-i$R/phase1/shims -i$R/phase1/shims-h98 -i$R/phase1/shims-ghc"
+INC="-i$R/common/shims -i$R/ghc622/shims-h98 -i$R/ghc622/shims-ghc"
 INC="$INC -i$R/build/ghc-parsers -i$R/phase2/hsboot -i$R/build/ghc-hsboot"
 for d in "$T"/*/; do
   case "$d" in *nativeGen/) continue;; esac      # OMIT_NATIVE_CODEGEN

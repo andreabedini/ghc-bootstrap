@@ -39,6 +39,8 @@ R := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 export GHC_BOOTSTRAP_ROOT := $(R)
 M1    := $(R)/build/ghc622-mhs
 S2    := $(R)/build/ghc622-stage2
+G     := $(R)/ghc622
+G2    := $(G)/stage2
 MK    := $(R)/build/mk
 TREE  := $(R)/build/ghc-6.2.2-run1/ghc/compiler
 INC1  := $(R)/build/ghc-6.2.2-run1/ghc/includes
@@ -72,17 +74,17 @@ CC    ?= gcc
 # modules, the includes. build.sh comb takes ~9 min whatever changed: mhs's
 # cache validation looks for <Module>.hs, so every .lhs module and its
 # importers are always recompiled (build/ghc622-stage2/LOG.md, 2026-09-16).
-STAGE1_SRCS := $(shell find $(TREE) $(INC1) $(R)/build/shims-6.2.2-run1 \
-    $(R)/phase1/shims $(R)/phase1/shims-ghc $(R)/phase1/shims-h98 \
-    $(R)/phase2/hsboot-6.2.2-run1 $(R)/phase2/gen-6.2.2 -type f \
+STAGE1_SRCS := $(shell find $(TREE) $(INC1) $(R)/ghc622/shims \
+    $(R)/common/shims $(R)/ghc622/shims-ghc $(R)/ghc622/shims-h98 \
+    $(R)/ghc622/hsboot $(R)/ghc622/gen -type f \
     \( -name '*.hs' -o -name '*.lhs' -o -name '*.h' -o -name '*.hs-boot' \
        -o -name '*.hi-boot' -o -name '*.hs-incl' -o -name '*.txt' \) -not -path '*/tmp/*')
 
 $(M1)/ghc.comb: $(STAGE1_SRCS) $(M1)/build.sh
 	sh $(M1)/build.sh comb
-$(M1)/ghc-data.c: $(M1)/ghc.comb $(M1)/comb2c.py
+$(M1)/ghc-data.c: $(M1)/ghc.comb $(G)/stage1/comb2c.py
 	sh $(M1)/build.sh c
-$(M1)/ghc: $(M1)/ghc-data.c $(M1)/ffi.c $(M1)/stubs.c $(M1)/stubs.h $(M1)/build.sh
+$(M1)/ghc: $(M1)/ghc-data.c $(G)/stage1/ffi.c $(G)/stage1/stubs.c $(G)/stage1/stubs.h $(M1)/build.sh
 	sh $(M1)/build.sh cc
 stage1: $(M1)/ghc
 
@@ -114,7 +116,7 @@ LIBS_STAMP := $(S2)/topdir/libs.stamp
 
 include $(MK)/deps.mk
 
-$(MK)/deps.mk: $(MK)/gen-deps.py $(M1)/diag/base-rebuild-order.txt $(S2)/order.txt
+$(MK)/deps.mk: $(MK)/gen-deps.py $(G)/base/base-rebuild-order.txt $(G2)/order.txt
 	python3 $(MK)/gen-deps.py > $@.tmp && mv $@.tmp $@
 deps: $(MK)/deps.mk
 

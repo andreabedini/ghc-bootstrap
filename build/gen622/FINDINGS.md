@@ -36,7 +36,7 @@ How this was established:
   HappyAbsSyn` in the action_*/happyReduce_* signature block (with
   ParserCore's `type P a = String -> Int -> ParseResult a`, 6.2.2 leaves the
   parenthesised synonym head unexpanded and cannot unify it with a function
-  type). `phase4/fix-generated-parsers.sh` rewrites all three; `regen.sh`
+  type). `ghc622/tools/fix-generated-parsers.sh` rewrites all three; `regen.sh`
   and `phase4/regen-generated.sh` call it after each happy run. Details and
   the experiments in `build/ghc622-stage2/LOG.md` (2026-09-15).
 - **cpp for primops.** The Makefile's `% : %.pp` rule is
@@ -62,8 +62,8 @@ How this was established:
   `genprimopcode/genprimopcode` here is compiled by mhs from 6.2.2's own
   `Main.hs` (pristine copy from `build/ghc-6.2.2/ghc/utils/genprimopcode/`,
   same bytes as in `build/rts622`), with one edit (below), using
-  `phase1/shims-h98` for `Monad/Char/List/Maybe/System` and `genprimopcode/Parsec.hs`
-  (the slice-of-Parsec shim from `build/shims-6.2.2-run1`, identical to
+  `ghc622/shims-h98` for `Monad/Char/List/Maybe/System` and `genprimopcode/Parsec.hs`
+  (the slice-of-Parsec shim from `ghc622/shims`, identical to
   6.0-run2's) for the `import Parsec` branch that cpphs selects because
   `__GLASGOW_HASKELL__` is undefined. Cross-check: this binary on 6.0's
   `primops.txt` reproduces 9/10 of 6.0's files byte for byte; the tenth,

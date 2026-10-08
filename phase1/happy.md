@@ -171,11 +171,11 @@ The route is therefore forced, and is recorded as
 
 ```sh
 build/downloads/                      # happy tarballs, 1.15 .. 1.19.12
-phase1/shims/                         # the Data.Array / containers / mtl shims
-phase1/happy-shim/Paths_happy.hs      # happy-specific
+common/shims/                         # the Data.Array / containers / mtl shims
+happy/shim/Paths_happy.hs      # happy-specific
 
 MicroHs/bin/mhs -C -c -fno-code -XCPP \
-  -iphase1/shims -iphase1/happy-shim -ibuild/happy-1.19.12/src <Module>
+  -icommon/shims -ihappy/shim -ibuild/happy-1.19.12/src <Module>
 ```
 
 `mhs` needs `cpphs` on `PATH` for `-XCPP`; build it with `make bin/cpphs` in

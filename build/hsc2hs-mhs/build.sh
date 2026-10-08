@@ -12,7 +12,7 @@
 #
 # -D__GLASGOW_HASKELL__=622 takes the `>= 504` import branch (System.Console.GetOpt,
 # which MicroHs has) instead of the hslibs-era `GetOpt`.  shims/System.hs supplies H98
-# System's `system`; phase1/shims-h98 supplies Directory/Monad/Char/List/IO.
+# System's `system`; ghc622/shims-h98 supplies Directory/Monad/Char/List/IO.
 #
 # The driver script `hsc2hs` (hsc2hs.sh with the Makefile's SCRIPT_SUBST_VARS filled in)
 # adds --template, --cc/--ld=gcc, --cflag=-std=gnu89, --cflag=-D__GLASGOW_HASKELL__=622
@@ -22,7 +22,9 @@ R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ...
 H="$R/build/hsc2hs-mhs"
 export TMPDIR="$H/tmp"; mkdir -p "$TMPDIR"
 export PATH="$R/MicroHs/bin:$PATH"          # mhs and its cpphs
+# The sources live in ghc622/hsc2hs/src; copy them into the tarball layout.
+mkdir -p "$H/ghc/utils/hsc2hs" && cp "$R"/ghc622/hsc2hs/src/* "$H/ghc/utils/hsc2hs/"
 cd "$H/ghc/utils/hsc2hs"
-mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i"$H/shims" -i"$R/phase1/shims-h98" Main -o"$H/hsc2hs-bin"
+mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i"$R/ghc622/hsc2hs/shims" -i"$R/ghc622/shims-h98" Main -o"$H/hsc2hs-bin"
 cp template-hsc.h "$H/template-hsc.h"      # the wrapper's --template
 "$H/hsc2hs-bin" --version

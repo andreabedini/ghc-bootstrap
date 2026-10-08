@@ -29,7 +29,7 @@ been run.
 
 ---
 
-### D3 — Shims live in `phase1/shims/`, as the start of `ghc-on-mhs`
+### D3 — Shims live in `common/shims/`, as the start of `ghc-on-mhs`
 Rather than throwaway scaffolding per experiment. They are written against
 MicroHs's real machinery (`Mhs.Array`, `Mhs.MutArr`) rather than simulated, so
 they carry over to Phase 2 unchanged.
@@ -80,7 +80,7 @@ deliberate. The chain is:
 1. `cabal`/GHC builds `happy-ghc` — **outside the trusted base**.
 2. `happy-ghc` turns `Parser.ly` into a *portable* `Parser.hs` (generic
    template, no `--ghc`).
-3. `mhs` compiles that plus `phase1/shims/` → `happy-mhs`. **This** is the
+3. `mhs` compiles that plus `common/shims/` → `happy-mhs`. **This** is the
    artifact the chain uses.
 4. `happy-mhs` regenerates `Parser.hs` from `Parser.ly` and the result must be
    byte-identical to step 2's output.
@@ -147,7 +147,7 @@ exists, it must regenerate both byte-identically.
 ### D11 — The GHC tarball stays pristine; everything else is a side directory or a patch
 Generated parsers go in `build/ghc-parsers/` and reach the compiler through
 `mhs -i`, not by being copied into `ghc-4.08.2/ghc/compiler/parser/`. Shims go in
-`phase1/shims/`. Source changes, when they become unavoidable, go in a numbered
+`common/shims/`. Source changes, when they become unavoidable, go in a numbered
 patch series against the unmodified tarball, as `phase0/patches/` already does
 for Hugs and MicroHs.
 
@@ -171,7 +171,7 @@ in `Monad` and gave `Either e` the instance `fail = Left . strMsg`; base later
 split `MonadFail` out and dropped it, and MicroHs follows modern base (its only
 `MonadFail` instance is `[]`).
 
-Fixed in `phase1/shims/Control/Monad/Reader.hs` with the two instances mtl used
+Fixed in `common/shims/Control/Monad/Reader.hs` with the two instances mtl used
 to supply:
 
 ```haskell
@@ -207,7 +207,7 @@ MicroHs has all three function instances (`Functor`/`Applicative`/`Monad` for
 `((->) a)`), so the instance exists to be picked wrongly.
 
 **GHC needs none of it.** `Parser.y` and `ParseIface.y` are ordinary LALR
-grammars and `--glr` is never passed. So `phase2/happy-noglr/ProduceGLRCode.hs`
+grammars and `--glr` is never passed. So `happy/noglr/ProduceGLRCode.hs`
 provides the same module interface — the three option types, the same entry
 point — with `produceGLRParser` raising an `IOError`, and sits *earlier* on the
 `-i` path so it shadows the real module. happy's source is untouched (D11), and
@@ -323,7 +323,7 @@ stale.
 Worth recording next to D1 so a reader does not wonder why we patched Hugs at
 all when upstream did something else.
 
-Also checked: no upstream branch supplies what `phase1/shims/` provides.
+Also checked: no upstream branch supplies what `common/shims/` provides.
 `origin/oleg+more` has a weight-balanced `Data.Map`, but with a
 comparator-passing API (`lookupBy :: (k -> k -> Ordering) -> ...`), no `Ord`
 constraints, no `Data.Set`, and no mtl — it would not drop in where GHC or happy
@@ -357,7 +357,7 @@ through `Addr#`/`ByteArray#`/`indexCharOffAddr#` and GHC 4's C-label syntax
 (``prog_argv''). Emulating those primops on MicroHs would be more work and less
 trustworthy than reimplementing the ~60 functions the three modules export.
 
-`FastString` is done (`phase1/shims-ghc/FastString.hs`): a String plus an
+`FastString` is done (`ghc622/shims-ghc/FastString.hs`): a String plus an
 interned `Int`, because `Unique.getUnique` *is* `uniqueOfFS`, so interning is
 load-bearing rather than an optimisation — two equal strings must get the same
 `Int` or name resolution breaks. That in turn is why `Data.Map` was rewritten
@@ -1730,21 +1730,21 @@ fixed point is therefore reached at stage 3, and the acceptance run is
 **Overturned by:** nothing yet.
 
 ## D52 — 6.2.2 builds itself with its own build system; the chain climbs to 6.12.3; GMP 6.2 breaks every GHC before 8.0
-*2026-10-01, `nix/ghc622/inst.nix`, `nix/ghc610`, `nix/ghc612`, `nix/gmp612.nix`,
-`nix/test/GmpZero.hs`.* Three things happened in one day and one bug tied them
+*2026-10-01, `ghc622/nix/inst.nix`, `ghc610`, `ghc612`, `gmp612/default.nix`,
+`common/test/GmpZero.hs`.* Three things happened in one day and one bug tied them
 together.
 
 **6.2.2 by its own `configure && make`.** `nix-build -A ghc622` is now 6.2.2
 built by its own build system with the chain's stage 3 as `--with-ghc`
-(`nix/ghc622/inst.nix`; the stage-3 wrapper with a side `package.conf` that
-was the installed 6.2.2 until now is `nix/ghc622/boot.nix`, and nothing but
+(`ghc622/nix/inst.nix`; the stage-3 wrapper with a side `package.conf` that
+was the installed 6.2.2 until now is `ghc622/nix/boot.nix`, and nothing but
 inst.nix uses it). A 2026 host needs: the three `build/rts622` RTS patches,
 the `gen-htypes` block appended to `mk/config.h` (D47), `-D_GNU_SOURCE` for
 hsc2hs and the C bits (`struct ucred` in network's `Socket.hsc`), the private
 `execvpe` declarations of `libraries/unix` and `hslibs/posix` removed (glibc
 has had it since 2.11, with other types), the C flags carried by the rts
 package's `extra_cc_opts` so the installed compiler passes them to gcc, a
-`happy` wrapper that applies `phase4/fix-generated-parsers.sh` to what happy
+`happy` wrapper that applies `ghc622/tools/fix-generated-parsers.sh` to what happy
 1.19.5 writes (with `GHC_HAPPY_OPTS` and `SRC_HAPPY_OPTS` emptied), the
 shipped generated `.hs` touched, and the make output searched for `*** [`
 because fptools' loops carry on past a failing subdirectory (hslibs/posix's
@@ -1761,7 +1761,7 @@ GHC to drive it; stage 1 is GHC's source on the MicroHs runtime, about twenty
 times slower than native and dead on some modules at `-O`. From stage 3 on
 the compiler is native, and from inst.nix on the build system is the
 compiler's own. Every later rung is one `configure && make` derivation
-(`nix/ghc66`, `nix/ghc610`, `nix/ghc612`, ...).
+(`ghc66`, `ghc610`, `ghc612`, ...).
 
 **The ladder.** Each release's `configure.ac` names the oldest GHC that may
 build it; the jumps that keep the chain shortest are 6.2.2 → 6.6 → 6.10.4
@@ -1774,7 +1774,7 @@ needed a plain `ar`; its configure made `AR` "ar q") and **6.12.3 by
 libraries and stage 2, the unregisterised 6.10.4 compiles a stage 1 that then
 generates native x86-64 code for everything else. `ghc --info` of that
 6.12.3 says Unregisterised NO, NCG YES, tables next to code YES; it passes
-`nix/test/T3.hs` with no diagnostics and is half the size. From 6.12 on the
+`common/test/T3.hs` with no diagnostics and is half the size. From 6.12 on the
 chain is registerised (`registerised ? true`), which makes every later rung
 several times faster to build. 6.12.3 needed its `includes/Rts.h` blocks for
 `__GNUC__ > 4`, never compiled in 2010, disabled (one defines macros as
@@ -1784,7 +1784,7 @@ several times faster to build. 6.12.3 needed its `includes/Rts.h` blocks for
 three times out of three, while the same command passed 45 times outside the
 build; 7.4.2 by 6.12.3 died compiling `GHC/Show.lhs`, whichever 6.12.3 booted
 it and whichever way it was built. A gdb hook inside the build (`gdbModule`
-in `nix/ghc66/ghc.nix` and `nix/ghc74/default.nix`: the in-place compiler
+in `ghc66/ghc.nix` and `ghc74/default.nix`: the in-place compiler
 runs under `gdb -batch -ex run -ex bt` for the one compile) gave the same
 picture twice: SIGSEGV in `evacuate`, from `scavenge_stack` (6.6) or
 `scavenge_block` (7.4), on an address in the mmap region, and `info symbol`
@@ -1797,7 +1797,7 @@ integer-gmp 0.x's Cmm wrappers) takes `_mp_d - sizeof(StgArrWords)` as the
 `ByteArray#` closure, so the collector evacuates a pointer into libgmp's
 data segment and dies when the word there is not an info pointer. Whether
 it dies depends on what that word is and on which zeros are live at a
-collection, hence the maddening reproducibility. `nix/test/GmpZero.hs`
+collection, hence the maddening reproducibility. `common/test/GmpZero.hs`
 makes 2.4 million such zeros live across collections: a program compiled by
 the make-built 6.2.2 segfaults with GMP 6.3 and prints `(2400000,0)` with GMP
 6.1.2 substituted by `LD_LIBRARY_PATH` — the same binary. The hand chain's
@@ -1805,7 +1805,7 @@ stage-1 base, with `-fno-strictness` on nine modules, had merely shifted the
 allocation pattern enough to pass; the nine flags I had copied into inst.nix
 on that theory were a red herring and are gone.
 
-**Decision.** `nix/gmp612.nix` builds GMP 6.1.2 (the last before the lazy
+**Decision.** `gmp612/default.nix` builds GMP 6.1.2 (the last before the lazy
 `mpz_init`; `--disable-assembly`, `-std=gnu11` for gcc 15's C23 default, no
 `-no-pie` on a shared library), and every rung before 8.0 — stage 2's link,
 stages 3-5, boot, inst, happy 1.16, alex 2.1.0, 6.6, 6.10.4, 6.12.3, 7.4.2,
@@ -1834,14 +1834,14 @@ install check passed), the last rung that needs GMP 6.1.2.
 ---
 
 ## D53 — The chain climbs 8.0.2 → 8.4.4 → 8.8.4 → 9.0.2 → 9.4.8 with `configure && make`; 9.8.4 is the first Hadrian rung
-*2026-10-02, `nix/ghc80` … `nix/ghc98`, `nix/ghc90/StgCRunAsm-only-when-needed.patch`.*
+*2026-10-02, `ghc80` … `ghc98`, `ghc90/StgCRunAsm-only-when-needed.patch`.*
 
 **Built today, each by the rung before it, each `nix-build -A ghcNN`:**
 8.0.2 (374 MB, 13 min), 8.4.4 (454 MB, 16 min), 8.8.4 (557 MB), 9.0.2
 (559 MB), all registerised with the native code generator, static, the
 threaded RTS way, `make -j16` (nixpkgs builds every 8.x and later in
 parallel; the 2004-2012 build systems were kept serial), passing
-`nix/test/T3.hs`; 8.0.2 also passes `GmpZero` against the host's GMP 6.3
+`common/test/T3.hs`; 8.0.2 also passes `GmpZero` against the host's GMP 6.3
 outside the build, so D52's line is right: integer-gmp from 8.0 on works on
 limbs and does not care about the lazy `mpz_init`. 9.4.8 and 9.8.4: see the
 addendum.
@@ -1879,7 +1879,7 @@ about the boot compiler, each would hit a GHC of that version built any way.
   (checked with a two-line Makefile; the first 9.0.2 had `StgCRunAsm.o`, 48
   bytes, in `libHSrts.a`, and its `GNU_STACK` was RW only because binutils
   2.46 no longer defaults to an executable stack). Guix's copy of the patch
-  has no spaces; that is the one in `nix/ghc90/`, and the install check
+  has no spaces; that is the one in `ghc90/`, and the install check
   asserts `StgCRun.o` present and `StgCRunAsm.o` absent from the archive.
   The 8.x RTSs are not affected: their `StgCRunAsm.S` carries the note.
 
@@ -1889,16 +1889,16 @@ Hadrian-only rung. Its tarball still carries `mk/` and `ghc.mk`, and
 9.1 ("Note [Support for building ghc 9.4 with the make build system]",
 `MaxBootWithMakeGhcVersion`); nixpkgs 23.11 builds 9.4.8 with make (and
 even lowers the floor to 8.10 for it), Guix builds 9.4.3 with make. With a
-9.0.2 boot compiler `nix/ghc94` is the 8.x derivation again.
+9.0.2 boot compiler `ghc94` is the 8.x derivation again.
 
 **9.4 and 9.8 want a happy and an alex they never run.** The compiler,
 genprimopcode and hpc-bin declare `build-tool-depends: alex >= 3.2.6,
 happy >= 1.20.0`, and ghc-cabal (and Hadrian's Cabal) refuse to configure
 them without the programs on PATH, although every generated parser and
 lexer is in the tarball; nixpkgs and Guix both pass their own alex and
-happy in. So `nix/ghc94/happy120.nix` and `alex327.nix` build happy
+happy in. So `ghc94/happy120.nix` and `alex327.nix` build happy
 1.20.1.1 and alex 3.2.7.4 with the chain's 9.0.2 and the packages' own
-`Setup.hs`, in the shape of nix/ghc66's happy 1.16 and alex 2.1.0: happy's
+`Setup.hs`, in the shape of ghc66's happy 1.16 and alex 2.1.0: happy's
 Hackage tarball ships only the generated `Parser.hs` and
 `AttrGrammarParser.hs`, so the grammars come from the 1.20.1.1 git tag;
 generation 1 is built from parsers the chain's happy 1.19.5 generates
@@ -1921,9 +1921,9 @@ given a bare GHC and a *bootstrap plan* (a JSON file naming each dependency's
 version, Hackage revision and sha256, generated upstream with nix), it
 compiles each dependency's `Setup.hs` with the boot compiler and installs
 it into a private package database, then Hadrian itself. **Decision:**
-`nix/ghc98` uses that script, as Guix does (nixpkgs builds Hadrian from its
+`ghc98` uses that script, as Guix does (nixpkgs builds Hadrian from its
 own Haskell package set instead): the 9.8.4 tarball's newest plan,
-`plan-bootstrap-9_4_4.json`, is copied into `nix/ghc98/` verbatim and read
+`plan-bootstrap-9_4_4.json`, is copied into `ghc98/` verbatim and read
 with `builtins.fromJSON`; Nix fetches the 18 tarballs and the 18 revised
 `.cabal` files with the plan's hashes (bootstrap.py verifies the `.cabal`
 whatever the revision) and the build packs them as the `-s` sources tarball,
@@ -1967,7 +1967,7 @@ belongs:
 - *C23.* gcc 15 reads `extern void *realloc();` in `utils/hp2ps/Utilities.c`
   as a function of no arguments. Upstream's fix (!13863 for #25662, in 9.10;
   the Fedora copy nixpkgs applies to GHC < 9.10) includes stdlib.h instead:
-  `nix/ghc98/hp2ps-C-gnu17.patch`.
+  `ghc98/hp2ps-C-gnu17.patch`.
 
 Hadrian's `no_dynamic_libs` leaves the RTS's dyn ways in (`RTS ways` lists
 them); harmless, only build time. **Overturned by:** nothing yet.
@@ -1975,12 +1975,12 @@ them); harmless, only build time. **Overturned by:** nothing yet.
 ---
 
 ## D54 — Hadrian rungs: 9.8.4 → 9.12.4 → 9.14.1, one derivation for all three; the chain reaches the newest release
-*2026-10-03, `nix/hadrian-ghc.nix`, `nix/ghc98`, `nix/ghc912`, `nix/ghc914`.*
+*2026-10-03, `common/hadrian-ghc.nix`, `ghc98`, `ghc912`, `ghc914`.*
 
 **Built today, each by the rung before it:** 9.12.4 (973 MB, ~45 min) and
 9.14.1 (989 MB, ~55 min), both with Hadrian bootstrapped by bootstrap.py
 from a plan, both registerised, SMP, GHCi, static libraries, both passing
-`nix/test/T3.hs`, linking a `-threaded` program outside Nix that takes
+`common/test/T3.hs`, linking a `-threaded` program outside Nix that takes
 `-N2 -qg`, and printing `25!` and `2^200` right. 9.14.1 is the newest GHC
 release (9.14.1 of 2025; the 9.14.1.2026… directories on
 downloads.haskell.org are pre-releases of 9.14.2). **The chain is C
@@ -1988,9 +1988,9 @@ compiler + Hugs → MicroHs → 6.2.2 → 6.6 → 6.10.4 → 6.12.3 → 7.4.2 �
 7.8.4 → 8.0.2 → 8.4.4 → 8.8.4 → 9.0.2 → 9.4.8 → 9.8.4 → 9.12.4 → 9.14.1,
 and every link is `nix-build -A ghcNN`.**
 
-**One Hadrian derivation.** `nix/hadrian-ghc.nix` is D53's 9.8.4
+**One Hadrian derivation.** `common/hadrian-ghc.nix` is D53's 9.8.4
 derivation with the version, tarball hash, boot compiler, happy/alex, plan
-and patches as parameters; `nix/ghc98/default.nix` became a call of it
+and patches as parameters; `ghc98/default.nix` became a call of it
 that evaluates to the very derivation that was built (checked by store
 path, as was 9.12.4's after the later parameter), so nothing was rebuilt
 for the refactoring. The plan's boot-library versions are rewritten from
@@ -2021,7 +2021,7 @@ compiler's sake:**
   `type HalfWord = Word32`), so a 9.12.3 or 9.12.4 boot has the newtype and
   no instance. The ghc-9.14 branch guards it with
   `MIN_VERSION_GLASGOW_HASKELL(9,12,2,20250919)`; that one line is
-  `nix/ghc914/ghci-Binary-HalfWord-9.12.3-boot.patch`. nixpkgs, booting
+  `ghc914/ghci-Binary-HalfWord-9.12.3-boot.patch`. nixpkgs, booting
   from 9.10.3, never meets it.
 - *Where the GMP directory is recorded.* The install check asserted
   `--with-gmp-libraries` in `ghc-bignum`'s `library-dirs`; 9.14's

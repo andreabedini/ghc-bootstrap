@@ -36,7 +36,7 @@ ODIR="${OUTDIR:-$S/stage2}"
 export TMPDIR="$S/tmp"
 mkdir -p "$TMPDIR"
 ulimit -s unlimited 2>/dev/null || ulimit -s 65536
-ORDER="${1:-$S/order.txt}"
+ORDER="${1:-$R/ghc622/stage2/order.txt}"
 OUT="${OUT:-$S/results.tsv}"
 LOGS="${LOGS:-$S/logs/$(basename "$ODIR")}"
 mkdir -p "$LOGS"
@@ -94,7 +94,7 @@ while IFS="$(printf '\t')" read -r m path; do
   # GHC=stage 1; a native compiler takes the pristine file.
   fixnote=""
   src="$path"
-  if [ -f "$S/fixups/$path" ] && [ "${USE_FIXUPS:-1}" = 1 ]; then src="$S/fixups/$path"; fixnote=" [fixups]"; fi
+  if [ -f "$R/ghc622/stage2/fixups/$path" ] && [ "${USE_FIXUPS:-1}" = 1 ]; then src="$R/ghc622/stage2/fixups/$path"; fixnote=" [fixups]"; fi
   attempt() {   # $1 = opt flags for this attempt
     rm -f "$hc" "$hi"
     ( ulimit -v 8000000

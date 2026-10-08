@@ -18,8 +18,8 @@ layout, so Main.hs's `#include "../../includes/config.h"` resolves unchanged),
 ## 1. Building hsc2hs
 
 ```
-cd build/hsc2hs-mhs/ghc/utils/hsc2hs
-mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i../../../shims -i phase1/shims-h98 Main -o hsc2hs-bin
+cd ghc622/hsc2hs/src
+mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i../../../shims -i ghc622/shims-h98 Main -o hsc2hs-bin
 ```
 
 - `-D__GLASGOW_HASKELL__=622` (not the compiler build's 408): Main.hs imports
@@ -29,10 +29,10 @@ mhs -XCPP -D__GLASGOW_HASKELL__=622 -i. -i../../../shims -i phase1/shims-h98 Mai
   `mk/config.mk`: `cDEFAULT_TMPDIR="/tmp"`, `cGCC="gcc"`, `progNameSuffix=""`,
   `pathSep='/'`. Only `progNameSuffix` and `pathSep` are used.
 - `shims/System.hs`: Haskell 98's `System` also exports
-  `system :: String -> IO ExitCode`; `phase1/shims-h98/System.hs` re-exports
+  `system :: String -> IO ExitCode`; `ghc622/shims-h98/System.hs` re-exports
   only `System.Environment` + `System.Exit`. The local shim adds `system` from
   MicroHs's `System.Process`, first on `-i`. The shared shim is untouched.
-- `phase1/shims-h98` supplies `Directory`, `Monad`, `Char`, `List`, `IO`.
+- `ghc622/shims-h98` supplies `Directory`, `Monad`, `Char`, `List`, `IO`.
 
 ### Edits to Main.hs (copy; all marked `-- mhs`; 17 changed lines)
 
@@ -143,7 +143,7 @@ GHCi-only: it is an ordinary module of base whose `.o` goes into `libHSbase.a`
   `System/Posix/Signals.hs`, `Text/Regex/Posix.hs` (generated), their
   `.hi`/`.hc`, and `.hi`/`.hc` for the three importers; seven `.o` in `hcobj/`.
 - Tarball extractions untouched; the only edited source is the Main.hs copy
-  under `build/hsc2hs-mhs/ghc/utils/hsc2hs`.
+  under `ghc622/hsc2hs/src`.
 
 ## 7. Open
 

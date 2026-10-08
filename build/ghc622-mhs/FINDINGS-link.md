@@ -175,7 +175,7 @@ The `.hc` is *not* affected: `GHC/Float.hc:4329` defines
 distinct as they should be. The corruption is in the `.hi` writer:
 `utils/Binary.hs:592,683` keys its string dictionary by `getUnique` of the
 `FastString`, and under the shim two different strings had received the
-**same unique**. `build/shims-6.2.2-run1/FastString.hs` (`intern`) now
+**same unique**. `ghc622/shims/FastString.hs` (`intern`) now
 carries the diagnosis agent's fix and explanation: `mkWorkerOcc` builds
 `"$w" ++ occNameString occ`, forcing that string re-enters `intern` for
 `occ`'s own FastString, and the outer call's table snapshot then overwrote

@@ -10,4 +10,4 @@ cd "$W/test" || exit 1
 rm -f FmtCheck.hi FmtCheck.hc
 ulimit -s unlimited 2>/dev/null
 timeout 600 "$W/ghc" +RTS -K5M -RTS "-B$W/topdir" -C -fglasgow-exts -package-name base FmtCheck.hs || exit 1
-python3 "$W/test/hidict.py" FmtCheck.hi 8
+python3 "$R/ghc622/tools/hidict.py" FmtCheck.hi 8

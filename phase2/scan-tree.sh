@@ -21,7 +21,7 @@ INCDIR=$(cd "$3" && pwd) || exit 1
 shift 3
 export PATH="$M/bin:$PATH"
 
-INC="-i$R/phase1/shims -i$R/phase1/shims-ghc -i$R/phase1/shims-h98"
+INC="-i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98"
 for d in "$@"; do INC="$INC -i$(cd "$d" && pwd)"; done
 for d in "$TREE"/*/; do
   [ -d "$d" ] && INC="$INC -i${d%/}"

@@ -23,13 +23,13 @@ export HAPPY_DATADIR="$B/happy-mhs/datadir"   # portable HappyTemplate (happy 1.
 HAPPY=$B/happy-mhs/happy-mhs2                 # the fixpoint-verified happy (phase2/FINDINGS.md)
 
 # ---- genprimopcode: 6.2.2's own utils/genprimopcode/Main.hs, compiled by mhs -------
-# Main.hs imports the H98 modules Monad/Char/List/Maybe/System (phase1/shims-h98)
+# Main.hs imports the H98 modules Monad/Char/List/Maybe/System (ghc622/shims-h98)
 # and, with __GLASGOW_HASKELL__ undefined under cpphs, the old `Parsec` module
 # (genprimopcode/Parsec.hs: the slice-of-Parsec shim written for 6.0's run2).
 if [ "${SKIP_GENPOC:-0}" != 1 ] && [ "${VALIDATE60:-0}" != 1 ]; then
   cp "$GENPOC_SRC" "$G/genprimopcode/Main.hs"
   patch -s "$G/genprimopcode/Main.hs" "$G/patches/genprimopcode-Main.hs.patch"
-  ( cd "$G/genprimopcode" && mhs -XCPP -i. -i"$R/phase1/shims-h98" Main -ogenprimopcode )
+  ( cd "$G/genprimopcode" && mhs -XCPP -i. -i"$R/ghc622/shims-h98" Main -ogenprimopcode )
 fi
 GENPOC=$G/genprimopcode/genprimopcode
 
@@ -56,7 +56,7 @@ gen_parsers() {   # $1 = compiler src dir, $2 = output dir
   for y in main/ParsePkgConf parser/ParserCore parser/Parser; do
     printf '== happy %s.y\n' "$y"
     "$HAPPY" "$1/$y.y" -o "$2/$y.hs"
-    sh "$R/phase4/fix-generated-parsers.sh" "$2/$y.hs"
+    sh "$R/ghc622/tools/fix-generated-parsers.sh" "$2/$y.hs"
   done
 }
 

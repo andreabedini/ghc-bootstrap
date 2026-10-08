@@ -16,8 +16,8 @@
 #
 # genprimopcode is 6.2.2's own ghc/utils/genprimopcode/Main.hs compiled by mhs
 # in <work>/genprimopcode with one edit (genprimopcode-Main.hs.patch: `not.dodgy`
-# spaced), phase1/shims-h98 for Monad/Char/List/Maybe/System and the Parsec
-# slice shim from build/shims-6.2.2-run1 (cpphs leaves __GLASGOW_HASKELL__
+# spaced), ghc622/shims-h98 for Monad/Char/List/Maybe/System and the Parsec
+# slice shim from ghc622/shims (cpphs leaves __GLASGOW_HASKELL__
 # undefined, so Main.hs takes its `import Parsec` branch).
 set -eu
 R=$(cd "$(dirname "$0")/.." && pwd)
@@ -36,9 +36,9 @@ G=$WORK/genprimopcode
 if [ "${SKIP_GENPOC:-0}" != 1 ] || [ ! -x "$G/genprimopcode" ]; then
   mkdir -p "$G"
   cp "$SRC/ghc/utils/genprimopcode/Main.hs" "$G/Main.hs"
-  patch -s "$G/Main.hs" "$P4/genprimopcode-Main.hs.patch"
-  cp "$R/build/shims-6.2.2-run1/Parsec.hs" "$G/Parsec.hs"
-  ( cd "$G" && mhs -XCPP -i. -i"$R/phase1/shims-h98" Main -ogenprimopcode )
+  patch -s "$G/Main.hs" "$R/ghc622/tools/genprimopcode-Main.hs.patch"
+  cp "$R/ghc622/shims/Parsec.hs" "$G/Parsec.hs"
+  ( cd "$G" && mhs -XCPP -i. -i"$R/ghc622/shims-h98" Main -ogenprimopcode )
 fi
 
 # ---- primops: cpphs (as the 6.0 run did), then the ten genprimopcode outputs --
@@ -59,6 +59,6 @@ done
 for y in main/ParsePkgConf parser/ParserCore parser/Parser; do
   printf '== happy %s.y\n' "$y"
   "$HAPPY" "$C/$y.y" -o "$C/$y.hs"
-  sh "$P4/fix-generated-parsers.sh" "$C/$y.hs"
+  sh "$R/ghc622/tools/fix-generated-parsers.sh" "$C/$y.hs"
 done
 echo "== regenerated: primops.txt, 10 primop-*.hs-incl, 3 parsers"

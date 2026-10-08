@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Emit build/mk/deps.mk: the per-module rules of build/Makefile with the real
-import graph, for libraries/base (build/ghc622-mhs/diag/base-rebuild-order.txt),
-libraries/haskell98 and the compiler proper (build/ghc622-stage2/order.txt),
+import graph, for libraries/base (ghc622/base/base-rebuild-order.txt),
+libraries/haskell98 and the compiler proper (ghc622/stage2/order.txt),
 the last twice: stage 2 (compiled by the mhs-built stage 1 into stage2/) and
 stages 3 and 4 (each compiled by the previous stage's native compiler into
 stage<n>/ and obj-stage<n>/, linked as ghc-stage<n>) and stage 5 (compiled by
@@ -20,7 +20,7 @@ logging must not schedule a five-hour rebuild.
 import importlib.util, os, re, subprocess, sys
 
 R = os.environ["GHC_BOOTSTRAP_ROOT"]
-M1 = R + "/build/ghc622-mhs"; S2 = R + "/build/ghc622-stage2"
+M1 = R + "/build/ghc622-mhs"; S2 = R + "/build/ghc622-stage2"; G2 = R + "/ghc622/stage2"
 BASE = M1 + "/libraries/base"; H98 = S2 + "/libraries/haskell98"
 SRC2 = S2 + "/src/ghc-6.2.2/ghc/compiler"; INC1 = R + "/build/ghc-6.2.2-run1/ghc/includes"
 
@@ -60,7 +60,7 @@ def base_deps(mods):
         deps[m] = ds
     return deps
 
-base_order = [l.strip() for l in open(M1 + "/diag/base-rebuild-order.txt") if l.strip()]
+base_order = [l.strip() for l in open(R + "/ghc622/base/base-rebuild-order.txt") if l.strip()]
 base_mods = {}
 for m in base_order:
     p = m.replace(".", "/")
@@ -106,7 +106,7 @@ spec = importlib.util.spec_from_file_location("bo", R + "/phase2/build-order.py"
 bo = importlib.util.module_from_spec(spec); spec.loader.exec_module(bo)
 deps2, defined = bo.scan(SRC2, skip_dirs=("nativeGen", "ilxGen", "javaGen", "ghci"))
 order2 = []
-for l in open(S2 + "/order.txt"):
+for l in open(G2 + "/order.txt"):
     if l.strip():
         m, p = l.rstrip("\n").split("\t"); order2.append((m, p))
 mods2 = {m for m, _ in order2}
@@ -131,9 +131,9 @@ path_of = dict(order2)
 for m, p in order2:
     stem = os.path.splitext(p)[0]
     ds = [os.path.splitext(path_of[d])[0] + ".hi" for d in sorted(deps2.get(m, ())) if d in mods2 and d != m]
-    fix = " $(S2)/fixups/%s" % p if os.path.exists(S2 + "/fixups/" + p) else ""
+    fix = " $(G2)/fixups/%s" % p if os.path.exists(G2 + "/fixups/" + p) else ""
     # stage 2: the stage-1 (mhs-built) compiler, fixups for what the MicroHs runtime cannot read
-    emit("$(ODIR2)/%s.hi $(ODIR2)/%s.hc &: $(SRC2)/%s%s %s $(LIBS_STAMP) $(M1)/ghc | $(S2)/flags.tsv $(MK)/compile-stage2.sh" % (stem, stem, p, fix, " ".join("$(ODIR2)/" + d for d in ds)))
+    emit("$(ODIR2)/%s.hi $(ODIR2)/%s.hc &: $(SRC2)/%s%s %s $(LIBS_STAMP) $(M1)/ghc | $(G2)/flags.tsv $(MK)/compile-stage2.sh" % (stem, stem, p, fix, " ".join("$(ODIR2)/" + d for d in ds)))
     emit("\tsh $(MK)/compile-stage2.sh %s %s" % (m, p))
     emit("$(S2)/obj/%s.o: $(ODIR2)/%s.hc" % (obj2(p), stem))
     emit("\t$(HC2O_STAGE2)")

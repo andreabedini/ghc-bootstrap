@@ -6,7 +6,7 @@ M="$R/MicroHs"
 T="$R/build/ghc-4.08.2/ghc/compiler"
 export PATH="$M/bin:$PATH"
 
-INC="-i$R/build/probe -i$R/phase1/shims -i$R/phase1/shims-h98 -i$R/phase1/shims-ghc -i$R/build/ghc-parsers -i$R/phase2/hsboot -i$R/build/ghc-hsboot"
+INC="-i$R/build/probe -i$R/common/shims -i$R/ghc622/shims-h98 -i$R/ghc622/shims-ghc -i$R/build/ghc-parsers -i$R/phase2/hsboot -i$R/build/ghc-hsboot"
 for d in "$T"/*/; do
   case "$d" in *nativeGen/) continue;; esac   # OMIT_NATIVE_CODEGEN
   [ -d "$d" ] && INC="$INC -i${d%/}"

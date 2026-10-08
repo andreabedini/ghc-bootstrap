@@ -25,7 +25,7 @@ export PATH="$M/bin:$PATH"
 
 INC="${PREINC:+-i$PREINC} -i$L -i$L/shims -i$L/overlay"
 INC="$INC -i$R/phase2/hsboot-6.0-run2 -i$R/build/shims-6.0-run2"
-INC="$INC -i$R/phase1/shims -i$R/phase1/shims-ghc -i$R/phase1/shims-h98"
+INC="$INC -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98"
 INC="$INC -i$R/phase2/gen-6.0"
 for d in "$TREE"/*/; do
   [ -d "$d" ] && INC="$INC -i${d%/}"

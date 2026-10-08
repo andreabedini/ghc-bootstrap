@@ -214,7 +214,7 @@ build/shims-6.0-run2/ (16): all still needed. Directly imported by 6.2.2:
 Directory Exception FastMutInt FastString GHC.Base IO IOExts
 Language.Haskell.THSyntax Posix StringBuffer System Time; Concurrent/Dynamic
 via the CONCURRENT/DYNAMIC macros (unchanged), Text.PrettyPrint.HughesPJ via the
-THSyntax shim, Parsec via genprimopcode. Every phase1/shims* module 6.0 used is
+THSyntax shim, Parsec via genprimopcode. Every common/shims* module 6.0 used is
 still imported by 6.2.2.
 
 | shim | why | effort |

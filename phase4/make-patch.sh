@@ -1,5 +1,5 @@
 #!/bin/sh
-# Regenerate phase4/patches/ from a working GHC 6.2.2 compiler tree.
+# Regenerate ghc622/patches/ from a working GHC 6.2.2 compiler tree.
 #
 #   sh phase4/make-patch.sh [tree]      default tree: build/ghc-6.2.2-run1
 #
@@ -38,13 +38,13 @@ set -- --exclude 'primop-*.hs-incl' --exclude primops.txt \
        --exclude Lexer.hs --exclude tmp --exclude ghc-pkg --exclude .claude
 
 python3 "$P4/split-patch.py" --pristine "$PRISTINE" --tree "$TREE" \
-        --conf "$P4/series.conf" --out "$P4/patches" "$@"
+        --conf "$P4/series.conf" --out "$R/ghc622/patches" "$@"
 
 # ---- self-check: apply the series to a clean copy and compare ---------------
 mkdir -p "$WORK/check/ghc"
 cp -a "$PRISTINE/ghc/compiler" "$WORK/check/ghc/compiler"
 cd "$WORK/check"
-for p in "$P4"/patches/*.patch; do
+for p in "$R"/ghc622/patches/*.patch; do
   out=$(patch -p1 -N -i "$p" 2>&1) || { printf '%s\n' "$out"; echo "FAILED: $p"; exit 1; }
   case "$out" in *fuzz*|*offset*) printf '%s\n' "$out"; echo "INEXACT: $p"; exit 1 ;; esac
 done
@@ -52,4 +52,4 @@ diff -r -x 'primop-*.hs-incl' -x primops.txt -x Parser.hs -x ParserCore.hs \
         -x ParsePkgConf.hs -x Lexer.hs -x tmp -x ghc-pkg -x .claude \
         "$WORK/check/ghc/compiler" "$TREE/ghc/compiler"
 echo "series applies exactly and reproduces $TREE/ghc/compiler"
-ls "$P4"/patches/*.patch | wc -l | sed 's/^/patches: /'
+ls "$R"/ghc622/patches/*.patch | wc -l | sed 's/^/patches: /'

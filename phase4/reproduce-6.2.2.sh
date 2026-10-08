@@ -15,7 +15,7 @@
 #
 # Steps (each records its provenance in phase4/FINDINGS.md):
 #   1  tar xjf ghc-6.2.2-src.tar.bz2, sha256 checked
-#   2  patch -p1 with phase4/patches/*.patch (exact: no fuzz, no offset allowed)
+#   2  patch -p1 with ghc622/patches/*.patch (exact: no fuzz, no offset allowed)
 #   3  ./configure --enable-hc-boot --enable-hc-boot-unregisterised, with a
 #      PATH that holds no ghc (build/rts622/FINDINGS.md section 1)
 #   4  make -C ghc/includes config.h      (GHC's own $(H_CONFIG) rule)
@@ -24,16 +24,16 @@
 #  5b  ghc/includes/NativeDefs.h from mkNativeHdr.c, same flags (TcForeign.lhs
 #      reaches it through nativeGen/NCG.h even without a native code generator)
 #   6  phase4/regen-generated.sh: primops.txt, 10 primop-*.hs-incl, 3 parsers
-#      (post-processed by phase4/fix-generated-parsers.sh)
-#   7  phase4/convert-lexer.py on the shipped alex output parser/Lexer.hs
+#      (post-processed by ghc622/tools/fix-generated-parsers.sh)
+#   7  ghc622/tools/convert-lexer.py on the shipped alex output parser/Lexer.hs
 #   8  ln -s ../../utils/ghc-pkg ghc/compiler/utils/ghc-pkg
 #      (main/Packages.lhs #includes ../utils/ghc-pkg/Package.hs)
 #   9  assemble <dest>/ghc, regenerate the order file
 #  10  verify: diff -r against build/ghc-6.2.2-run1/ghc when it exists
 #
 # Not produced here, because they are inputs rather than tree contents (see
-# FINDINGS.md "Inputs that are not in the tree"): build/shims-6.2.2-run1,
-# phase2/hsboot-6.2.2-run1, phase2/gen-6.2.2/Config.hs.
+# FINDINGS.md "Inputs that are not in the tree"): ghc622/shims,
+# ghc622/hsboot, ghc622/gen/Config.hs.
 #
 # Needs: gcc, GNU make, patch, python3, tar/bzip2, and the chain's own tools
 # (MicroHs/bin/{mhs,cpphs}, build/happy-mhs/happy-mhs2). Takes 3-4 minutes.
@@ -61,10 +61,10 @@ S=$D/src/ghc-6.2.2
 [ -d "$S/ghc/compiler" ] || { echo "unexpected tarball layout"; exit 1; }
 
 # 2 ---------------------------------------------------------------------------
-step "apply phase4/patches"
+step "apply ghc622/patches"
 cd "$S"
 n=0
-for p in "$P4"/patches/*.patch; do
+for p in "$R"/ghc622/patches/*.patch; do
   out=$(patch -p1 -N -i "$p" 2>&1) || { printf '%s\n' "$out"; echo "FAILED: $p"; exit 1; }
   case "$out" in *fuzz*|*offset*) printf '%s\n' "$out"; echo "INEXACT: $p"; exit 1 ;; esac
   n=$((n + 1))
@@ -127,13 +127,13 @@ sh "$P4/regen-generated.sh" "$S" "$D/tools" > "$D/log/regen.log" 2>&1 \
 step "ghc/includes/config.h: HTYPE_* (gen-htypes.c)"
 # configure's FPTOOLS_CHECK_HTYPE probes have a K&R main() that gcc >= 14
 # rejects, so config.h leaves every HTYPE_* #undef and Foreign.Storable (and
-# the 96 base modules behind it) will not compile. phase4/gen-htypes.c reruns
+# the 96 base modules behind it) will not compile. ghc622/tools/gen-htypes.c reruns
 # the probes' logic and its output is appended (DECISIONS.md D47). This step
 # runs AFTER the primops regeneration on purpose: cpphs echoes every directive
 # of an included header as a blank line, and primops.txt in the working tree
 # was generated before the HTYPE block existed (the 71 trailing blank lines
 # would otherwise differ; genprimopcode does not care either way).
-gcc -O -w -o "$D/tmp/gen-htypes" "$P4/gen-htypes.c" > "$D/log/gen-htypes.log" 2>&1 \
+gcc -O -w -o "$D/tmp/gen-htypes" "$R/ghc622/tools/gen-htypes.c" > "$D/log/gen-htypes.log" 2>&1 \
   || { cat "$D/log/gen-htypes.log"; echo "gen-htypes failed"; exit 1; }
 # Inside the include guard, as build/ghc-6.2.2-run1 has it: the closing
 # `#endif /* __FPTOOLS_CONFIG_H__ */` is moved after the appended block.
@@ -147,7 +147,7 @@ step "convert the alex lexer"
 # The tarball ships alex's -g output (parser/Lexer.hs); its Addr# tables are
 # decoded into boxed arrays (build/lexer622/FINDINGS.md). The converter
 # asserts every line it touches against the pristine text.
-python3 "$P4/convert-lexer.py" ghc/compiler/parser/Lexer.hs "$D/tmp/Lexer.hs" > "$D/log/lexer.log" 2>&1
+python3 "$R/ghc622/tools/convert-lexer.py" ghc/compiler/parser/Lexer.hs "$D/tmp/Lexer.hs" > "$D/log/lexer.log" 2>&1
 mv "$D/tmp/Lexer.hs" ghc/compiler/parser/Lexer.hs
 
 # 8 ---------------------------------------------------------------------------

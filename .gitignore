@@ -57,6 +57,7 @@
 /build/repro-622/
 /build/happy-1.16/
 /build/happy-1.19.5/
+/build/hsc2hs-mhs/ghc/
 /build/ghc622-mhs/libraries/
 /build/ghc622-stage2/src/
 /build/ghc622-stage2/libraries/

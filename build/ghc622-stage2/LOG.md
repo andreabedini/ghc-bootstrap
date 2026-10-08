@@ -169,7 +169,7 @@ Outstanding before or at the resume:
   signature block removed OK (748 KB .hc); **parentheses removed OK** (494
   KB .hc). ParserCore is on Main's path (HscMain imports it).
   Fix, permanent and in the generator, not a fixups/ workaround: new
-  `phase4/fix-generated-parsers.sh` applies all three rewrites (OPTIONS_GHC,
+  `ghc622/tools/fix-generated-parsers.sh` applies all three rewrites (OPTIONS_GHC,
   the two imports, the parentheses) and is called by
   `phase4/regen-generated.sh` and `build/gen622/regen.sh` after each happy
   run; applied to the three parsers in this tree and in
@@ -275,7 +275,7 @@ Outstanding before or at the resume:
   `01 00 00 00 50 01 00 00 00 72 01 ... 00`: the `Binary [a]` list encoding
   (tag 0x01, 4-byte Word32 char, ..., terminator 0x00) of "Prelude", then
   "base", "GHCziS...". Stage-1 (build/rebase622/try622/utils/Binary.hs) has
-  phase4/patches/0004: `putFS bh s = put_ bh (unpackFS s)` and a matching
+  ghc622/patches/0004: `putFS bh s = put_ bh (unpackFS s)` and a matching
   `getFS` via `mkFastString`, because the mhs FastString shim has no
   ByteArray#. Every .hi stage-2 can see -- the libraries (built by
   build/ghc622-mhs/ghc on 2026-09-10) and the 220 stage2/ modules -- is in
@@ -309,7 +309,7 @@ Outstanding before or at the resume:
 
 - Chosen fix: option (a) of the entry above. The tree the series is
   generated from, build/ghc-6.2.2-run1/ghc/compiler/utils/Binary.hs, now
-  writes the pristine wire format and phase4/patches/0004 was regenerated
+  writes the pristine wire format and ghc622/patches/0004 was regenerated
   from it with phase4/make-patch.sh (series applies exactly, reproduces the
   tree; 259 hunks, 26 patches). FastString: `putFS` writes the Int length
   then the Latin-1 bytes, erroring on a char > 255 as the original's
@@ -466,7 +466,7 @@ Outstanding before or at the resume:
   the first mmap's hint (build/rts622/alias-test/mmap-alias.c): entries 19
   or 23 -> 6/6 segfaults in evacuate <- GarbageCollect; entries 4 or 2049 ->
   6/6 passes. Full write-up: build/rts622/FINDINGS.md section 9.
-- Fix: build/rts622/patches/0003-mblock-map-window.patch -- HEAP_BASE
+- Fix: ghc622/rts/patches/0003-mblock-map-window.patch -- HEAP_BASE
   0x500000000 on x86-64 (6.4's choice) and the map keyed on (p - HEAP_BASE)
   with 65536 entries, a 64 GB window; getMBlocks barfs on memory outside it.
   Rebuilt libHSrts.a (78/78); `make -f build/Makefile test` relinked the

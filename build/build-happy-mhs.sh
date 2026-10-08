@@ -6,7 +6,7 @@ M="$R/MicroHs"
 S="$R/build/happy-1.19.5/src"
 export PATH="$M/bin:$PATH"
 export HAPPY_DATADIR="$R/build/happy-1.19.5/templates"
-INC="-i$R/phase2/happy-noglr -i$R/phase1/shims -i$R/phase1/happy-shim -i$S"
+INC="-i$R/happy/noglr -i$R/common/shims -i$R/happy/shim -i$S"
 mkdir -p "$R/build/happy-mhs" && cd "$R/build/happy-mhs" || exit 1
 
 echo "== per-module =="

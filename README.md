@@ -45,7 +45,7 @@ What the chain takes from the host, stated precisely:
     run, is MicroHs's shipped `generated/cpphs.c` compiled by gcc
     (`phase2/FINDINGS.md`). mhs runs it on every module that uses CPP, which
     includes most of the GHC 6.2.2 sources stage 1 compiles. From stage 2 on,
-    GHC's own `-cpp` uses gcc. The Nix build (`nix/cpphs.nix`) builds cpphs
+    GHC's own `-cpp` uses gcc. The Nix build (`cpphs/default.nix`) builds cpphs
     from source with mhs instead: gcc's traditional cpp stands in for the
     first round, and rounds 2 and 3 reach a fixed point. The source-built
     cpphs and the shipped one give identical output on every `.hs`, `.lhs`
@@ -110,7 +110,7 @@ flowchart LR
 **The whole ladder, 6.2.2 to 9.14.1** (DECISIONS.md D52-D54; every rung is
 `nix-build -A ghcNN`, each built by the one before it, each the newest
 release whose build accepts the previous rung as the boot compiler, each
-passing `nix/test/T3.hs` and the checks named in its derivation):
+passing `common/test/T3.hs` and the checks named in its derivation):
 
 | Rung | Built by | Build system | What it needed on a 2026 host (gcc 15, glibc 2.42, binutils 2.46) |
 |---|---|---|---|
@@ -187,7 +187,7 @@ The compiler tree, from the pristine `ghc-6.2.2-src.tar.bz2`:
 sh phase4/reproduce-6.2.2.sh            # -> build/repro-622/ghc, 3-4 minutes
 ```
 
-One script: 26 patches (`phase4/patches`, one concern each), GHC's own
+One script: 26 patches (`ghc622/patches`, one concern each), GHC's own
 configure and `config.h` rule, `DerivedConstants.h` from
 `mkDerivedConstants.c` with the unregisterised flags, the `HTYPE_*` block
 that gcc 16 stops configure from producing, the three parsers and ten primop
@@ -205,10 +205,10 @@ the boot files, `Config.hs`).
 Typechecking the tree with mhs (about an hour; `phase4/FINDINGS.md` section 2):
 
 ```sh
-TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/build/shims-6.2.2-run1 \
+TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
   sh build/probe-ordered-622.sh <label> build/repro-622/ghc/compiler \
      build/repro-622/ghc/includes build/repro-622/order-6.2.2.txt \
-     phase2/hsboot-6.2.2-run1 phase2/gen-6.2.2
+     ghc622/hsboot ghc622/gen
 ```
 
 From the typechecked tree to the self-hosting compiler, the chain is one
@@ -260,23 +260,34 @@ DECISIONS.md          the decision log, D1-D54: every choice and every wrong tur
 BOOTSTRAP-ANALYSIS.md why this chain, and why not a shorter one (2026-09-02, with status notes)
 PATCHES.md            the two patch series, grouped by what each patch is really about
 DIAGRAMS.md, diagrams/ the chain as six diagrams (Mermaid, and D2 for the derivation graph): links, seed, tools, derivation graph, comparisons, road ahead
-default.nix, nix/     the chain as Nix derivations: nix-build -A hugs|mhs|cpphs|happy|ghc622|ghc66|ghc610|ghc612|ghc74|ghc78|ghc80|ghc84|ghc88|ghc90|ghc94|ghc98|ghc912|ghc914; nix/ghc622/, nix/ghc66/ and nix/ghc94/ hold steps (ghc622.stage2, ghc66.happy116, ghc94.alex327, ...); nix/hadrian-ghc.nix is the Hadrian rungs
+default.nix           the chain as Nix derivations, one directory per link:
+                      nix-build -A hugs|mhs|cpphs|happy|gmp612|ghc622|ghc66|ghc610|ghc612|ghc74|ghc78|ghc80|ghc84|ghc88|ghc90|ghc94|ghc98|ghc912|ghc914
+hugs/ mhs/ cpphs/ happy/ gmp612/
+ghc622/ ghc66/ ... ghc914/
+                      each link's derivation (default.nix) and every file it reads:
+                      patches, shims, boot files, build tables, test programs;
+                      ghc66/ and ghc94/ hold steps (ghc66.happy116, ghc94.alex327, ...)
+  ghc622/             GHC 6.2.2, the entry point since D45: default.nix and the steps
+                      in nix/ (ghc622.tree, .stage1, .stage2, ...); patches/ (the series
+                      0001-0026), shims/ shims-ghc/ shims-h98/, hsboot/, gen/, tools/,
+                      and the inputs of each stage (stage1/, base/, stage2/, rts/,
+                      hsc2hs/, boot/, test/)
+common/               what several links share: shims/ (ghc-on-mhs, used by happy and
+                      6.2.2), test/ (T3, GmpZero), hadrian-ghc.nix (the Hadrian rungs)
 phase0/               surveying candidate compilers; the Hugs -> MicroHs seed (feature-scan.py)
-phase1/               ghc-on-mhs: shims, import inventory, happy analysis
-phase2/               building hsc: patches 0001-0024, build order, cpp pipeline;
-                      also the 6.2.2 boot files (hsboot-6.2.2-run1) and Config (gen-6.2.2)
+phase1/               ghc-on-mhs: import inventory, happy analysis
+phase2/               building hsc: patches 0001-0024, build order, cpp pipeline
 phase3/               building the 4.08.2 libraries and runtime: patches 0019-0030
   patches/            source changes, one concern per patch
   build-*.sh          the build steps
   FINDINGS.md         what each phase established
-phase4/               GHC 6.2.2, the entry point since D45: reproduce-6.2.2.sh,
-                      patches 0001-0026, the regeneration recipes; FINDINGS.md
-                      records the provenance of every non-patch input
+phase4/               GHC 6.2.2 without Nix: reproduce-6.2.2.sh, make-patch.sh and
+                      series.conf (which generate ghc622/patches), the regeneration
+                      recipes; FINDINGS.md records the provenance of every non-patch input
 build/                everything built, plus the 6.2.2 work not yet folded into phase4:
   Makefile            the 6.2.2 chain from stage 1 to stage 5, one dependency graph
   mk/                 its per-module recipes and the generated dependency rules
   ghc-6.2.2-run1/     the compiler tree mhs typechecks (the reference reproduce-6.2.2.sh diffs against)
-  shims-6.2.2-run1/   the ghc-on-mhs shims the 6.2.2 build uses
   gen622/ lexer622/   regenerated parsers and primop tables; the alex lexer conversion
   rts622/             6.2.2's RTS on x86-64, libHSrts.a
   ghc622-mhs/         the mhs-built ghc, base, cbits, libHSbase.a, link.sh, the 12 test programs
@@ -319,7 +330,7 @@ On the 6.2.2 chain, as of 2026-09-23:
 5. **Hygiene.** The RTS is compiled without `-fwrapv` (no failure traced to
    it). The 4.08.2 `hsc` was never relinked with the fixed FastString shim.
    Three shim modules (`FastString`, `Foreign`, `StringBuffer`) exist both
-   in `phase1/shims-ghc` (the 4.08.2 set) and in `build/shims-6.2.2-run1`,
+   in `ghc622/shims-ghc` (the 4.08.2 set) and in `ghc622/shims`,
    with different contents; the 6.2.2 build puts the second directory first
    on the `-i` path.
 

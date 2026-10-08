@@ -14,7 +14,7 @@ what runs, what is still assumed.
         |
         +-- cpphs            (from MicroHs's generated/cpphs.c)      [BUILT]
         |
-        +-- happy-mhs        (happy 1.19.5 + phase1/shims)           [VERIFIED]
+        +-- happy-mhs        (happy 1.19.5 + common/shims)           [VERIFIED]
         |        |  gen2 == gen3 byte-identical; happy-ghc is out
         |        |  of the trusted base (D7 discharged, D14)
         |        |
@@ -48,7 +48,7 @@ what runs, what is still assumed.
 | `happy-ghc` 1.19.12 | used once as a generator; **now discharged, no longer needed** | `build/tools119/happy-1.19` |
 | happy 1.19.5 portable parsers | generated, zero GHC-isms | `build/happy-1.19.5/src/{Parser,AttrGrammarParser}.hs` |
 | GHC 4.08.2 portable parsers | **regenerated in-chain** by `happy-mhs2`, 18,918 lines | `build/ghc-parsers/` |
-| `ghc-on-mhs` shims | 16 modules, all typecheck under `mhs` | `phase1/shims/` |
+| `ghc-on-mhs` shims | 16 modules, all typecheck under `mhs` | `common/shims/` |
 | `happy-mhs` | **built, runs, fixpoint-verified** | `build/happy-mhs/happy-mhs2` |
 
 ## Established by experiment, not assumed
@@ -101,7 +101,7 @@ compiler, Hugs source, and the artifacts derived from them.
 
 ## The shim, as it grows
 
-`phase1/shims/` is the embryonic `ghc-on-mhs`. Every module in it was added
+`common/shims/` is the embryonic `ghc-on-mhs`. Every module in it was added
 because a *specific compile failed*, and the failure is recorded here so the
 next person can tell a real gap from a guess.
 
@@ -141,15 +141,15 @@ Main -> HsSyn -> HsDecls -> HsBinds -> HsTypes -> Type -> TypeRep -> Var -> Name
       FastString, FiniteMap, Outputable, Pretty, and the 31 boot modules
 ```
 
-`StringBuffer` is now reimplemented too (`phase1/shims-ghc/StringBuffer.hs`,
+`StringBuffer` is now reimplemented too (`ghc622/shims-ghc/StringBuffer.hs`,
 ~180 lines, an immutable `Array Int Char` with the lexeme/current index pair,
 semantics copied function by function), and **`parser/Lex.lhs` compiles** — the
 densest user of GHC-only constructs in the compiler.
 
 ### What it took to get here
 
-**Shims** — `phase1/shims/` (16 modern), `phase1/shims-h98/` (16 aliases),
-`phase1/shims-ghc/` (16 GHC-internal), of which the load-bearing ones are:
+**Shims** — `common/shims/` (16 modern), `ghc622/shims-h98/` (16 aliases),
+`ghc622/shims-ghc/` (16 GHC-internal), of which the load-bearing ones are:
 
 | shim | stands in for | note |
 |---|---|---|

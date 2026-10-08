@@ -1,5 +1,5 @@
-# GHC 6.2.2 as the Nix derivation graph (nix/ghc622/). Edges are the inputs
-# of each nix/ghc622/*.nix; stdenv, python3, perl and gmp are omitted. An
+# GHC 6.2.2 as the Nix derivation graph (ghc622/). Edges are the inputs
+# of each ghc622/*.nix; stdenv, python3, perl and gmp are omitted. An
 # edge into a box stands for one into each derivation in it. Declaration
 # order matters: TALA uses it as a tiebreak, and this order gives one
 # straight column for the four compiles.
@@ -13,7 +13,7 @@ outer: "outer scope\n(default.nix)" {
   mhs
 }
 
-ghc622: "nix/ghc622 (lib.makeScope)" {
+ghc622: "ghc622 (lib.makeScope)" {
   pre: "before a native GHC exists: mhs, cpphs, gcc" {
     base: "base\n147 modules: .hi + .hc by stage 1,\n.o by gcc; hsc2hs built by mhs"
     stage1: "stage1\nmhs → ghc.comb → comb2c.py →\nghc-data.c → gcc + MicroHs runtime"
