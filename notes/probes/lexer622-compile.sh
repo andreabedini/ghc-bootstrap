@@ -24,7 +24,12 @@ HSCPP="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98
 export PATH="$M/bin:$PATH"
 
 INC="${PREINC:+-i$PREINC} -i$L -i$L/shims -i$L/overlay"
-INC="$INC -i$R/notes/phase2/hsboot-6.0-run2 -i$R/build/shims-6.0-run2"
+# build/shims-6.0-run2 keeps only the files that differ from ghc622/shims
+# (the identical ones were removed 2026-10-13); ghc622/shims after them supplies
+# the rest, plus modules the old set did not have (CForeign, Foreign, ...).
+# build/lexer622/StringBuffer.hs and overlay/SrcLoc.lhs are gone too: the first is
+# ghc622/shims/StringBuffer.hs, the second the SRCLOC hunk of ghc622/patches.
+INC="$INC -i$R/notes/phase2/hsboot-6.0-run2 -i$R/build/shims-6.0-run2 -i$R/ghc622/shims"
 INC="$INC -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98"
 INC="$INC -i$R/notes/phase2/gen-6.0"
 for d in "$TREE"/*/; do

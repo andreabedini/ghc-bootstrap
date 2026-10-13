@@ -17,6 +17,10 @@ M="$R/MicroHs"; B="$R/build/happy-mhs"; S="$R/build/happy-1.19.5/src"
 [ -d "$R/build/happy-1.19.5" ] || tar xzf "$R/happy-1.19.5.tar.gz" -C "$R/build"
 export PATH="$M/bin:$PATH"
 export HAPPY_DATADIR="$B/datadir"
+# The portable template (no -agc), as happy/default.nix makes it; the 6.2.2
+# parser regeneration (ghc622/tools/regen-generated.sh) reads it from here too.
+mkdir -p "$B/datadir"
+cpphs --noline "$R/build/happy-1.19.5/templates/GenericTemplate.hs" > "$B/datadir/HappyTemplate"
 
 link() {   # $1 = output binary name
   cc -w -O1 -I"$M/src/runtime" -I"$M/src/runtime/unix" \

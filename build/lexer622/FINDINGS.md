@@ -9,13 +9,13 @@ expected tokens and spans. READY is touched.
 
 | file | what |
 |---|---|
-| `Lexer.hs` (1373 lines) | 6.2.2's shipped `alex -g` output, hand-converted; generated from the pristine file by `convert-lexer.py` |
-| `convert-lexer.py` | the conversion, every edit asserted against the pristine text (re-runnable) |
-| `StringBuffer.hs` (118 lines) | new shim for the 6.2.2 StringBuffer API (11 functions) |
-| `overlay/SrcLoc.lhs` | one dependency fix (strict line/column fields), see "Overlay" |
+| `Lexer.hs` (1373 lines) | 6.2.2's shipped `alex -g` output, hand-converted; generated from the pristine file by `convert-lexer.py` (now `ghc622/tools/convert-lexer.py`) |
+| `convert-lexer.py` | the conversion, every edit asserted against the pristine text (re-runnable); now `ghc622/tools/convert-lexer.py` |
+| `StringBuffer.hs` (118 lines) | new shim for the 6.2.2 StringBuffer API (11 functions); now `ghc622/shims/StringBuffer.hs` |
+| `overlay/SrcLoc.lhs` | one dependency fix (strict line/column fields), see "Overlay"; now the SRCLOC hunk of `ghc622/patches` |
 | `compile.sh` | the mhs invocation (INC/HSCPP recipe of probe-ordered-slit.sh, own `-C` cache in `work/`) |
 | `includes/` | pristine 6.2.2 `ghc/includes/*.h` + form-feed-free `config.h` from rts622 + generated `DerivedConstants.h` |
-| `utils/ghc-pkg/Package.hs` | pristine copy, needed via `#include "../utils/ghc-pkg/Package.hs"` (see "Tree layout") |
+| `utils/ghc-pkg/Package.hs` | pristine copy (no longer kept: the tarball's), needed via `#include "../utils/ghc-pkg/Package.hs"` (see "Tree layout") |
 | `driver/Main.hs` | token-dump driver (`work/lexdump`), verification only |
 
 Directory search order used: `build/lexer622` (Lexer.hs, StringBuffer.hs), `shims/` (empty),

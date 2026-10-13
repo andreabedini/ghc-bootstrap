@@ -8,7 +8,7 @@
 # never an old extraction lying around in build/.
 #
 # What is NOT in the patches, because the reproduction script generates it
-# (the same exclusion list build/6.2.2-run1.patch used, see
+# (the same exclusion list the old whole-tree build/6.2.2-run1.patch used, see
 # build/ghc-6.2.2-run1/FINDINGS.md "Patch"):
 #   prelude/primops.txt, prelude/primop-*.hs-incl   genprimopcode (regen-generated.sh)
 #   parser/Parser.hs parser/ParserCore.hs main/ParsePkgConf.hs   happy (regen-generated.sh)

@@ -157,7 +157,7 @@ was forced long before, by the renamer.
 ## 4. Minimal reproducer (no GHC involved)
 
 `diag/repro/Intern.hs`, built with mhs against the shim
-(`diag/repro/buggy/` is the pre-fix copy):
+(`build/shims-6.0-run2/FastString.hs` is the pre-fix copy):
 
 ```haskell
 let c = mkFastString "$wlgo"                  -- a key sharing the "$w" prefix

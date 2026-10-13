@@ -82,5 +82,5 @@ patch series applied; the series and the scripts that apply them are tracked,
 the trees are not. Objects, interfaces, `.hc` files, archives, binaries,
 `.mhscache` caches and `tmp/` directories are outputs of tracked scripts.
 The tree `build/ghc-6.2.2-run1/ghc` that `ghc622/reproduce-6.2.2.sh` diffs
-against is recorded as `build/6.2.2-run1.patch` (whole-tree diff against the
-pristine extraction, generated files excluded).
+against is recorded as the `ghc622/patches` series (`ghc622/make-patch.sh`
+regenerates it from that tree, generated files excluded).

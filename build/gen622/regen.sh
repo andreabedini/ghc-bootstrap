@@ -16,6 +16,7 @@ G=$B/gen622                                   # this directory: all output lands
 SRC=$B/rebase622/ghc-6.2.2/ghc/compiler       # pristine 6.2.2 inputs (read-only)
 INC=$B/rebase622/ghc-6.2.2/ghc/includes       # MachDeps.h (pristine)
 GENPOC_SRC=$B/ghc-6.2.2/ghc/utils/genprimopcode/Main.hs   # pristine 6.2.2 tarball
+CONFIG_INC=${TREE622:-$B/repro-622/src/ghc-6.2.2}/ghc/includes   # configure's config.h (ghc622/reproduce-6.2.2.sh)
 
 export PATH="$R/MicroHs/bin:$PATH"
 export TMPDIR="$G/tmp"; mkdir -p "$TMPDIR"
@@ -25,21 +26,27 @@ HAPPY=$B/happy-mhs/happy-mhs2                 # the fixpoint-verified happy (not
 # ---- genprimopcode: 6.2.2's own utils/genprimopcode/Main.hs, compiled by mhs -------
 # Main.hs imports the H98 modules Monad/Char/List/Maybe/System (ghc622/shims-h98)
 # and, with __GLASGOW_HASKELL__ undefined under cpphs, the old `Parsec` module
-# (genprimopcode/Parsec.hs: the slice-of-Parsec shim written for 6.0's run2).
+# (ghc622/shims/Parsec.hs: the slice-of-Parsec shim written for 6.0's run2).
 if [ "${SKIP_GENPOC:-0}" != 1 ] && [ "${VALIDATE60:-0}" != 1 ]; then
+  mkdir -p "$G/genprimopcode"
   cp "$GENPOC_SRC" "$G/genprimopcode/Main.hs"
-  patch -s "$G/genprimopcode/Main.hs" "$G/patches/genprimopcode-Main.hs.patch"
+  patch -s "$G/genprimopcode/Main.hs" "$R/ghc622/tools/genprimopcode-Main.hs.patch"
+  cp "$R/ghc622/shims/Parsec.hs" "$G/genprimopcode/Parsec.hs"
   ( cd "$G/genprimopcode" && mhs -XCPP -i. -i"$R/ghc622/shims-h98" Main -ogenprimopcode )
 fi
 GENPOC=$G/genprimopcode/genprimopcode
 
 # ---- primops: cpphs (as the 6.0 run did), then the ten genprimopcode outputs ---------
 # ghc/compiler/Makefile: `% : %.pp` runs $(CPP) -P -I$(GHC_INCLUDE_DIR); MachDeps.h
-# pulls in config.h, which configure writes; gen622/includes/config.h is 6.2.2's
-# x86_64 configure output (SIZEOF_VOID_P 8 -> WORD_SIZE_IN_BITS 64).
+# pulls in config.h, which configure writes: $CONFIG_INC/config.h, 6.2.2's x86_64
+# configure output (SIZEOF_VOID_P 8 -> WORD_SIZE_IN_BITS 64). A hand-transcribed
+# copy used to sit in gen622/includes; it differed only in whitespace and
+# CONST_EFTYPE, neither of which reaches primops.txt. The reproduced tree's
+# config.h also carries the HTYPE block (D47), which adds trailing blank lines
+# to primops.txt; genprimopcode ignores them.
 gen_primops() {   # $1 = compiler src dir, $2 = includes dir, $3 = output dir, $4 = genprimopcode
   mkdir -p "$3/prelude"
-  cpphs --noline --strip -I"$G/includes" -I"$2" "$1/prelude/primops.txt.pp" > "$3/prelude/primops.txt"
+  cpphs --noline --strip -I"$CONFIG_INC" -I"$2" "$1/prelude/primops.txt.pp" > "$3/prelude/primops.txt"
   for pair in data-decl:data-decl primop-tag:tag primop-list:list \
               has-side-effects:has-side-effects out-of-line:out-of-line \
               commutable:commutable needs-wrapper:needs-wrapper can-fail:can-fail \

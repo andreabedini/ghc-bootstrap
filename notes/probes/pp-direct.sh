@@ -3,7 +3,10 @@
 # line/col refer exactly to build/ppkeep/<M>.pp.hs, then print that spot.
 set -u
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"; T=${TREE:-$R/build/ghc-6.0-slit/ghc/compiler}
-INC="-i$R/build/ppkeep -i${HSBOOT:-$R/notes/phase2/hsboot-6.0b} -i${SHIMS:-$R/build/shims-6.0} -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98 -i$R/notes/phase2/gen-6.0"
+# build/shims-6.0{,-run2} keep only the files that differ from ghc622/shims
+# (the identical ones were removed 2026-10-13); ghc622/shims after them supplies
+# the rest, plus modules the old set did not have (CForeign, Foreign, ...).
+INC="-i$R/build/ppkeep -i${HSBOOT:-$R/notes/phase2/hsboot-6.0b} -i${SHIMS:-$R/build/shims-6.0} -i$R/ghc622/shims -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98 -i$R/notes/phase2/gen-6.0"
 for d in "$T"/*/; do INC="$INC -i${d%/}"; done
 INC="$INC -i$T -I$T -I${INCDIR:-$R/build/ghc-6.0-slit/ghc/includes}"
 HSCPP="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__ -DOMIT_NATIVE_CODEGEN -DHscIfaceFileVersion=6"
