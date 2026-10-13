@@ -26,7 +26,8 @@ An extraction of `MicroHs-0.16.8.0.tar.gz`, the latest release
 (`https://github.com/augustss/MicroHs/archive/refs/tags/v0.16.8.0.tar.gz`,
 sha256 `7b014251b6dfc332b16a49457797c8f1b32d88633dff5b550132cee8558492f7`,
 kept in the repo root), with `mhs/patches/0001-microhs-hugs-shim.patch`
-applied to its `hugs/` shim tree (five files). `mhs/bootstrap-seed.sh`
+applied to its `hugs/` shim tree (six files; `System/Directory.hs` since
+2026-10-12, for the `listDirectory` 0.16.8.0's `Main.hs` uses). `mhs/bootstrap-seed.sh`
 expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
 `MicroHs/bin/cpphs`, which every later phase uses. `generated/hmhs.c` and
 `mhs.conf` inside it are build outputs. The chain was built on commit

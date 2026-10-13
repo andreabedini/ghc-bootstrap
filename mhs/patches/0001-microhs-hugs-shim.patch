@@ -1,6 +1,6 @@
 diff --git i/hugs/Data/Version.hs w/hugs/Data/Version.hs
 new file mode 100644
-index 00000000..1ea62556
+index 0000000..1ea6255
 --- /dev/null
 +++ w/hugs/Data/Version.hs
 @@ -0,0 +1,11 @@
@@ -16,7 +16,7 @@ index 00000000..1ea62556
 +showVersion :: Version -> String
 +showVersion (Version b _) = foldr1 (\x y -> x ++ "." ++ y) (map show b)
 diff --git i/hugs/MHSPrelude.hs w/hugs/MHSPrelude.hs
-index 09300495..c8927486 100644
+index 0930049..c892748 100644
 --- i/hugs/MHSPrelude.hs
 +++ w/hugs/MHSPrelude.hs
 @@ -6,12 +6,14 @@ module MHSPrelude(
@@ -89,8 +89,42 @@ index 09300495..c8927486 100644
  instance NFData Word
  instance NFData Float
  instance NFData Double
+diff --git i/hugs/System/Directory.hs w/hugs/System/Directory.hs
+new file mode 100644
+index 0000000..3e7b605
+--- /dev/null
++++ w/hugs/System/Directory.hs
+@@ -0,0 +1,28 @@
++-- Shim: Hugs's System.Directory (2006) is Haskell 98's Directory plus a
++-- few additions; MicroHs 0.16.8.0's Main.hs also wants listDirectory
++-- (directory 1.2.5, 2016). Hugs.Directory holds the primitives, and this
++-- module stands in front of Hugs's System.Directory on the search path
++-- (+Phugs:... before {Hugs}/packages/*, like the other shims here), so it
++-- re-exports them and adds the two functions MicroHs uses on top:
++-- createDirectoryIfMissing as Hugs's own module defines it, and
++-- listDirectory.
++module System.Directory(module Hugs.Directory, createDirectoryIfMissing, listDirectory) where
++import Hugs.Directory
++
++createDirectoryIfMissing :: Bool -> FilePath -> IO ()
++createDirectoryIfMissing parents dir = do
++  b <- doesDirectoryExist dir
++  case (b, parents, dir) of
++    (_,     _, "") -> return ()
++    (True,  _,  _) -> return ()
++    (_,  True,  _) -> mapM_ (createDirectoryIfMissing False) (ancestors dir)
++    (_, False,  _) -> createDirectory dir
++  where
++    -- the directory and its ancestors, shortest first ("/a", "/a/b", "/a/b/c")
++    ancestors d = filter (not . null) (scanl1 (\a c -> a ++ "/" ++ c) (splitSlash d))
++    splitSlash s = case break (== '/') s of
++                     (a, [])    -> [a]
++                     (a, _ : r) -> a : splitSlash r
++
++listDirectory :: FilePath -> IO [FilePath]
++listDirectory d = fmap (filter (\f -> f /= "." && f /= "..")) (getDirectoryContents d)
 diff --git i/hugs/System/IO/Serialize.hs w/hugs/System/IO/Serialize.hs
-index 81bc636f..ea4b138a 100644
+index 81bc636..ea4b138 100644
 --- i/hugs/System/IO/Serialize.hs
 +++ w/hugs/System/IO/Serialize.hs
 @@ -7,9 +7,10 @@ module System.IO.Serialize(
@@ -119,7 +153,7 @@ index 81bc636f..ea4b138a 100644
  errhugs :: a
  errhugs = error "System.IO.Serialize: serialization not available with hugs"
 diff --git i/hugs/System/IO/TimeMilli.hs w/hugs/System/IO/TimeMilli.hs
-index 1c5597ed..d4b5ee08 100644
+index 1c5597e..d4b5ee0 100644
 --- i/hugs/System/IO/TimeMilli.hs
 +++ w/hugs/System/IO/TimeMilli.hs
 @@ -2,5 +2,12 @@ module System.IO.TimeMilli(getTimeMilli) where
@@ -138,7 +172,7 @@ index 1c5597ed..d4b5ee08 100644
 +       getCurrentTime
 diff --git i/hugs/Text/Read.hs w/hugs/Text/Read.hs
 new file mode 100644
-index 00000000..58be060c
+index 0000000..58be060
 --- /dev/null
 +++ w/hugs/Text/Read.hs
 @@ -0,0 +1,10 @@

@@ -42,8 +42,10 @@ stdenv.mkDerivation {
         ${mhs}/src/runtime/unix/config.h > rtconf/config.h
     grep -q '^#define WANT_OVERFLOW 0' rtconf/config.h
     # Non-PIE, as the chain was built and verified.
+    # -I${../stage1}: ffi.c includes "stubs.h" from beside itself, and a file
+    # named on its own is copied to the store alone.
     gcc -w -O3 -fno-pie -no-pie -Irtconf -I${mhs}/src/runtime -I${mhs}/src/runtime/unix \
-        -D__MHS__ -include ${../stage1/stubs.h} \
+        -I${../stage1} -D__MHS__ -include ${../stage1/stubs.h} \
         ${mhs}/src/runtime/main.c ${mhs}/src/runtime/eval.c ${../stage1/stubs.c} \
         ghc-data.c ${../stage1/ffi.c} -lm -o ghc
     runHook postBuild
