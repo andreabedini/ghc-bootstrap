@@ -77,12 +77,17 @@ stdenv.mkDerivation {
     for p in Parser AttrGrammarParser; do ${happy}/bin/happy src/$p.ly -o src/$p.hs; done
     sh ${../ghc622/tools/fix-generated-parsers.sh} src/Parser.hs src/AttrGrammarParser.hs
     build 1; regen 1
-    sh ${./cmp-generated.sh} gen1/Parser.hs shipped/Parser.hs
     cp gen1/Parser.hs gen1/AttrGrammarParser.hs src/
     build 2; regen 2
+  '';
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    sh ${./cmp-generated.sh} gen1/Parser.hs shipped/Parser.hs
     cmp gen1/Parser.hs gen2/Parser.hs
     cmp gen1/AttrGrammarParser.hs gen2/AttrGrammarParser.hs
     echo "happy 1.16: fixed point, gen 2 regenerates gen 1's parsers byte for byte"
+    runHook postCheck
   '';
   installPhase = ''
     install -Dm755 happy-2 $out/bin/happy

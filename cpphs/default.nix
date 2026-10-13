@@ -5,7 +5,8 @@
 #            compiled with no CPP at all, so MicroHs's libraries never meet
 #            gcc's cpp (it joins a line ending in (\\) to the next).
 #   round 2  upstream's `make bootstrapcpphs` command, with round 1's cpphs.
-#   round 3  the same with round 2's cpphs; its C must equal round 2's.
+#   round 3  the same with round 2's cpphs; the check phase requires its C
+#            equal to round 2's.
 #
 # Round 2 is installed. It replaces MicroHs's shipped generated/cpphs.c, and
 # behaves the same: both preprocess every .hs/.lhs/.pp file of GHC 6.2.2 with
@@ -53,8 +54,13 @@ stdenv.mkDerivation {
         -ipolyparse-1.12/src -icpphs-1.20.9 cpphs-1.20.9/cpphs.hs -ocpphs$((r+1)).c
       link cpphs$((r+1))
     done
-    cmp cpphs2.c cpphs3.c && echo "fixpoint: round 2 == round 3"
     runHook postBuild
+  '';
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    cmp cpphs2.c cpphs3.c && echo "fixpoint: round 2 == round 3"
+    runHook postCheck
   '';
   installPhase = "install -Dm755 cpphs2 $out/bin/cpphs";
 }

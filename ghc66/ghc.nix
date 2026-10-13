@@ -92,8 +92,11 @@ stdenv.mkDerivation {
   # -c unlimited: a crash in the build then reaches the host's coredump
   # handler (coredumpctl) instead of being recorded without a core.
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";
-  postBuild = ''
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
     for f in ${files}; do sh ${./cmp-generated.sh} $f $NIX_BUILD_TOP/shipped/$f; done
+    runHook postCheck
   '';
   enableParallelBuilding = false;
 

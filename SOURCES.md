@@ -52,7 +52,7 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | `ghc-9.0.2-src.tar.xz` | `ghc90` | `sha256-FA5CuWNGMi0aOesXYCvNx24pICitSmkoayMLqxiKkZc=` |
 | `ghc-9.4.8-src.tar.xz` | `ghc94` | `sha256-C/QH62f+PjwksPTI3qjLY+B/Y8oPds8gWFZRQ1B6uF4=` |
 | `ghc-9.8.4-src.tar.xz` | `ghc98` | `sha256-F+gYjzyKXC9z+0410BAy6NwliDXsh21SyK2O49JLL8U=` |
-| `happy-1.20.1.1.tar.gz`, `alex-3.2.7.4.tar.gz` (Hackage) | `ghc94/happy120.nix`, `ghc94/alex327.nix` | in the files |
+| `happy-1.20.1.1.tar.gz` (Hackage) | `ghc94/happy120.nix` | in the file |
 | `src/Parser.ly`, `src/AttrGrammarParser.ly` at the `1.20.1.1` tag of github.com/haskell/happy (the Hackage tarball ships only the generated parsers) | `ghc94/happy120.nix` | in the file |
 | `ghc-9.12.4-src.tar.xz` | `ghc912` | `sha256-AtHuUICs8A4TW5OyOPCQFbBv8nJUzeWWac9XxCwr7kM=` |
 | `ghc-9.14.1-src.tar.xz` | `ghc914` | `sha256-KoN3nJr4ZVSjKJ8nh6ONaqg9ANE2qp+SA2HdaTwQHnc=` |
@@ -61,6 +61,9 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | `hp2ps-C-gnu17.patch` (Fedora's copy of GHC !13863, the C23 fix for `utils/hp2ps/Utilities.c`) | `ghc98/hp2ps-C-gnu17.patch` | in the repository |
 | Hadrian's 18 bootstrap dependencies (Hackage tarballs and revised `.cabal` files: shake 0.19.8, QuickCheck 2.14.3, ...) | `ghc98/plan-bootstrap-9_4_4.json`, copied from `ghc-9.8.4/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
 | `happy-1.16.tar.gz`, `alex-2.1.0.tar.gz` (Hackage) | `ghc66/happy116.nix`, `ghc66/alex210.nix` | in the files |
+| `happy-1.19.5.tar.gz` (as above), `alex-3.2.7.4.tar.gz` (Hackage) | `ghc74/happy1195.nix`, `ghc74/alex327.nix` | in the files |
+| `libraries/mtl` of `ghc-7.4.2-src.tar.bz2` (mtl 1.1.1.1, which 7.4.2 builds but does not install) | `ghc74/mtl.nix` | the tarball's, above |
+| `happy-1.19.12.tar.gz` (Hackage); `src/Parser.ly`, `src/AttrGrammarParser.ly`, `templates/GenericTemplate.hs`, `GLR_Base.hs`, `GLR_Lib.hs` at the `1.19.12` tag of github.com/haskell/happy (the tarball ships only the generated parsers and the preprocessed templates); `gen-happy-sdist/Main.hs` at the same tag (sha256 `2d1b93d621c7a7414de2a447bb9cb92d17e6100e1f03f09e4d7fa17816c1dca8`) read for how the templates are made, not fetched by the build | `ghc88/happy11912.nix` | in the file |
 | `gmp-6.1.2.tar.xz` (`ftp.gnu.org/gnu/gmp/`) | `gmp612/default.nix` | `sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=` |
 | `hugs98-plus-Sep2006.tar.gz`, `MicroHs-0.16.8.0`, `cpphs-1.20.9.tar.gz` and `polyparse-1.12.tar.gz` (Hackage) | `hugs/default.nix`, `mhs/default.nix`, `cpphs/default.nix` | in the files |
 

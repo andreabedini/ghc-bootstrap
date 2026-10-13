@@ -1,11 +1,22 @@
-# alex 3.2.7.4, the alex GHC 9.4 and 9.8 ask for (>= 3.2.6), compiled by the
-# chain's GHC 9.0.2 with its own Setup.hs (Cabal 3.4), from its Hackage
-# tarball. The tarball ships the generated src/Parser.hs and src/Scan.hs and,
-# as .boot files, the sources they came from.
+# alex 3.2.7.4, compiled by the chain's GHC 7.4.2 with its own Setup.hs
+# (Cabal 1.14), from its Hackage tarball. One alex serves every rung from
+# 7.8.4 on: 7.8.4 asks for an alex >= 3.1, 8.0.2 to 8.4.4 for >= 3.1.0,
+# 8.8.4 and 9.0.2 for >= 3.1.7, 9.4.8 to 9.14.1 for >= 3.2.6 (< 4). The
+# chain's alex 2.1.0 is too old for all of them, and no 3.1.x release can
+# stand in: their executable imports Test.QuickCheck (the Data.Ranged
+# modules they carry), and 7.4.2 has no QuickCheck. 3.2.4 dropped that
+# dependency; 3.2.7.4 builds with 7.4.2 as released (base >= 2.1, array,
+# containers, directory), its -g output compiles with 7.4.2 (the boot
+# compiler of 7.8.4, which compiles the Lexer.hs regenerated there), and
+# its templates (data/AlexTemplate.hs, data/AlexWrappers.hs) are plain
+# source, not cpp output: from 3.2.6 the generated lexer defines the
+# ALEX_* macros and the compiler's cpp does the rest.
 #
-# src/Parser.hs is regenerated from Parser.y.boot by the chain's happy 1.19.5
-# (plain backend) and the tarball's is not used. src/Scan.hs, alex's own
-# lexer, can only come from an alex (the chain's alex 2.1.0 accepts Scan.x
+# The tarball ships the generated src/Parser.hs and src/Scan.hs and, as
+# .boot files, the sources they came from. src/Parser.hs is regenerated
+# from Parser.y.boot by the chain's happy 1.19.5 (happy/default.nix, the
+# mhs-built one, plain backend) and the tarball's is not used. src/Scan.hs,
+# alex's own lexer, can only come from an alex (alex 2.1.0 accepts Scan.x
 # but its template no longer fits alex 3's code), so the tarball's is the
 # seed, discharged by a fixed point:
 #
@@ -20,9 +31,9 @@
 # templates, through Paths_alex).
 { stdenv
 , fetchurl
-, gmp
+, gmp612
 , happy
-, ghc90
+, ghc
 }:
 
 stdenv.mkDerivation {
@@ -32,14 +43,15 @@ stdenv.mkDerivation {
     url = "https://hackage.haskell.org/package/alex-3.2.7.4/alex-3.2.7.4.tar.gz";
     sha256 = "8a13fa01ea00883aa3d75d15ce848835b18631b8c9a4966961492d7c6095226f";
   };
-  nativeBuildInputs = [ ghc90 happy ];
-  buildInputs = [ gmp ];   # programs linked by 9.0.2 need -lgmp
+  nativeBuildInputs = [ ghc happy ];
+  buildInputs = [ gmp612 ];   # programs linked by 7.4.2 need -lgmp
   hardeningDisable = [ "all" ];
   dontStrip = true;
-  env = ghc90.nonPie;
+  env = ghc.nonPie;
 
   buildPhase = ''
     runHook preBuild
+    ulimit -s unlimited
     mkdir shipped grammar
     mv src/Parser.hs src/Scan.hs shipped/
     cp src/Parser.y.boot grammar/Parser.y
@@ -58,13 +70,18 @@ stdenv.mkDerivation {
     build 1
     mkdir gen1 gen2
     ./alex-1 -g grammar/Scan.x -o gen1/Scan.hs
-    sh ${../ghc66/cmp-generated.sh} gen1/Scan.hs shipped/Scan.hs
     cp gen1/Scan.hs src/Scan.hs
     build 2
     ./alex-2 -g grammar/Scan.x -o gen2/Scan.hs
+    runHook postBuild
+  '';
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    sh ${../ghc66/cmp-generated.sh} gen1/Scan.hs shipped/Scan.hs
     cmp gen1/Scan.hs gen2/Scan.hs
     echo "alex 3.2.7.4: fixed point, gen 2 regenerates gen 1's Scan.hs byte for byte"
-    runHook postBuild
+    runHook postCheck
   '';
   installPhase = ''
     runHook preInstall

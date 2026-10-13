@@ -1,95 +1,34 @@
-# GHC 7.4.2 built by the chain's GHC 6.12.3 (ghc612): configure and make,
-# registerised with the native code generator (via C with `registerised =
-# false`), no GHCi, one library way. 7.4.2 asks for a 6.12 or later as the
-# bootstrapping compiler, so 7.0 and 7.2 are skipped. The tarball ships
-# Parser.hs, Lexer.hs, CmmParse.hs and CmmLex.hs, used as shipped for now.
+# GHC 7.4.2 built by the chain's GHC 6.12.3, as one derivation: the installed
+# compiler (ghc.nix), with the two generators the rungs after it need, and
+# the mtl one of them needs, reachable as attributes.
 #
-# build.mk as for 6.12 (ghc612); GMP 6.1.2 as every rung before 8.0
-# (D52). Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed
-# GHC 7.4.2, bin/ghc.
-{ stdenv
-, lib
-, fetchurl
-, perl
-, gmp612
-, ncurses
-, gdb
-, ghc612
-, registerised ? true   # as ghc612: NCG and tables next to code
-, gdbModule ? null
-  # diagnostic (as ghc66): the in-place compiler runs under gdb for the
-  # compile whose arguments contain this string; the backtrace goes to the log
+#   nix-build -A ghc74            GHC 7.4.2, configure and make with 6.12.3 (ghc.nix)
+#   nix-build -A ghc74.mtl        mtl 1.1.1.1 from 7.4.2's tarball, which builds but does not install it (mtl.nix)
+#   nix-build -A ghc74.happy1195  happy 1.19.5, compiled by 7.4.2 with that mtl; fixed point (happy1195.nix)
+#   nix-build -A ghc74.alex327    alex 3.2.7.4, compiled by 7.4.2; Scan.hs by fixed point (alex327.nix)
+#
+# 7.4.2 itself regenerates its parsers and lexers with 6.6's happy 1.16 and
+# alex 2.1.0 (common/regen-parsers.sh). The releases after it ask for more:
+# 7.8.4 for happy >= 1.19 and alex >= 3.1, 8.0.2 to 8.8.4 for happy >= 1.19.4
+# and alex >= 3.1.0 (3.1.7 from 8.8), 9.0.2 for the same, 9.4.8 and later
+# for alex >= 3.2.6. happy 1.19.5 is the newest happy 7.4.2's libraries can
+# build (1.19.6 and later want an mtl with Control.Monad.Except; the mtl
+# 1.1.1.1 of 7.4.2's tree, which its build keeps in-tree, is mtl.nix), and
+# it is the happy that made 8.0.2's shipped parsers; it serves 7.8.4 to
+# 8.8.4. alex 3.2.7.4 builds with 7.4.2 and serves every rung from 7.8.4 to
+# 9.14.1 (alex327.nix says why no 3.1.x can).
+{ lib
+, newScope
+, registerised ? true
+, gdbModule ? null   # diagnostic, see ghc.nix
 }:
 
-stdenv.mkDerivation {
-  pname = "ghc" + (if registerised then "-registerised" else "");
-  version = "7.4.2";
-  src = fetchurl {
-    url = "https://downloads.haskell.org/~ghc/7.4.2/ghc-7.4.2-src.tar.bz2";
-    hash = "sha256-8u4SiaM8xwU5KHEphBrMfq8WESu2DFm1pu6RiHv9g20=";
-  };
-  nativeBuildInputs = [ perl ghc612 ] ++ lib.optional (gdbModule != null) gdb;
-  buildInputs = [ gmp612 ncurses ];
-  hardeningDisable = [ "all" ];
-  dontStrip = true;
-  env = ghc612.nonPie;
-  passthru = { inherit (ghc612) nonPie; };
-
-  postPatch = lib.optionalString (gdbModule != null) ''
-    mkdir -p $NIX_BUILD_TOP/bin
-    cat > $NIX_BUILD_TOP/bin/gdbwrap <<'EOF'
-    #!${stdenv.shell}
-    case "$*" in
-      *" -c "*${gdbModule}*) echo "== gdbwrap: running under gdb: $*"
-                     exec gdb -batch -ex run -ex bt -ex 'info registers' -ex 'x/8i $pc-16' -ex 'x/8gx $rbx' -ex 'info symbol $rbx' -ex 'info proc mappings' -ex 'quit 0' --args "$@" ;;
-      *) exec "$@" ;;
-    esac
-    EOF
-    chmod +x $NIX_BUILD_TOP/bin/gdbwrap
-    # ghc/ghc.wrapper is the tail of every inplace/bin/ghc-stage* script
-    sed -i "s|^exec \"\$executablename\"|exec $NIX_BUILD_TOP/bin/gdbwrap \"\$executablename\"|" ghc/ghc.wrapper
-    grep -q gdbwrap ghc/ghc.wrapper
-  '' + ''
-    patchShebangs .
-    cat > mk/build.mk <<'EOF'
-    GhcUnregisterised = ${if registerised then "NO" else "YES"}
-    GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
-    GhcWithInterpreter = NO
-    GhcWithSMP = NO
-    GhcLibWays = v
-    GhcRTSWays =
-    SplitObjs = NO
-    HADDOCK_DOCS = NO
-    HSCOLOUR_SRCS = NO
-    BUILD_DOCBOOK_HTML = NO
-    BUILD_DOCBOOK_PS = NO
-    BUILD_DOCBOOK_PDF = NO
-    LATEX_DOCS = NO
-    GhcStage1HcOpts = -O
-    GhcStage2HcOpts = -O${if registerised then " -fasm" else ""}
-    GhcLibHcOpts = -O${if registerised then " -fasm" else ""}
-    SRC_HC_OPTS = -H64m -O -optc-std=gnu89 -optc-fpermissive -optc-w -optc-fwrapv
-    SRC_CC_OPTS += -std=gnu89 -fpermissive -w -fwrapv
-    SRC_HSC2HS_OPTS += --cflag=-std=gnu89 --cflag=-fpermissive --cflag=-w
-    EOF
-  '';
-  configurePhase = ''
-    ./configure --prefix=$out --with-ghc=${ghc612}/bin/ghc --with-gcc=gcc \
-      CFLAGS="-std=gnu89 -fpermissive -w"
-    grep -q 'with-ghc=${ghc612}/bin/ghc' config.log
-  '';
-  preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
-  enableParallelBuilding = false;
-
-  # common/test/T3.hs, compiled by the installed compiler with no extra flags.
-  doInstallCheck = true;
-  installCheckPhase = ''
-    mkdir t; cp ${../common/test/T3.hs} t/T3.hs
-    (cd t && $out/bin/ghc -v0 --make T3.hs -o t3 && ./t3 > out.txt)
-    diff ${../common/test/T3.out} t/out.txt
-    # GMP >= 6.2 and pre-8.0 Integers (gmp612/default.nix, D52): zeros across GCs
-    cp ${../common/test/GmpZero.hs} t/GmpZero.hs
-    (cd t && $out/bin/ghc -v0 -O --make GmpZero.hs -o gz && ./gz > gz.txt && printf "(2400000,0)\n" | diff - gz.txt)
-    $out/bin/ghc --numeric-version | grep -qx 7.4.2
-  '';
-}
+let
+  parts = lib.makeScope newScope (self: {
+    mtl = self.callPackage ./mtl.nix { };
+    happy1195 = self.callPackage ./happy1195.nix { };
+    alex327 = self.callPackage ./alex327.nix { };
+    ghc = self.callPackage ./ghc.nix { inherit registerised gdbModule; };
+  });
+in
+parts.ghc // { inherit (parts) mtl happy1195 alex327; }

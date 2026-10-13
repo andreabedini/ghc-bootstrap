@@ -87,7 +87,13 @@ stdenv.mkDerivation {
   };
 
   inherit patches;
-  postPatch = "patchShebangs .";
+  postPatch = ''
+    patchShebangs .
+    # The tarball's parsers and lexers are happy and alex output; put them
+    # back under their grammars (shipped as .source files) so the build
+    # regenerates them with the happy and alex above (common/regen-parsers.sh).
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${./regen-parsers.sh}
+  '';
   configurePhase = ''
     runHook preConfigure
     ./configure --prefix=$out GHC=${bootGhc}/bin/ghc CC=gcc \
@@ -120,6 +126,12 @@ stdenv.mkDerivation {
     runHook preBuild
     hadrian/_build/bin/hadrian -j$NIX_BUILD_CORES --flavour=${flavour} --docs=none binary-dist-dir
     runHook postBuild
+  '';
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${./cmp-regenerated.sh}
+    runHook postCheck
   '';
   installPhase = ''
     runHook preInstall

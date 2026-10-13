@@ -10,13 +10,13 @@
 # compile. Upstream's fix (GitLab !13863 for #25662, in 9.10 and later; the
 # Fedora copy is the one nixpkgs applies to GHC < 9.10): include stdlib.h
 # instead.
-{ callPackage, ghc94 }:
+{ callPackage, ghc94, ghc74 }:
 (callPackage ../common/hadrian-ghc.nix { }) {
   version = "9.8.4";
   sha256 = "17e8188f3c8a5c2f73fb4e35d01032e8dc258835ec876d52c8ad8ee3d24b2fc5";
   bootGhc = ghc94;
   happy = ghc94.happy120;
-  alex = ghc94.alex327;
+  alex = ghc74.alex327;
   plan = ./plan-bootstrap-9_4_4.json;
   patches = [ ./hp2ps-C-gnu17.patch ];
 }

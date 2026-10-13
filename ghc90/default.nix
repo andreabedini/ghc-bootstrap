@@ -2,8 +2,10 @@
 # (the last release with the make build system), registerised with the native
 # code generator (via C with `registerised = false`), GHCi, static only.
 # 9.0.2 asks for an 8.8 or later as the bootstrapping compiler; 8.10 is
-# skipped. The tarball ships
-# GHC/Parser.hs, GHC/Parser/Lexer.hs, GHC/Cmm/Parser.hs and GHC/Cmm/Lexer.hs.
+# skipped. The tarball's parsers and lexers are regenerated from their
+# grammars (common/regen-parsers.sh) with 8.8.4's happy 1.19.12 and 7.4.2's
+# alex 3.2.7.4 (9.0 asks for >= 1.19.10 < 1.20 and >= 3.1.7); 1.19.12 made the
+# shipped ones, so the comparison is strict. So is Cabal's lexer (boot/Lexer.x).
 #
 # GhcWithInterpreter = YES and GhcWithSMP = YES from 8.8 on, the standard
 # configuration (nixpkgs, Guix), after two upstream facts: 8.8.4's
@@ -30,6 +32,7 @@
 , gmp
 , ncurses
 , ghc88
+, ghc74            # for alex327
 , registerised ? true
 }:
 
@@ -40,12 +43,23 @@ stdenv.mkDerivation {
     url = "https://downloads.haskell.org/~ghc/9.0.2/ghc-9.0.2-src.tar.xz";
     hash = "sha256-FA5CuWNGMi0aOesXYCvNx24pICitSmkoayMLqxiKkZc=";
   };
-  nativeBuildInputs = [ perl ghc88 ];
+  nativeBuildInputs = [ perl ghc88 ghc88.happy11912 ghc74.alex327 ];
   buildInputs = [ gmp ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
   env = ghc88.nonPie;
   passthru = { inherit (ghc88) nonPie; };
+
+  # 9.0.2's tarball carries a dirty containers checkout: dist-install/ with
+  # the .o, .a, .so and .hi files of the release manager's build (reported
+  # in the 9.0.2 announcement thread; absent from containers' own source),
+  # and a stray utils/hsc2hs/test.o. Nothing links them (the chain's
+  # libHScontainers differs from the shipped one); delete them before
+  # anything runs.
+  postUnpack = ''
+    rm -rf "$sourceRoot"/libraries/containers/containers/dist-install
+    rm -f  "$sourceRoot"/utils/hsc2hs/test.o
+  '';
 
   # Upstream d61f7428 (#21478) as Guix carries it for 9.0-9.4: the make
   # build system linked rts/StgCRunAsm.S into the RTS on every architecture,
@@ -61,6 +75,10 @@ stdenv.mkDerivation {
 
   postPatch = ''
     patchShebangs .
+    # The tarball's parsers and lexers are happy and alex output; put them
+    # back under their grammars (shipped as .source files) so the build
+    # regenerates them with the happy and alex above (common/regen-parsers.sh).
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/regen-parsers.sh}
     cat > mk/build.mk <<'EOF'
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
@@ -94,6 +112,12 @@ stdenv.mkDerivation {
     grep -q 'GHC=${ghc88}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/cmp-regenerated.sh}
+    runHook postCheck
+  '';
   enableParallelBuilding = true;
 
   # common/test/T3.hs, compiled by the installed compiler with no extra flags.

@@ -10,12 +10,12 @@
 # glibc: include-modern-utimbuf is Windows-only, the adjustor stack overrun
 # is i386, ELF64_ST_VISIBILITY is in glibc 2.42's elf.h, the rest are
 # PowerPC, docs or JavaScript.
-{ callPackage, ghc98, ghc94 }:
+{ callPackage, ghc98, ghc94, ghc74 }:
 (callPackage ../common/hadrian-ghc.nix { }) {
   version = "9.12.4";
   sha256 = "02d1ee5080acf00e135b93b238f09015b06ff27254cde59669cf57c42c2bee43";
   bootGhc = ghc98;
   happy = ghc94.happy120;
-  alex = ghc94.alex327;
+  alex = ghc74.alex327;
   plan = ./plan-bootstrap-9_8_4.json;
 }

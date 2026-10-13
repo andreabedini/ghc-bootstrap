@@ -21,13 +21,13 @@
 # newtype and no instance. The ghc-9.14 branch guards it with
 # MIN_VERSION_GLASGOW_HASKELL(9,12,2,20250919) instead; the patch is that
 # one line.
-{ callPackage, ghc912, ghc94 }:
+{ callPackage, ghc912, ghc94, ghc74 }:
 (callPackage ../common/hadrian-ghc.nix { }) {
   version = "9.14.1";
   sha256 = "2a83779c9af86554a3289f2787a38d6aa83d00d136aa9f920361dd693c101e77";
   bootGhc = ghc912;
   happy = ghc94.happy120;
-  alex = ghc94.alex327;
+  alex = ghc74.alex327;
   plan = ./plan-bootstrap-9_12_2.json;
   patches = [ ./ghci-Binary-HalfWord-9.12.3-boot.patch ];
   # 9.14's ghc-bignum is a shim over ghc-internal, which holds the GMP backend

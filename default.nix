@@ -14,13 +14,14 @@
 #                          (ghc66/: .happy116 .alex210)
 #   nix-build -A ghc610    GHC 6.10.4, configure and make with that 6.6 (ghc610/)
 #   nix-build -A ghc612    GHC 6.12.3, configure and make with that 6.10.4 (ghc612/)
-#   nix-build -A ghc74     GHC 7.4.2, configure and make with that 6.12.3 (ghc74/)
+#   nix-build -A ghc74     GHC 7.4.2, configure and make with that 6.12.3 (ghc74/: .happy1195 .alex327,
+#                          the generators 7.8 on ask for: happy to 8.8, alex to 9.14)
 #   nix-build -A ghc78     GHC 7.8.4, configure and make with that 7.4.2 (ghc78/)
 #   nix-build -A ghc80     GHC 8.0.2, configure and make with that 7.8.4 (ghc80/)
 #   nix-build -A ghc84     GHC 8.4.4, configure and make with that 8.0.2 (ghc84/)
-#   nix-build -A ghc88     GHC 8.8.4, configure and make with that 8.4.4 (ghc88/)
+#   nix-build -A ghc88     GHC 8.8.4, configure and make with that 8.4.4 (ghc88/: .happy11912, for 9.0)
 #   nix-build -A ghc90     GHC 9.0.2, configure and make with that 8.8.4 (ghc90/)
-#   nix-build -A ghc94     GHC 9.4.8, configure and make with that 9.0.2 (ghc94/: .happy120 .alex327;
+#   nix-build -A ghc94     GHC 9.4.8, configure and make with that 9.0.2 (ghc94/: .happy120, for 9.4 on;
 #                          9.4 keeps the make build system for a boot GHC < 9.1)
 #   nix-build -A ghc98     GHC 9.8.4, Hadrian (bootstrapped by bootstrap.py from a plan
 #                          with Nix-fetched sources, common/hadrian-ghc.nix) with that 9.4.8 (ghc98/)

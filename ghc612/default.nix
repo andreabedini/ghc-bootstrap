@@ -6,8 +6,9 @@
 # can produce, and everything stage 1 compiles is native code (D52). The
 # first registerised rung; `registerised = false` gives the via-C variant,
 # as 6.6 and 6.10 were built. 6.12.3 asks for a 6.8 or later as the
-# bootstrapping compiler. The tarball ships Parser.hs, Lexer.hs,
-# ParserCore.hs, CmmParse.hs and CmmLex.hs, used as shipped for now.
+# bootstrapping compiler. The tarball's parsers and lexers are regenerated from their
+# grammars (common/regen-parsers.sh) with 6.6's happy 1.16 and alex 2.1.0
+# (6.12 asks for >= 1.16 and >= 2.1.0).
 #
 # build.mk as for 6.10 (ghc610), in the new system's names; -optc flags
 # in SRC_HC_OPTS reach every compile, the boot compiler's included. GMP 6.1.2
@@ -20,6 +21,7 @@
 , gmp612
 , ncurses
 , ghc610
+, ghc66            # for happy116 and alex210
 , registerised ? true
   # true: GhcUnregisterised=NO with the x86-64 native code generator. Stage 1
   # is still compiled by the unregisterised 6.10.4 (via C, no -fasm); the
@@ -34,7 +36,7 @@ stdenv.mkDerivation {
     url = "https://downloads.haskell.org/~ghc/6.12.3/ghc-6.12.3-src.tar.bz2";
     hash = "sha256-bL2+QVAR8sfRXk2FB1jY05P3Bhe4jLMjfSxgK7YOXmg=";
   };
-  nativeBuildInputs = [ perl ghc610 ];
+  nativeBuildInputs = [ perl ghc610 ghc66.happy116 ghc66.alex210 ];
   buildInputs = [ gmp612 ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
@@ -43,6 +45,10 @@ stdenv.mkDerivation {
 
   postPatch = ''
     patchShebangs .
+    # The tarball's parsers and lexers are happy and alex output; put them
+    # back under their grammars (shipped as .source files) so the build
+    # regenerates them with the happy and alex above (common/regen-parsers.sh).
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/regen-parsers.sh}
     # includes/Rts.h has `#if __GNUC__ > 4` blocks for a gcc that did not exist
     # in 2010; one defines macros as `#pragma GCC visibility ...`, which no
     # cpp accepts. Take the branch every 2010 gcc took.
@@ -76,6 +82,12 @@ stdenv.mkDerivation {
     grep -q 'with-ghc=${ghc610}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/cmp-regenerated.sh}
+    runHook postCheck
+  '';
   enableParallelBuilding = false;
 
   # common/test/T3.hs, compiled by the installed compiler with no extra flags.

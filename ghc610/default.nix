@@ -2,8 +2,9 @@
 # make, unregisterised via C, no GHCi, no native code generator, no profiling,
 # as 6.6 was built. 6.10.4 is the newest release whose configure accepts a
 # 6.6 as the bootstrapping compiler (it asks for 6.4 or later; 6.12 asks for
-# 6.8). The tarball's generated parsers and lexers are used as shipped for
-# now; happy 1.16 and alex 2.1.0 are on the path in case make wants them.
+# 6.8). The tarball's parsers and lexers are regenerated from their
+# grammars (common/regen-parsers.sh) with 6.6's happy 1.16 and alex 2.1.0
+# (6.10 asks for >= 1.15 and >= 2.1.0).
 #
 # The build.mk is what 6.6's patch added to its tree, written here instead:
 # the ways and the interpreter off, and the C flags a 2026 gcc needs for 2009
@@ -35,6 +36,10 @@ stdenv.mkDerivation {
 
   postPatch = ''
     patchShebangs .
+    # The tarball's parsers and lexers are happy and alex output; put them
+    # back under their grammars (shipped as .source files) so the build
+    # regenerates them with the happy and alex above (common/regen-parsers.sh).
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/regen-parsers.sh}
     # configure's FP_PROG_AR_ARGS makes AR "ar q", and make exports it to
     # libffi's configure, whose libtool then runs `ar q cru`. Give libffi a
     # plain ar.
@@ -65,6 +70,12 @@ stdenv.mkDerivation {
     grep -Eq '^GhcUnregisterised[[:space:]]*=[[:space:]]*YES' mk/build.mk
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/cmp-regenerated.sh}
+    runHook postCheck
+  '';
   enableParallelBuilding = false;
 
   # common/test/T3.hs (6.6's T2.hs with 6.10's extensible exceptions), compiled

@@ -2,8 +2,10 @@
 # registerised with the native code generator (via C with `registerised =
 # false`), no GHCi, static only. 8.0.2
 # asks for a 7.8 or later as the bootstrapping compiler; 7.10 is skipped.
-# The tarball ships Parser.hs, Lexer.hs, CmmParse.hs and CmmLex.hs and its
-# own libffi. Docs are Sphinx now (BUILD_SPHINX_*, BUILD_MAN). The C flags
+# The tarball's parsers and lexers are regenerated from their
+# grammars (common/regen-parsers.sh) with 7.4.2's happy 1.19.5 and alex 3.2.7.4
+# (8.0 asks for >= 1.19.4 and >= 3.1.0); 1.19.5 made the shipped ones, so the
+# comparison is strict. The tarball ships its own libffi. Docs are Sphinx now (BUILD_SPHINX_*, BUILD_MAN). The C flags
 # change here: -std=gnu11 -w instead of the -std=gnu89 -fpermissive -fwrapv
 # the 2004-2012 sources and their generated C needed (integer-gmp's cbits
 # are C99), and the host's GMP: 8.0's integer-gmp works on limbs and does
@@ -21,6 +23,7 @@
 , gmp
 , ncurses
 , ghc78
+, ghc74            # for happy1195 and alex327
 , registerised ? true
 }:
 
@@ -31,7 +34,7 @@ stdenv.mkDerivation {
     url = "https://downloads.haskell.org/~ghc/8.0.2/ghc-8.0.2-src.tar.xz";
     hash = "sha256-EWJUU+HQaGs/pnOZiPcOysg2ytwwufDItJ75CR1hGLE=";
   };
-  nativeBuildInputs = [ perl ghc78 ];
+  nativeBuildInputs = [ perl ghc78 ghc74.happy1195 ghc74.alex327 ];
   buildInputs = [ gmp ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
@@ -40,6 +43,10 @@ stdenv.mkDerivation {
 
   postPatch = ''
     patchShebangs .
+    # The tarball's parsers and lexers are happy and alex output; put them
+    # back under their grammars (shipped as .source files) so the build
+    # regenerates them with the happy and alex above (common/regen-parsers.sh).
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/regen-parsers.sh}
     cat > mk/build.mk <<'EOF'
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
@@ -71,6 +78,12 @@ stdenv.mkDerivation {
     grep -q 'with-ghc=${ghc78}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/cmp-regenerated.sh}
+    runHook postCheck
+  '';
   enableParallelBuilding = true;   # 8.0's ghc.mk build is -j safe (nixpkgs builds it so)
 
   # common/test/T3.hs, compiled by the installed compiler with no extra flags.

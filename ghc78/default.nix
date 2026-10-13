@@ -4,8 +4,9 @@
 # the first release that builds dynamic libraries and a dynamically linked
 # ghc by default; DYNAMIC_* = NO keeps the build like the earlier rungs').
 # 7.8.4 asks for a 7.4 or later as the bootstrapping compiler; 7.6 is
-# skipped. The tarball ships Parser.hs, Lexer.hs, CmmParse.hs and CmmLex.hs,
-# and its own libffi 3.0.11.
+# skipped. The tarball's parsers and lexers are regenerated from their
+# grammars (common/regen-parsers.sh) with 7.4.2's happy 1.19.5 and alex 3.2.7.4
+# (7.8 asks for >= 1.19 and >= 3.1.0). The tarball ships its own libffi 3.0.11.
 #
 # Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
 # 7.8.4, bin/ghc.
@@ -25,7 +26,7 @@ stdenv.mkDerivation {
     url = "https://downloads.haskell.org/~ghc/7.8.4/ghc-7.8.4-src.tar.xz";
     hash = "sha256-wxnNlK2yhBd+0ObSFUbtC5AK2EuGuHwGqZ6sNRUpgsQ=";
   };
-  nativeBuildInputs = [ perl ghc74 ];
+  nativeBuildInputs = [ perl ghc74 ghc74.happy1195 ghc74.alex327 ];
   buildInputs = [ gmp612 ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
@@ -34,6 +35,10 @@ stdenv.mkDerivation {
 
   postPatch = ''
     patchShebangs .
+    # The tarball's parsers and lexers are happy and alex output; put them
+    # back under their grammars (shipped as .source files) so the build
+    # regenerates them with the happy and alex above (common/regen-parsers.sh).
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/regen-parsers.sh}
     cat > mk/build.mk <<'EOF'
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
@@ -65,6 +70,12 @@ stdenv.mkDerivation {
     grep -q 'with-ghc=${ghc74}/bin/ghc' config.log
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/cmp-regenerated.sh}
+    runHook postCheck
+  '';
   enableParallelBuilding = false;
 
   # common/test/T3.hs, compiled by the installed compiler with no extra flags.

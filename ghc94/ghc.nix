@@ -5,12 +5,16 @@
 # make build system]"), which a 9.0.2 is; nixpkgs 23.11 and Guix both build
 # 9.4 this way. Registerised with the native code generator (via C with
 # `registerised = false`), GHCi, static only. 9.4.8 asks for a 9.0 or
-# later as the bootstrapping compiler; 9.2 is skipped. The tarball ships
+# later as the bootstrapping compiler; 9.2 is skipped. The tarball's parsers and lexers are regenerated from their
+# grammars (common/regen-parsers.sh) with happy 1.20.1.1 and alex 3.2.7.4
+# (9.4 asks for 1.20 and >= 3.2.6); so is Cabal's lexer (templates/Lexer.x).
+# The tarball ships
 # GHC/Parser.hs, GHC/Parser/Lexer.hs, GHC/Cmm/Parser.hs and GHC/Cmm/Lexer.hs,
 # so neither happy nor alex is run, but the compiler, genprimopcode and hpc
 # declare `build-tool-depends: alex >= 3.2.6, happy >= 1.20.0` and ghc-cabal
 # refuses to configure them without the programs: happy 1.20.1.1 and alex
-# 3.2.7.4, compiled by the chain's 9.0.2 (happy120.nix, alex327.nix).
+# 3.2.7.4, the former compiled by the chain's 9.0.2 (happy120.nix), the
+# latter by its 7.4.2 (ghc74/alex327.nix).
 #
 # GhcWithInterpreter = YES and GhcWithSMP = YES from 8.8 on, the standard
 # configuration (nixpkgs, Guix), after two upstream facts: 8.8.4's
@@ -39,7 +43,7 @@
 , ncurses
 , ghc90
 , happy120
-, alex327
+, ghc74            # for alex327
 , registerised ? true
 }:
 
@@ -50,7 +54,7 @@ stdenv.mkDerivation {
     url = "https://downloads.haskell.org/~ghc/9.4.8/ghc-9.4.8-src.tar.xz";
     sha256 = "0bf407eb67fe3e3c24b0f4c8dea8cb63e07f63ca0f76cf2058565143507ab85e";
   };
-  nativeBuildInputs = [ perl python3 ghc90 happy120 alex327 ];
+  nativeBuildInputs = [ perl python3 ghc90 happy120 ghc74.alex327 ];
   buildInputs = [ gmp ncurses ];
   hardeningDisable = [ "all" ];
   dontStrip = true;
@@ -71,6 +75,10 @@ stdenv.mkDerivation {
 
   postPatch = ''
     patchShebangs .
+    # The tarball's parsers and lexers are happy and alex output; put them
+    # back under their grammars (shipped as .source files) so the build
+    # regenerates them with the happy and alex above (common/regen-parsers.sh).
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/regen-parsers.sh}
     cat > mk/build.mk <<'EOF'
     GhcUnregisterised = ${if registerised then "NO" else "YES"}
     GhcWithNativeCodeGen = ${if registerised then "YES" else "NO"}
@@ -103,9 +111,15 @@ stdenv.mkDerivation {
       CFLAGS="-std=gnu11 -w"
     grep -q 'GHC=${ghc90}/bin/ghc' config.log
     grep -Eq '^HAPPY[[:space:]]*=[[:space:]]*${happy120}/bin/happy$' mk/config.mk
-    grep -Eq '^ALEX[[:space:]]*=[[:space:]]*${alex327}/bin/alex$' mk/config.mk
+    grep -Eq '^ALEX[[:space:]]*=[[:space:]]*${ghc74.alex327}/bin/alex$' mk/config.mk
   '';
   preBuild = "ulimit -s unlimited; ulimit -c unlimited";   # cores reach the host's coredumpctl
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    SHIPPED=$NIX_BUILD_TOP/shipped sh ${../common/cmp-regenerated.sh}
+    runHook postCheck
+  '';
   enableParallelBuilding = true;
 
   # common/test/T3.hs, compiled by the installed compiler with no extra flags.

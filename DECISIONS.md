@@ -2044,3 +2044,235 @@ systems, driven as their packagers drive them.
 **Overturned by:** nothing yet. When 9.14.2 is released the guard patch
 should be checked against it and dropped if it carries the branch's text;
 a 9.16 will want the 9.14's plan treatment.
+
+## D55 — Generated code in the inputs: the audit, and the parsers and lexers of 6.10 to 9.14 regenerated from their grammars
+*2026-10-12, `common/regen-parsers.sh`, `common/cmp-regenerated.sh`, `ghc74/happy1195.nix`, `ghc74/alex327.nix`, `ghc88/happy11912.nix`, every rung from `ghc610` to `common/hadrian-ghc.nix`.*
+
+**The question.** README claimed code generated outside the chain entered
+it in three places (happy's seed, the mhs binary, cpphs). Asked whether that
+had been checked, it had not. The audit listed what every tarball the
+derivations fetch ships pre-generated or pre-built and what each derivation
+deletes, regenerates or consumes.
+
+**What the audit found.**
+
+- Clean: Hugs's `parser.c` (bison regenerates it, the rule is `-$(YACC)` so
+  a failure would be silent), MicroHs's `generated/*.c` (deleted first),
+  cpphs (from source), happy 1.16 and 1.20.1.1 and GHC 6.6's seven modules
+  (regenerated and compared, D52), 7.4.2's shipped `ghc-pwd` binary (its
+  configure rebuilds it) and 9.0.2's shipped containers objects (the
+  chain's archive differs: `7364362d…` against `8fea7042…`).
+- Acknowledged seeds: `happy/happy-seed` (a GHC-9.14-built happy's
+  output, D7/D14) and the `Scan.hs` of alex 2.1.0 and 3.2.7.4 (fixed
+  points). The README named only the first.
+- Not acknowledged: **every rung from 6.10.4 to 9.14.1 built its parser and
+  lexer from upstream's happy and alex output.** The tarballs ship
+  `Parser.hs`, `Lexer.hs`, the Cmm pair, `ParserCore.hs`, genprimopcode's
+  and hpc's (from 9.4 `HaddockLex.hs`, from 9.12 `Lexer/String.hs`), and
+  the chain's happy and alex were inputs on 6.10 and 9.4+ only for
+  `build-tool-depends`. Upstream's happy per rung, from the file headers:
+  1.18.4 (6.10, 6.12), 1.18.6 (7.4), 1.19.4 (7.8), 1.19.5 (8.0), 1.19.9
+  (8.4), 1.19.12 (8.8, 9.0), 1.20.0 (9.4), 1.20.1.1 (9.8 to 9.14); alex
+  output names no version. Also 6.2.2's `Lexer.hs` (alex 2.0 output
+  rewritten by `convert-lexer.py`, the only alex-made file in the chain
+  with no alex to remake it), Cabal's `Distribution/Fields/Lexer.hs` (alex
+  output committed in Cabal's tree, 8.4 to 9.8), and the alex 3.5.2.0 of
+  9.12's Hadrian plan, built from its shipped `Scan.hs`.
+- `configure` scripts: autoconf output, run as shipped by every make rung
+  and GMP. Guix and nixpkgs do the same (Guix's bootstrap phase runs
+  autoreconf only when there is no configure); Debian regenerates
+  (`dh_autoreconf` since compat 10); bootstrappable.org's best practices
+  say nothing. The xz payload rode in the tarball's `m4/`, which
+  `autoreconf` on the tarball carries over. **Decision: used as shipped,
+  stated in the README.** Where the people whose standard the README cites
+  are strict is parser-generator output (live-bootstrap rebuilds bison's
+  parser from its `.y` in stages), which is the next point.
+
+**The grammars are in the tarballs.** The first listing missed them: GHC's
+sdist renames each grammar `<name>.source` (ghc.mk's `sdist-ghc-file` up
+to 9.4, Hadrian's `Rules/SourceDist.hs` after) precisely so that a build
+never runs happy or alex; 6.10 to 7.8 ship the cpp'd `Parser.y.pp.source`.
+So no fetch from GHC's history is needed (GitLab has no tags before 7.x
+anyway). 6.10's genprimopcode ships `.y`/`.x` beside the `.hs` under their
+own names.
+
+**The fix.** `common/regen-parsers.sh`, run in `postPatch`, moves every
+shipped generated module to `$NIX_BUILD_TOP/shipped/<path>`, gives each
+grammar its name back, and for Cabal's lexer runs its Makefile's own rule
+(`alex --latin1 --ghc`, `cat -s`). The tarball's own rules then regenerate:
+`mk/suffix.mk` and Cabal's preprocessors on 6.10, `rules/hs-suffix-rules-
+srcdir.mk` (`-agc --strict`, `-g`, `--latin1` from 7.4 with an alex 3) on
+6.12 to 9.4, Hadrian's generators after; on 6.10 to 7.8 `Parser.y.pp` is
+cpp'd to `Parser.y` first. `common/cmp-regenerated.sh`, in `postBuild`,
+finds each regenerated module under `*/build/*` (longest matching tail,
+package directory preferred) and compares it with the shipped one through
+`ghc66/cmp-generated.sh`: a difference fails the build only when the
+happy on PATH is the version named in the shipped file's header (8.0.2
+by 1.19.5, 9.0.2 by 1.19.12, 9.8.4 to 9.14.1 by 1.20.1.1); otherwise, and
+for alex output, it is reported. The point of regenerating is that the
+build no longer depends on the shipped file; agreement is evidence on top.
+
+**The generators each rung's configure accepts**, and who builds them:
+
+| rung | happy floor | alex floor | used |
+|---|---|---|---|
+| 6.10.4 | >= 1.15 | >= 2.1.0 | 6.6's happy 1.16, alex 2.1.0 (already inputs) |
+| 6.12.3, 7.4.2 | >= 1.16 | >= 2.1.0 | the same |
+| 7.8.4 | >= 1.19 | >= 3.1.0 | **7.4.2's happy 1.19.5 and alex 3.2.7.4** (new) |
+| 8.0.2, 8.4.4 | >= 1.19.4 | >= 3.1.0 | the same |
+| 8.8.4 | >= 1.19.4 | >= 3.1.7 | the same |
+| 9.0.2 | >= 1.19.10, < 1.20 | >= 3.1.7 | **8.8.4's happy 1.19.12** (new), 7.4.2's alex |
+| 9.4.8 to 9.14.1 | 1.20.x (9.14: or 2.0.2 to 2.1) | >= 3.2.6, < 4 | 9.0.2's happy 1.20.1.1, 7.4.2's alex |
+
+happy 1.19.5 is the newest happy 7.4.2 can build (1.19.6 on want mtl's
+`Control.Monad.Except`; 7.4.2's tree has mtl 1.1.1.1, see the mtl
+paragraph below), hence 1.19.12 by 8.8.4
+(mtl 2.2.2) for 9.0.2. Both follow `ghc94/happy120.nix`: the tarball's
+parsers set aside, generation 1 from the grammars by the mhs-built happy
+1.19.5, `-agc` regeneration compared with the shipped, generation 2 the
+fixed point. 1.19.5's tarball ships its grammars; 1.19.12's ships neither
+grammars nor template sources (only the cpp'd `data/`), so those five
+files come from the 1.19.12 tag, and the templates are regenerated with
+`ghc66/cpp-template.sh` and compared. The ghc74 and ghc88 links became
+scopes like ghc66 and ghc94 (`ghc74.happy1195`, `ghc74.alex327`,
+`ghc88.happy11912`).
+
+**One alex, 3.2.7.4 by 7.4.2.** The first draft had 7.4.2 build alex 3.1.7
+for 7.8 to 9.0 (the floors) and kept 9.0.2's 3.2.7.4 for 9.4 on. Reading
+the tarballs before the rebuild reached them: every alex 3.1.x executable
+has `build-depends: QuickCheck >= 2`, and means it (`import Test.QuickCheck`
+in the `Data.Ranged` modules it carries, for Arbitrary instances); 7.4.2's
+tree has mtl but no QuickCheck, so `Setup configure` would have failed.
+3.2.4 dropped the dependency (and the custom `Setup.lhs`); 3.2.7.4's
+bounds are `base >= 2.1 && < 5`, array, containers, directory. Tried by
+hand with a 7.4.2 still in the store: it builds, its `alex -g Scan.x`
+equals the shipped `Scan.hs` modulo blank lines and LINE pragmas,
+generation 2 is the fixed point, and its `-g` output compiles under 7.4.2
+(the boot compiler of 7.8.4, which compiles the `Lexer.hs` regenerated
+there). Its `data/AlexTemplate.hs` and `AlexWrappers.hs` are plain source:
+from 3.2.6 the generated lexer defines the `ALEX_*` macros and the
+compiler's cpp does the rest, so, unlike happy 1.19.12's `data/`, nothing
+there is cpp output. `ghc94/alex327.nix` moved to `ghc74/alex327.nix`,
+`alex317.nix` is gone, and every rung from 7.8.4 to 9.14.1 takes
+`ghc74.alex327`; the ghc94 scope keeps happy 1.20.1.1 only (1.20, like
+1.19.6, wants an mtl 7.4.2 has not).
+
+**happy 1.19.5 by hand, three corrections.** The same dry run with the
+7.4.2 in the store, happy 1.19.5 (`ghc74/happy1195.nix`), fell at
+configure: "mtl >= 1.0 missing". The claim above that 7.4.2 has mtl
+1.1.1.1 came from the tarball's `libraries/`; 7.4.2 builds that mtl but
+never installs it (`PKGS_THAT_ARE_INTREE_ONLY` in ghc.mk: haskeline,
+mtl, terminfo, utf8-string, xhtml), so the installed compiler has no mtl.
+`ghc74/mtl.nix` builds the tree's mtl 1.1.1.1 with 7.4.2 and the tree's
+own Setup.hs into a package database of its own, which happy1195.nix
+passes as `--package-db`; nothing new is fetched. With that, happy
+builds, and the comparison with `dist/` showed two more things. The
+tarball's parsers were written by happy **1.19.4** (their header), and
+1.19.5's output adds `import Control.Monad (ap)` ("fixes for GHC 7.10"),
+so the check compares modulo those two lines. And the templates
+Setup.lhs's postBuild cpp'd carried `# 1 ".../stdc-predef.h" 1 3`: its
+`getLinePrag` converts a marker to a LINE pragma only with at most one
+flag after the file name, 1.16's bug again (D52, `ghc66/cpp-template.sh`),
+and the stray line would have ridden into every parser this happy writes,
+including the ones compared strictly on 8.0.2. After `Setup build` the
+derivation redoes Setup.lhs's thirteen-entry table over the same sources
+with the fixed step, and `Setup install` installs those. By hand: both
+parsers as shipped modulo the lines above, generation 2 the fixed point,
+no marker left in any template.
+
+**happy 1.19.12 by hand: the templates are cpphs output.** The same dry
+run with an 8.8.4 from the store. The thirteen `data/` files regenerated
+with `ghc -E -cpp` (the flag table from 1.19.5's `Setup.lhs`) differed
+from the shipped ones in ways no flag explains: `$Id$` kept, macros left
+alone inside comments, `__GLASGOW_HASKELL__` undefined (bare `==#` where
+the tag's `GLR_Lib.hs` would write `isTrue#`), two spaces inside an
+expansion. 1.19.12's Makefile says how upstream made them: its `sdist`
+target runs `gen-happy-sdist`, forty lines at the tag (`gen-happy-sdist/
+Main.hs`, sha256 `2d1b93d6…`) over the cpphs *library* 1.20.8: `runCpphs`
+with each flag defined as 1, `hashline` off (LINE pragmas), `locations`
+and `macros` on, `ansi` off, the file named `templates/<src>`. The chain's
+cpphs 1.20.9 (`cpphs/default.nix`, from source) run that way from the
+package root (`cpphs --linepragma -D<flag>… templates/<src>`) reproduces
+all thirteen **byte for byte**; `ghc88/happy11912.nix` now does that, and
+its check is `cmp`. The shipped parsers, by a happy 1.19.10, carry two raw
+markers (`# 1 "/usr/include/stdc-predef.h" 1 3 4`): that happy's template
+had been cpp'd by gcc through a `Setup.lhs` with the 1.16 regex bug, the
+case the previous paragraph found. `ghc66/cmp-generated.sh` now drops
+raw cpp line markers as it drops LINE pragmas (same category: cpp's line
+bookkeeping); with that, both parsers are as shipped modulo the version
+line, and generation 2 is the fixed point. The GHC tarballs show the same
+history: the `compiler/parser/Parser.hs` shipped by 7.8.4, 8.0.2 and
+8.4.4 (by happy 1.19.4, 1.19.5, 1.19.9, all with `Setup.lhs`-cpp'd
+templates) carry 5, 2 and 2 raw markers; 8.8.4, 9.0.2 and 9.4.8 (by
+1.19.12 and 1.20.0, cpphs templates) none. So the strict comparison on
+8.0.2 would have failed on those two lines and nothing else.
+
+**Also today:** 7.4.2's `utils/ghc-pwd/dist-boot` and 9.0.2's containers
+`dist-install` and `utils/hsc2hs/test.o` deleted in `postUnpack`, so "not
+used" is enforced rather than inferred.
+
+**Not yet built.** Everything evaluates (`nix-instantiate`, 15 derivations).
+The whole chain from `mhs` up is unbuilt since the 2026-10-08
+reorganisation (MicroHs from the 0.16.8.0 tarball, cpphs from Hackage, the
+generated inputs of 6.2.2 made by `ghc622/tools`), so the rebuild that
+proves this is the rebuild that proves that; it is queued under pueue
+(`nix-build -A ghc914`, then `ghc622.fixpoint`). Expected trouble spots:
+6.10's Cabal 1.6 running happy on `Parser.y`, happy 1.19.5's custom
+`Setup.lhs` under Cabal 1.14, the 1.19.12 template flag table (taken from
+1.19.5's `Setup.lhs`), and `cmp-regenerated.sh` finding Hadrian's outputs.
+Results go here when they exist. First pass: mhs needed `listDirectory`
+in the Hugs shim (0.16.8.0's `Main.hs` uses it); 6.2.2's stage 1 needed
+`-I` for `ffi.c`'s `stubs.h` (a file named on its own is copied to the
+store alone); stage 1 then built, and stage 2's chunks 1 and 2 took 49 and
+47 minutes. Chunk 3 was killed by hand at SetLevels on a suspicion of a
+hang; by hand with the same inputs SetLevels takes 47 s (33 s in the
+09-15 run), and the chunk, 64 modules, prints one line per module. A
+`systemctl restart nix-daemon` during a build leaves the builder running
+outside Nix's control (systemd reports the left-over processes); kill
+them before rerunning.
+
+**Where the checks run.** The same day, every fixed-point and comparison
+check moved out of `buildPhase`/`postBuild` into `checkPhase` with
+`doCheck = true`, the slot nixpkgs' stdenv defines for "whether the package
+was built correctly": mhs's generation 3, cpphs's round 3, happy-mhs's
+regeneration, the seven happy/alex builds' shipped comparisons and
+generation-2 fixed points, 6.6's seven modules and `cmp-regenerated.sh` on
+every later rung. The rule is that the build makes every artefact (gen 3,
+round 3, the regenerated parsers) and the check only compares, so a build
+with checks disabled still installs the same output. The installed-tree
+checks (`--version`, T3, GmpZero, the GMP directory) stay in
+`installCheckPhase`; the 6.2.2 fixed point stays its own derivation, as the
+manual recommends for expensive tests (`passthru.tests`), reachable also as
+`ghc622.tests.fixpoint`. One caveat the manual states: cross-compiled
+builds never run `checkPhase`, whatever `doCheck` says; nothing here is
+cross-compiled.
+
+**The first link, rebuilt.** `nix-build -A mhs` on the 0.16.8.0 tarball
+failed at once: its `Main.hs` calls `listDirectory`, which Hugs's 2006
+`System.Directory` lacks and upstream's `hugs/` shim tree does not supply
+(checked on master). A sixth shim, `hugs/System/Directory.hs`, re-exports
+`Hugs.Directory`'s primitives and adds `createDirectoryIfMissing` and
+`listDirectory`; `Main.hs` stays pristine. With it the link builds, the
+check phase passes (generation 2 == generation 3), and a check added the
+same day holds: the Hugs-derived `bin/mhs`, run with `-z` as the Makefile
+runs it, reproduces the tarball's `generated/mhs.c` byte for byte (383,000
+bytes). That is D1's equivalence stated at its strongest: the shipped seed
+is exactly what the Hugs-derived compiler emits from the source.
+
+**happy 1.19.12 in the build, 2026-10-13.** By then `nix-build -A ghc914`
+had built the chain through 8.0.2 from this tree. happy 1.19.12's check
+phase failed: the parsers gen 1 writes with -agc differed from the shipped
+ones only in the template text, `Id:` for `$Id:…$`, `0#` for `ERROR_TOK`
+inside a comment, `+#  i` for `+# i`. Dropping raw markers was not
+enough. The shipped parsers carry 1.19.10's template, which gcc
+preprocessed through its `Setup.lhs` (`ghc -E -cpp` and the perl pass,
+the case of the 1.19.5 paragraph). They do not carry 1.19.12's cpphs
+template. A `HappyTemplate-arrays-coerce` made by `ghc66/cpp-template.sh`
+with the chain's 8.8.4 matches the shipped parser's template part line for
+line once normalised, and 1.19.12's own does not. So gen 1 now also writes
+both parsers with `--template` pointing at that gcc-made template, and the
+check compares those with the tarball's. Both are as shipped. gen 1, gen 2
+and the installed happy keep 1.19.12's own templates, and the fixed point
+is unchanged. Nothing from 8.4.4 up was built yet.
+
+**Overturned by:** nothing yet.

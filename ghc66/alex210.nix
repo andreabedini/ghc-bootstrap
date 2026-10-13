@@ -74,14 +74,19 @@ stdenv.mkDerivation {
     }
 
     ${happy116}/bin/happy -agc src/Parser.y -o src/Parser.hs
-    sh ${./cmp-generated.sh} src/Parser.hs shipped/Parser.hs
     cp shipped/Scan.hs src/
     build 1; regen 1
-    sh ${./cmp-generated.sh} gen1/Scan.hs shipped/Scan.hs
     cp gen1/Scan.hs src/
     build 2; regen 2
+  '';
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    sh ${./cmp-generated.sh} src/Parser.hs shipped/Parser.hs
+    sh ${./cmp-generated.sh} gen1/Scan.hs shipped/Scan.hs
     cmp gen1/Scan.hs gen2/Scan.hs
     echo "alex 2.1.0: fixed point, gen 2 regenerates gen 1's Scan.hs byte for byte"
+    runHook postCheck
   '';
   installPhase = ''
     install -Dm755 alex-2 $out/bin/alex

@@ -12,7 +12,8 @@
 #   nix-build -A ghc622.stage3    the compiler again, compiled by stage 2 (native.nix)
 #   nix-build -A ghc622.stage4    and by stage 3
 #   nix-build -A ghc622.stage5    its .hi/.hc by stage 4, not linked
-#   nix-build -A ghc622.fixpoint  stage 5's .hc = stage 4's, module by module (fixpoint.nix)
+#   nix-build -A ghc622.fixpoint  stage 5's .hc = stage 4's, module by module (fixpoint.nix);
+#                                 also ghc622.tests.fixpoint, the nixpkgs passthru.tests idiom
 #
 # Why this many steps before 6.2.2's own build system can take over: it needs
 # a working GHC to drive it, and the chain has none yet. Stage 1 is GHC's
@@ -48,4 +49,5 @@ let
 in
 stages.inst // {
   inherit (stages) tree rts stage1 base stage2 stage3 stage4 stage5 fixpoint boot;
+  tests.fixpoint = stages.fixpoint;
 }

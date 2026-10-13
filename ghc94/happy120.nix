@@ -67,16 +67,21 @@ stdenv.mkDerivation {
     }
     for p in Parser AttrGrammarParser; do happy grammar/$p.ly -o src/$p.hs; done
     build 1; regen 1
+    cp gen1/Parser.hs gen1/AttrGrammarParser.hs src/
+    build 2; regen 2
+    runHook postBuild
+  '';
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
     for p in Parser AttrGrammarParser; do
       sed 's/^-- parser produced by Happy Version 1\.20\.0$/-- parser produced by Happy Version 1.20.1.1/' shipped/$p.hs > shipped/$p.hs.v
       sh ${../ghc66/cmp-generated.sh} gen1/$p.hs shipped/$p.hs.v
     done
-    cp gen1/Parser.hs gen1/AttrGrammarParser.hs src/
-    build 2; regen 2
     cmp gen1/Parser.hs gen2/Parser.hs
     cmp gen1/AttrGrammarParser.hs gen2/AttrGrammarParser.hs
     echo "happy 1.20.1.1: fixed point, gen 2 regenerates gen 1's parsers byte for byte"
-    runHook postBuild
+    runHook postCheck
   '';
   installPhase = ''
     runHook preInstall
