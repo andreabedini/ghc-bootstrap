@@ -1,6 +1,6 @@
 # Phase 3 findings — GHC compiling the Prelude
 
-Started 2026-09-02, continuing from [`../notes/phase2/FINDINGS.md`](../notes/phase2/FINDINGS.md).
+Started 2026-09-02, continuing from [`../phase2/FINDINGS.md`](../phase2/FINDINGS.md).
 
 ## Result so far: GHC emits C
 
@@ -115,7 +115,7 @@ Three things were needed beyond the compile itself:
 
 1. **Is the object code *correct*?** It compiles and has the right symbols, but
    nothing has linked or run it. Correct-looking output has already been wrong
-   twice in this project (D24).
+   twice in this project ([D24](../../DECISIONS.md#d24--hsc-runs-two-runtime-bugs-that-typechecking-could-never-have-caught)).
 2. **Do the traces match a real GHC 4.08?** If ours emits more `NoBindF` cases
    than the original, something upstream differs.
 3. The remaining 46 modules of `ghc/lib/std`, then `hslibs`, then closing the
@@ -156,7 +156,7 @@ the de-litified source and appends what it finds to the command line. 31 of the
 carry `-#include` naming a C header.
 
 Reproducing that scan fixed `Time` (`deriving (Eq, Ord)` with no `Eq` in scope),
-`IO` (`readIO` not in scope), and `PrelHugs`. See DECISIONS.md D29 for the wrong
+`IO` (`readIO` not in scope), and `PrelHugs`. See [DECISIONS.md](../../DECISIONS.md) [D29](../../DECISIONS.md#d29---fno-implicit-prelude-comes-from-the-source-not-from-position) for the wrong
 turn taken first — a positional rule that got six modules wrong *without failing*.
 
 ### Two more 1999-isms in the C
@@ -185,7 +185,7 @@ The fix was to stop hand-writing `ghc/includes/config.h` and run GHC's own
 `configure`, which ships with all 177 probes. Getting a 1999 autoconf to run
 needed four accommodations (x86-64 unknown to `config.sub` and to `configure`'s
 platform whitelist; pre-C99 probe programs; and a version test that compares
-`1.19.5 < 1.6` as strings). All four are recorded in DECISIONS.md D31.
+`1.19.5 < 1.6` as strings). All four are recorded in [DECISIONS.md](../../DECISIONS.md) [D31](../../DECISIONS.md#d31--run-ghcs-own-configure-instead-of-hand-writing-configh).
 
 It also caught a live bug in my hand-written file: `#define LEADING_UNDERSCORE 0`,
 read by `MachMisc.lhs:62` as `#ifdef`, is *true*.
@@ -235,7 +235,7 @@ Every repair was taken from the same file's own 32-bit code rather than
 invented — the `Bits Int32` instance supplied the correct `complement`, the
 `Bits Word32` instance the `rotate` parenthesisation, `Eq Int32` the `==#`/`/=#`.
 That is what kept the work mechanical rather than a matter of taste. Full list
-in DECISIONS.md D34 and D38.
+in [DECISIONS.md](../../DECISIONS.md) [D34](../../DECISIONS.md#d34--the-64-bit-paths-in-hslibslang-were-never-compiled) and [D38](../../DECISIONS.md#d38--running-tally-of-the-64-bit-repair).
 
 ### Linking needed four things the object files did not imply
 

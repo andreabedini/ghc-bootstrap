@@ -2,7 +2,7 @@
 
 Run 2026-09-02, Fedora 44, x86_64.
 Goal: score the candidate GHCs mechanically instead of assuming 4.08.2, per the
-plan in [`../BOOTSTRAP-ANALYSIS.md`](../BOOTSTRAP-ANALYSIS.md). Candidates are the
+plan in [How I found the route](../../README.md#how-i-found-the-route). Candidates are the
 four tarballs in the repo root — 4.08.2, 5.00.2, 6.0, 6.10.4. (The plan named
 5.04; the repo has 5.00.2, which is the same era.)
 
@@ -33,7 +33,7 @@ is worth less than 80,000 lines of extra code.
 ## 0. What had to be fixed before any number meant anything
 
 The scanners were reporting noise. Five corrections, all in
-[`../notes/phase0/feature-scan.py`](../notes/phase0/feature-scan.py) and
+[`../phase0/feature-scan.py`](../phase0/feature-scan.py) and
 [`import-inventory.py`](import-inventory.py):
 
 1. **Literate Haskell.** GHC is 207/208 `.lhs` in 4.08.2, LaTeX-style
@@ -57,7 +57,7 @@ is a comprehension (`[ s | Import s <- defs ]`); every sampled keep is a real
 guard (`| Just op' <- lookup op flipOps = ...`). It now **under**-reports
 by roughly the multi-line-guard count (~13 in `src/`), so the figure is a lower
 bound where it used to be an upper bound. (This supersedes the "roughly 200
-pattern-guard sites" in [`../notes/phase0/FINDINGS.md`](../notes/phase0/FINDINGS.md) §3 — the
+pattern-guard sites" in [`../phase0/FINDINGS.md`](../phase0/FINDINGS.md) §3 — the
 old number was mostly comprehensions; the real figure is 64 across `src/` + `lib/`.
 The conclusion there is unaffected: Hugs needed the feature either way.)
 
@@ -150,7 +150,7 @@ Two things get much worse further up the chain:
 
 ## 3. The RTS coupling a shim has to cover
 
-This is the part `BOOTSTRAP-ANALYSIS.md` flagged as "GHC's compiler source reaches
+This is the part the original plan ([How I found the route](../../README.md#how-i-found-the-route)) flagged as "GHC's compiler source reaches
 into RTS internals via `base`", now enumerated.
 
 **4.08.2 — 18 modules, 75 import sites:**

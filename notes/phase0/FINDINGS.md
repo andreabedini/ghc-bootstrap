@@ -2,7 +2,7 @@
 
 Run 2026-09-02, Fedora 44, GCC 16.2.1, x86_64.
 Goal: confirm the claim that MicroHs can be bootstrapped from **C compiler + Hugs
-source only**, with no pre-generated combinator file. See `../BOOTSTRAP-ANALYSIS.md`.
+source only**, with no pre-generated combinator file. See [How I found the route](../../README.md#how-i-found-the-route).
 
 ## Result: the seed works. It needed one Hugs feature and a shim patch.
 
@@ -81,11 +81,11 @@ Discourse thread, now confirmed empirically rather than by report.
 list comprehension spans lines). *(Phase 1 tightened the scanner: comprehensions
 were most of that number, and the figure is now 64, a lower bound. The conclusion
 is unchanged — Hugs needed the feature either way. See
-[`../notes/phase1/FINDINGS.md`](../notes/phase1/FINDINGS.md) §0.)* Concentrated in `src/MicroHs/TypeCheck.hs` (~73).
+[`../phase1/FINDINGS.md`](../phase1/FINDINGS.md) §0.)* Concentrated in `src/MicroHs/TypeCheck.hs` (~73).
 
 ## What this changes about the plan
 
-`BOOTSTRAP-ANALYSIS.md` argued the seed problem was solved because MicroHs has a
+The original plan ([How I found the route](../../README.md#how-i-found-the-route)) argued the seed problem was solved because MicroHs has a
 Hugs path. That is **too strong**: the path exists and is 95% there, but it does
 not run today. The corrected claim is that the seed is *one contained Hugs
 feature away*, not that it works.

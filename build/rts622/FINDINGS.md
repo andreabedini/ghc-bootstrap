@@ -17,9 +17,9 @@ rewrites), `genapply/build-genapply.sh` (the one generated source), patches in
 ```
 
 Exit 0 with **no patches, no cache seeding, no CFLAGS override**. The four
-accommodations 4.08.2 needed (D31) are all gone in 6.2.2:
+accommodations 4.08.2 needed ([D31](../../DECISIONS.md#d31--run-ghcs-own-configure-instead-of-hand-writing-configh)) are all gone in 6.2.2:
 
-| 4.08.2 problem (D31)                       | 6.2.2                                                        |
+| 4.08.2 problem ([D31](../../DECISIONS.md#d31--run-ghcs-own-configure-instead-of-hand-writing-configh))                       | 6.2.2                                                        |
 |--------------------------------------------|--------------------------------------------------------------|
 | `config.sub` rejects x86_64                | knows it (`config.sub:282,341,377`)                          |
 | configure platform whitelist lacks x86_64  | native case `x86_64-*-linux*` (`configure:1628`)             |
@@ -56,7 +56,7 @@ Flags come from `ghc/rts/Makefile` `STANDARD_OPTS` (`-I../includes -I.
 -Iparallel -DCOMPILING_RTS`), `mk/bootstrap.mk:63-64` (`-DNO_REGS
 -DUSE_MINIINTERPRETER`), the driver (`DriverPipeline.hs:726`
 `-D__GLASGOW_HASKELL__=622`, `-O`) and, for the `.hc` files, the driver's
-`-x c` (`DriverPipeline.hs:710`). `-std=gnu89 -O` for the D41 reason:
+`-x c` (`DriverPipeline.hs:710`). `-std=gnu89 -O` for the [D41](../../DECISIONS.md#d41--it-links-and-compiled-haskell-runs) reason:
 `ghc/rts/Stable.h` still defines `deRefStablePtr` and friends `extern inline`.
 Not carried over: `WARNING_OPTS` (warnings only), `GhcRtsCcOpts =
 -fomit-frame-pointer`, `-ffloat-store`.
@@ -95,7 +95,7 @@ Linker.c 2, PrimOps.hc 2, GCCompact.c 1, Schedule.c 1.
 **(a) 2026-toolchain C issues: 59 of 59.**
 
 - 58 x cast-as-lvalue (`(StgClosure *)tmp = evacuate(...)`), the same GNU
-  extension gcc dropped in 4.0 that D30/D40 hit 32 times in 4.08.2. Shapes:
+  extension gcc dropped in 4.0 that [D30](../../DECISIONS.md#d30--two-more-headerencoding-warts-in-the-4082-tree)/D40 hit 32 times in 4.08.2. Shapes:
   48 plain assignments, 5 compound assignments (`(W_)p += MBLOCK_SIZE`,
   `(StgPtr)frame += ...`, `(StgWord)q -= 1`), 1 post-increment
   (`((StgPtr)p)++`, PrimOps.hc:264), 4 address-of-cast
@@ -113,7 +113,7 @@ map, `StgCRun.c:177` an assembler `StgRun`, `TailCalls.h:66` an x86_64 `JMP_`,
 `Linker.c:2198` an x86_64 case. Under `USE_MINIINTERPRETER` none of the
 arch-specific code is selected (the mini-interpreter `StgRun` is a C loop,
 `JMP_` is `return`), so those paths were not exercised here. The 64-bit bugs
-of D42 (`Words-1` underflow in `Updates.hc`, info-table jump) are runtime
+of [D42](../../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime) (`Words-1` underflow in `Updates.hc`, info-table jump) are runtime
 properties of compiled Haskell and cannot be observed without a compiler
 producing 6.2.2 `.hc` files; nothing in a C-only run contradicts or confirms
 them.
@@ -145,7 +145,7 @@ they compile with the `.hc` command above.
 - `0001-rts-cast-as-lvalue.patch` — the 58 cast-as-lvalue sites in 8 files,
   rewritten mechanically by `apply-fixes.pl` from gcc's own error list:
   `(T)lv OP v` -> `*(T*)&(lv) OP v`, `((T)p)++` -> `(*(T*)&(p))++`,
-  `&BCO_LIT(n)` -> `(W_ *)&literals[n]`. Meaning-preserving (D40), no
+  `&BCO_LIT(n)` -> `(W_ *)&literals[n]`. Meaning-preserving ([D40](../../DECISIONS.md#d40--the-rts-compiles-4545)), no
   knowledge of the left-hand types needed, and nothing outside the reported
   lines is touched.
 - `0002-gc-static-objects-linkage.patch` — GC.c:84 drop `static`, matching
@@ -212,7 +212,7 @@ by default when the compiler was built with `GhcUnregisterised=YES`
 (`Main.hs:152`). `genapply` is compiled `-DNO_REGS` by its own Makefile and so
 also sees 0.
 
-So yes, the D42 item-1 mismatch is fixed **by construction** in 6.2.2: the RTS
+So yes, the [D42](../../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime) item-1 mismatch is fixed **by construction** in 6.2.2: the RTS
 macro and the code generator both derive from the register *count* (0), not
 one from the count's default and the other from register *pinning*. The RTS as
 built here (`.hc` files compiled `-DNO_REGS`) is consistent with what a
@@ -224,7 +224,7 @@ runs unregisterised: then PrimOps.hc would take the `== 1` branch (R1 in
 ## 8. Verdict
 
 Yes. GHC 6.2.2's RTS builds unregisterised on x86-64 with gcc 16 after one
-mechanical transformation (58 cast-as-lvalue sites, the same class as D40) and
+mechanical transformation (58 cast-as-lvalue sites, the same class as [D40](../../DECISIONS.md#d40--the-rts-compiles-4545)) and
 one linkage-keyword fix; there are no implicit-declaration, header, or
 64-bit-size failures, configure needs no help at all, GMP detection works
 against the system library, `Adjustor.c` needs no stub, and the resulting
@@ -232,7 +232,7 @@ against the system library, `Adjustor.c` needs no stub, and the resulting
 shuts down cleanly from a C driver. The only piece a compiler-less bootstrap
 must supply is `AutoApply.hc`, which is a small Haskell 98 generator that
 MicroHs compiles with a pretty-printer shim. What this experiment cannot
-show is runtime correctness under compiled Haskell — the D42 class of bugs
+show is runtime correctness under compiled Haskell — the [D42](../../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime) class of bugs
 lives there — but 6.2.2 was the first GHC to know x86-64 existed, its
 register-convention selection is already count-based, and every place that
 was a porting problem in 4.08.2 was a non-event here.
@@ -291,6 +291,6 @@ programs in `build/ghc622-mhs/test` were linked against the old archive and
 have not been relinked; they ran short enough to be lucky.
 
 **Why it was not seen before.** The C driver of section 6 has no static
-Haskell closures; the twelve test programs (D48) each ran once; the stage-2
+Haskell closures; the twelve test programs ([D48](../../DECISIONS.md#d48--a-compiled-haskell-program-runs-putstrln-hello-works-on-622)) each ran once; the stage-2
 link happened this morning, and the 397-run scan was the first time this RTS
 ran a few hundred processes.

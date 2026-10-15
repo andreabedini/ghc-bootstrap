@@ -69,7 +69,7 @@ defines `INLINE int __hscore_s_isblk(m) { ... }` (K&R parameter lists, lines
 C23 mode, so the first two modules died in the C step. `-std=gnu89` is exactly
 the mode `build-hc.sh`/`build-rts.sh` already use for GHC's own `.hc` output.
 `HSC2HS_CFLAGS` in the environment overrides it. This is the same
-2026-toolchain class as D31/D40 and gap 7, not an hsc2hs or MicroHs problem.
+2026-toolchain class as [D31](../../DECISIONS.md#d31--run-ghcs-own-configure-instead-of-hand-writing-configh)/D40 and gap 7, not an hsc2hs or MicroHs problem.
 
 Everything else in the pipeline is stock: `gcc -c` the `X_hsc_make.c`, `gcc`
 link, run it with stdout to `X.hs`, delete the three intermediates. None of
@@ -122,7 +122,7 @@ own closures/info tables, RTS entry points (`integer2Intzh_fast`,
 
 ## 5. `GHC.PrimopWrappers`
 
-Already dealt with in the compiler run (ghc622-mhs LOG.md "Result"):
+Already dealt with in the compiler run ([ghc622-mhs LOG.md](../ghc622-mhs/LOG.md) "Result"):
 `build/ghc622-mhs/libraries/base/GHC/PrimopWrappers.hs` is byte-identical to
 `build/gen622/genprimopcode/genprimopcode --make-haskell-wrappers <
 build/gen622/prelude/primops.txt` (checked with `diff`), which is
@@ -150,6 +150,6 @@ GHCi-only: it is an ordinary module of base whose `.o` goes into `libHSbase.a`
 Nothing from this task. The three base modules that were still open when
 this was written (`Data.Complex`, `Data.Graph`, `System.Console.GetOpt`) were
 closed the same day: a FastString unique collision in the shim, not a
-compiler or module problem (`build/ghc622-mhs/diag/FINDINGS.md`, D48). base
+compiler or module problem ([`build/ghc622-mhs/diag/FINDINGS.md`](../ghc622-mhs/diag/FINDINGS.md), [D48](../../DECISIONS.md#d48--a-compiled-haskell-program-runs-putstrln-hello-works-on-622)). base
 is 147/147; the seven modules above are part of that count and were
 recompiled in the rebuild.

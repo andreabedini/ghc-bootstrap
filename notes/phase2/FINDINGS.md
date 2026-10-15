@@ -1,7 +1,7 @@
 # Phase 2 findings — building the chain
 
 Running log. Started 2026-09-02. Decisions are indexed in
-[`../DECISIONS.md`](../DECISIONS.md); this file records *state*: what exists,
+[`../../DECISIONS.md`](../../DECISIONS.md); this file records *state*: what exists,
 what runs, what is still assumed.
 
 ## The chain as designed
@@ -55,16 +55,16 @@ what runs, what is still assumed.
 
 1. **`mhs` compiles happy's hand-written source.** Every module that does not
    transitively import a generated parser compiles; see
-   [`../notes/phase1/happy.md`](../notes/phase1/happy.md).
+   [`../phase1/happy.md`](../phase1/happy.md).
 2. **No shipped happy parser is usable** — all are GHC-template output with
-   unboxed `Addr#` string literals, which is lexical and unshimmable (D5).
+   unboxed `Addr#` string literals, which is lexical and unshimmable ([D5](../../DECISIONS.md#d5--no-shipped-happy-parser-can-be-used-the-grammar-must-be-regenerated)).
 3. **happy 1.19 accepts GHC 4.08.2's 1999 grammar** — 21 shift/reduce conflicts,
-   which is normal for it, and the output is portable Haskell (D10).
+   which is normal for it, and the output is portable Haskell ([D10](../../DECISIONS.md#d10--happy-119-handles-ghc-4082s-grammar-both-parsers-generated-portably)).
 4. **`mhs` accepts MagicHash identifiers** and has `Unsafe.Coerce`, so
    `unsafeCoerce#` is a rename, not a blocker. Only unboxed *literals* stop it.
 5. **MicroHs has more of `base` than its module names suggest** — `Mhs.Array` is
    a complete `Data.Array`, `Mhs.MutArr` a real mutable array. Several apparent
-   gaps were aliases (corrected in `../notes/phase1/FINDINGS.md`).
+   gaps were aliases (corrected in [`../phase1/FINDINGS.md`](../phase1/FINDINGS.md)).
 
 ## Open risks
 
@@ -74,7 +74,7 @@ what runs, what is still assumed.
 - **`UArray` is boxed** in the shim. Correct, but memory-hungry at GHC's table
   sizes.
 - **The GHC-built happy is still in the trusted base** until the fixpoint check
-  in D7 runs.
+  in [D7](../../DECISIONS.md#d7--use-the-machines-ghc-9141-as-a-one-time-generator-then-discharge-it) runs.
 - **Nothing has yet compiled a line of GHC.** Every finding so far is about the
   tools GHC needs, not GHC.
 
@@ -95,7 +95,7 @@ parser byte-identical to `gen3`. Worth doing rather than assuming — the shim
 happy's fixpoint was verified against no longer existed, so the verification
 would otherwise have referred to something that had been replaced.
 
-What this buys: **the tool dependency in D4 is now satisfied from inside the
+What this buys: **the tool dependency in [D4](../../DECISIONS.md#d4--happy-is-a-required-sub-bootstrap-not-an-optional-detour) is now satisfied from inside the
 chain.** A GHC parser can be produced from `Parser.y` using nothing but a C
 compiler, Hugs source, and the artifacts derived from them.
 
@@ -121,13 +121,13 @@ than MicroHs gaps, and Phase 2 will hit the same class repeatedly:
 - **`MonadFail (Either String)`** — happy's `happyError = fail "…"` relied on
   pre-`MonadFail` mtl, where `Either e` had `fail = Left . strMsg`. Restoring
   the historical instance keeps the parse failure a `Left`; an `error`-based
-  instance would have compiled and misbehaved at runtime (D12).
+  instance would have compiled and misbehaved at runtime ([D12](../../DECISIONS.md#d12--restore-the-pre-monadfail-either-instance-rather-than-patch-happy)).
 - **`mapWriter`** — present in every mtl, simply not yet in the shim.
 
-The rule that fell out of this, now recorded as D12: **where MicroHs's `base`
+The rule that fell out of this, now recorded as [D12](../../DECISIONS.md#d12--restore-the-pre-monadfail-either-instance-rather-than-patch-happy): **where MicroHs's `base`
 differs from the `base` a package expects, reproduce the old behaviour in the
 shim rather than adapt the package to the new one.** The package's source then
-stays diffable against upstream, which is the whole point of D11.
+stays diffable against upstream, which is the whole point of [D11](../../DECISIONS.md#d11--the-ghc-tarball-stays-pristine-everything-else-is-a-side-directory-or-a-patch).
 
 
 ## GHC itself: how far the import graph is walked (2026-09-02)
@@ -154,7 +154,7 @@ densest user of GHC-only constructs in the compiler.
 | shim | stands in for | note |
 |---|---|---|
 | `GlaExts` | GHC's extensions module, 26 import sites | unboxed types are aliases; `I#`/`C#`/`W#`/`F#`/`D#` are **identity pattern synonyms**, so 215 use sites need no source change |
-| `FastString` | interned strings | reimplemented; interning is load-bearing (D20) |
+| `FastString` | interned strings | reimplemented; interning is load-bearing ([D20](../../DECISIONS.md#d20--the-three-raw-memory-modules-get-reimplemented-not-emulated)) |
 | `GhcCompat` | Prelude names base has moved | imported by every module via `HsVersions.h`; one place for base drift |
 | `PrelArr`/`ArrBase` | GHC's array types | `ByteArray` is backed by a `String` |
 | `Data.Map` | containers | rewritten as a weight-balanced tree |
@@ -183,7 +183,7 @@ output), `ghc/includes/config.h` (`notes/phase2/mkconfig.sh`).
    name `Type.PredType` without creating a build edge; `mhs`'s cannot, so the
    converter emits `import {-# SOURCE #-}` between boot modules, and `Type`
    needed a hand-written boot file GHC never had (`notes/phase2/hsboot/`).
-2. **Check GHC's build flags before diagnosing a port problem** (D19). Two of
+2. **Check GHC's build flags before diagnosing a port problem** ([D19](../../DECISIONS.md#d19--ghcs-own-build-flags-are-the-specification-for-how-to-preprocess-it)). Two of
    the four hardest-looking errors were configuration mistakes on our side, not
    incompatibilities.
 

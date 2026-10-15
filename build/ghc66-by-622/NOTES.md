@@ -63,7 +63,7 @@ compiled without the -optc flags (HsBase.h K&R again). A hello-world through
 `libHSrts.a(Stable.o)` and `libHSrts.a(AutoApply.o)`. The rts is compiled
 through ghc-inplace (UseGhcForCc), so build.mk's SRC_CC_OPTS never reached it
 and gcc's default C mode turned Stable.h's `extern inline` functions into
-external definitions (the D41 issue in reverse). Fix: the -optc flags in
+external definitions (the [D41](../../DECISIONS.md#d41--it-links-and-compiled-haskell-runs) issue in reverse). Fix: the -optc flags in
 SRC_HC_OPTS for every compile; `make -C rts clean`; rerun. Run 3 was killed
 during the stage-2 compile to avoid the same link failure there.
 

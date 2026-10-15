@@ -36,7 +36,7 @@ imports. happy is roughly **1/20th the size of the thing it exists to unblock**.
 
 `-XCPP` works: `mhs` shells out to `cpphs`, and MicroHs ships one
 (`make bin/cpphs`, built from `generated/cpphs.c`). That also exercises the cpphs
-step that `FINDINGS.md` listed as unverified — it runs.
+step that [`FINDINGS.md`](FINDINGS.md) listed as unverified — it runs.
 
 ## 2. The shipped generated parser is unusable, and that is clarifying
 
@@ -102,7 +102,7 @@ turned out to be tiny — the whole of happy uses ten `Data.Set` functions, thre
 plain `Writer`, and `lift` is written explicitly where the stack is
 `ExceptT String (Writer (Set Inst))`).
 
-They live in [`shims/`](shims), which is the beginning of Phase 2's
+They live in [`shims/`](../../common/shims) (now `common/shims`), which is the beginning of Phase 2's
 `ghc-on-mhs` package rather than throwaway scaffolding:
 
 | shim | over | note |
@@ -116,7 +116,7 @@ They live in [`shims/`](shims), which is the beginning of Phase 2's
 | `Control.Monad.Writer` | — | `Writer`, `tell`, `runWriter` |
 | `Control.Monad.Except` | — | `ExceptT`, `throwError`, `catchError` |
 | `Control.Monad.Trans` | — | `MonadTrans(lift)` defined **once** and re-exported by the three above, so a module importing two of them sees one `lift`, not an ambiguous occurrence |
-| `Paths_happy` | — | happy-specific; in [`happy-shim/`](happy-shim), not `shims/` |
+| `Paths_happy` | — | happy-specific; in [`happy-shim/`](../../happy/shim) (now `happy/shim`), not `shims/` |
 
 The array shims are the interesting ones. MicroHs's `Mhs.MutArr` is a genuine
 mutable array (`primArrAlloc`/`primArrRead`/`primArrWrite`), so
@@ -157,7 +157,7 @@ cannot compile the artifact that happy's tarball ships *instead of* its parser.
 ## 5. What follows
 
 The route is therefore forced, and is recorded as
-[D5–D7 in the decision log](../DECISIONS.md):
+[D5–D7 in the decision log](../../DECISIONS.md):
 
 - Bootstrap **happy 1.19.5**, whose tarball is genuine source — both `.ly`
   grammars, no generated `.hs`, and the portable `templates/GenericTemplate.hs`.

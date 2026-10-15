@@ -123,7 +123,7 @@ the laziness literally. run-base.sh therefore retries a module once with
 Not a compiler bug: `configure`'s `FPTOOLS_CHECK_HTYPE` probes
 (aclocal.m4:726-822) compile a program whose `main() {...}` has no return type,
 which gcc >= 14 rejects, so the 6.2.2 configure run in build/rts622 left every
-`HTYPE_*` as `#undef` -- the same 2026-toolchain class as D31/D40.
+`HTYPE_*` as `#undef` -- the same 2026-toolchain class as [D31](../../DECISIONS.md#d31--run-ghcs-own-configure-instead-of-hand-writing-configh)/D40.
 `Foreign/Storable.hs:178`, `Foreign/C/Types.hs` and `System/Posix/Types.hs`
 need them. `gen-htypes.c` reruns the probes' logic verbatim (integer type ->
 Int/Word plus width, else Float/Double by size) and its output is appended to
@@ -190,7 +190,7 @@ System.Directory, System.Random, Text.Regex compiled 7/7 at -O (System.Time
 
 ### Runtime gap 8: the three "space blow-ups" were an infinite inlining loop from a FastString unique collision in the shim
 
-Full write-up: `diag/FINDINGS.md`. `Data.Complex`, `Data.Graph` and
+Full write-up: [`diag/FINDINGS.md`](diag/FINDINGS.md). `Data.Complex`, `Data.Graph` and
 `System.Console.GetOpt` all stall in the *second* `*** Simplify:` (phase 2,
 the first with real inlining) and `-ddump-inlinings` shows an endless cycle:
 the simplifier considers `GHCziList.zdwzdsmaximum` (the *worker*) and finds

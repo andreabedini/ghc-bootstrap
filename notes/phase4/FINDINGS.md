@@ -8,10 +8,10 @@ order is identical; `Util` compiles from the reproduced tree with mhs.*
 
 ## 1. Layout: why `notes/phase4/`
 
-README "Layout" gives one directory per stage of the chain and numbers the
+README "Layout" (now [Repository layout](../../README.md#repository-layout)) gave one directory per stage of the chain and numbered the
 4.08.2 patches in a single sequence across phase2 (0001-0024) and phase3
 (0019-0030). The 6.2.2 tree is a different tarball, so its series needs its
-own numbering, and moving the entry point to 6.2.2 (D45, D46) is a new stage
+own numbering, and moving the entry point to 6.2.2 ([D45](../../DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to-ghc-622), [D46](../../DECISIONS.md#d46--the-622-probe-passes-main-typechecks-226235)) is a new stage
 of the project, not a variant of "building hsc". A separate phase directory
 keeps the numbering unambiguous and gives the reproduction script, the
 regeneration recipes and this file one home. The 6.2.2 inputs that already
@@ -42,13 +42,13 @@ of which configure is ~50 s and the mhs build of genprimopcode ~50 s):
 |---|---|---|
 | 1 | `tar xjf ghc-6.2.2-src.tar.bz2` into `dest/src`, sha256 checked | section 3 |
 | 2 | `patch -p1 -N` with `ghc622/patches/*.patch`; any fuzz or offset is an error | section 4 |
-| 3 | `./configure --enable-hc-boot --enable-hc-boot-unregisterised --host/--build/--target=x86_64-unknown-linux` with `PATH=/usr/bin:/bin` | `build/rts622/FINDINGS.md` section 1 |
+| 3 | `./configure --enable-hc-boot --enable-hc-boot-unregisterised --host/--build/--target=x86_64-unknown-linux` with `PATH=/usr/bin:/bin` | [`build/rts622/FINDINGS.md`](../../build/rts622/FINDINGS.md#1-configure) section 1 |
 | 4 | `make -C ghc/includes config.h` -- GHC's own `$(H_CONFIG)` rule (platform defines + `mk/config.h`) | section 3 |
-| 5 | `gcc -O2 -w -include stdio.h -DNO_REGS -DUSE_MINIINTERPRETER -Ighc/includes -Wl,--unresolved-symbols=ignore-all mkDerivedConstants.c`, run -> `DerivedConstants.h` | `build/ghc-6.2.2-run1/LOG.md`, `build/lexer622/FINDINGS.md` |
-| 5b | same recipe on `mkNativeHdr.c`, run -> `NativeDefs.h` (the Makefile builds it unconditionally; `TcForeign.lhs` reaches it through `nativeGen/NCG.h`; cpphs had silently passed the missing include during the probes) | `build/ghc622-stage2/LOG.md` 2026-09-15 |
-| 6 | `regen-generated.sh`: `primops.txt` (cpphs), 10 `primop-*.hs-incl` (genprimopcode), `Parser.hs` `ParserCore.hs` `ParsePkgConf.hs` (happy-mhs2, then `fix-generated-parsers.sh`) | `build/gen622/FINDINGS.md` |
-| 7 | `convert-lexer.py` on the tarball's `parser/Lexer.hs` | `build/lexer622/FINDINGS.md` |
-| 8 | `ln -s ../../utils/ghc-pkg ghc/compiler/utils/ghc-pkg` | `build/ghc-6.2.2-run1/FINDINGS.md` section 1 |
+| 5 | `gcc -O2 -w -include stdio.h -DNO_REGS -DUSE_MINIINTERPRETER -Ighc/includes -Wl,--unresolved-symbols=ignore-all mkDerivedConstants.c`, run -> `DerivedConstants.h` | [`build/ghc-6.2.2-run1/LOG.md`](../../build/ghc-6.2.2-run1/LOG.md), [`build/lexer622/FINDINGS.md`](../../build/lexer622/FINDINGS.md) |
+| 5b | same recipe on `mkNativeHdr.c`, run -> `NativeDefs.h` (the Makefile builds it unconditionally; `TcForeign.lhs` reaches it through `nativeGen/NCG.h`; cpphs had silently passed the missing include during the probes) | [`build/ghc622-stage2/LOG.md`](../../build/ghc622-stage2/LOG.md) 2026-09-15 |
+| 6 | `regen-generated.sh`: `primops.txt` (cpphs), 10 `primop-*.hs-incl` (genprimopcode), `Parser.hs` `ParserCore.hs` `ParsePkgConf.hs` (happy-mhs2, then `fix-generated-parsers.sh`) | [`build/gen622/FINDINGS.md`](../../build/gen622/FINDINGS.md) |
+| 7 | `convert-lexer.py` on the tarball's `parser/Lexer.hs` | [`build/lexer622/FINDINGS.md`](../../build/lexer622/FINDINGS.md) |
+| 8 | `ln -s ../../utils/ghc-pkg ghc/compiler/utils/ghc-pkg` | [`build/ghc-6.2.2-run1/FINDINGS.md`](../../build/ghc-6.2.2-run1/FINDINGS.md#1-setup-decisions) section 1 |
 | 9 | assemble `dest/ghc/{compiler,includes,utils/ghc-pkg}`; regenerate `dest/order-6.2.2.txt` with `ghc622/tools/build-order.py` minus `ilxGen/tests` | section 5 |
 | 10 | `diff -r` against `build/ghc-6.2.2-run1/ghc` (excluding `tmp`, `.mhscache*`, `*.log`, `*.rej`, `*.orig`, `*.o`, `*.comb`) | section 3 |
 
@@ -96,8 +96,8 @@ future reference rebuild should re-take `config.h` from this script.
 Also checked:
 
 - **Module order.** `ghc622/tools/build-order.py` over the reproduced tree, minus the
-  31 programs under `ilxGen/tests` (they are not compiler modules; `build/
-  ghc-6.2.2-run1/FINDINGS.md` removed them by name), gives 235 modules
+  31 programs under `ilxGen/tests` (they are not compiler modules;
+  [`build/ghc-6.2.2-run1/FINDINGS.md`](../../build/ghc-6.2.2-run1/FINDINGS.md) removed them by name), gives 235 modules
   identical to `build/order-6.2.2.txt`. The full 266-entry output equals
   `build/rebase622/build-order-6.2.2.txt`.
 - **Headers regenerate.** `configure` on a fresh extraction gives an
@@ -114,7 +114,7 @@ Also checked:
   monad `(P) HappyAbsSyn` in the signature block, which 6.2.2 cannot unify
   when `P` is a function-type synonym, as in ParserCore). The run1 copies
   carry the same rewrites, so the check still holds; the script's header has
-  the details (`build/ghc622-stage2/LOG.md`, 2026-09-15).
+  the details ([`build/ghc622-stage2/LOG.md`](../../build/ghc622-stage2/LOG.md), 2026-09-15).
 - **Series self-check.** `make-patch.sh` applies the freshly written series to
   a clean copy and diffs it against the tree: 25 patches, 249 hunks, 101
   files, no fuzz, no offset, identical.
@@ -122,7 +122,7 @@ Also checked:
   with the probe script's exact mhs flags into `build/repro-622/smoke/`
   (`.mhscache` 636 KB): rc 0, 54 s cold (`smoke-Util.log`). The full ordered
   pass (about an hour) was not rerun; the byte-level identity of the tree is
-  the evidence that it would give D46's result.
+  the evidence that it would give [D46](../../DECISIONS.md#d46--the-622-probe-passes-main-typechecks-226235)'s result.
 
 A note on method: an exploratory configure run made while writing this
 (`build/repro-622/conf-test`, since removed) found the machine's GHC on PATH
@@ -169,7 +169,7 @@ generated (section 2) or pristine. Same content as `build/6.2.2-run1.patch`
 | 0025-srcloc-strict-fields | 1 | 1 | `!FastInt` line/column |
 
 Header conventions: the 4.08.2 patches carry their explanation as `-- mhs`
-comments inside the diff and in `PATCHES.md`; these do that too (the inline
+comments inside the diff and in [notes/README.md](../README.md#the-ghc-4082-patch-series); these do that too (the inline
 comments came with the edits) and additionally start with a header paragraph,
 which `patch(1)` ignores. Three impurities are stated in the headers rather
 than hidden: in `HscMain` some `_scc_` lines also lost a leading `;` (0009
@@ -221,7 +221,7 @@ extractions in `build/rts622/ghc-6.2.2`, `build/rebase622/ghc-6.2.2` and
 
 **Tools from earlier in the chain** (all built without GHC): `MicroHs/bin/mhs`
 and `MicroHs/bin/cpphs` (phase0/phase1), `build/happy-mhs/happy-mhs2` with
-`build/happy-mhs/datadir` (the fixpoint-verified happy, `notes/phase2/FINDINGS.md`),
+`build/happy-mhs/datadir` (the fixpoint-verified happy, [`notes/phase2/FINDINGS.md`](../phase2/FINDINGS.md)),
 `ghc622/shims-h98` (for genprimopcode), system `gcc`, `make`, `patch`,
 `python3`. `genprimopcode` is compiled during the run from the tarball's own
 `ghc/utils/genprimopcode/Main.hs` plus `genprimopcode-Main.hs.patch` (one
@@ -261,7 +261,7 @@ edits, both from 6.2.2's own `.hi-boot-6` files: `TcMatches.hs-boot`
 `dataConInstOrigArgTys :: DataCon -> [Type] -> [Type]` and its `SOURCE`
 import of TypeRep). The 6.0 set was hand-converted from `.hi-boot-6`
 (`notes/phase2/hiboot2hsboot.py` reads the GHC-4 flavour); 30 of 32 carry over
-verbatim (`build/rebase622/FINDINGS.md` section 4).
+verbatim ([`build/rebase622/FINDINGS.md`](../../build/rebase622/FINDINGS.md#4-supporting-files) section 4).
 
 **`main/Config.hs`** (step 9b, `ghc622/tools/config-hs.sh`): what
 `make -C ghc/compiler main/Config.hs` writes in the configured tree, the
@@ -283,7 +283,7 @@ and reports whether it matches -- it does.
 
 **`ghc622/tools/probe-ordered.sh`**: the driver; its cpp defines
 (`__GLASGOW_HASKELL__=408`, no `GHCI`, `OMIT_NATIVE_CODEGEN`) are documented
-in its header and in `build/ghc-6.2.2-run1/FINDINGS.md` section 1.
+in its header and in [`build/ghc-6.2.2-run1/FINDINGS.md`](../../build/ghc-6.2.2-run1/FINDINGS.md#1-setup-decisions) section 1.
 
 ## 6. Proposed README text
 
@@ -323,7 +323,7 @@ and `DECISIONS.md          the decision log, D1-D46`.
 
 ## 7. Addendum, 2026-09-10 evening: patch 0026 and the HTYPE step
 
-After the compiler was linked and run (DECISIONS.md D47, D48) the tree gained
+After the compiler was linked and run ([DECISIONS.md](../../DECISIONS.md) [D47](../../DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc), [D48](../../DECISIONS.md#d48--a-compiled-haskell-program-runs-putstrln-hello-works-on-622)) the tree gained
 eight hunks in four files (`utils/Binary.hs`, `basicTypes/Literal.lhs`,
 `coreSyn/CoreUtils.lhs`, `main/DriverUtil.hs`): arithmetic that must wrap,
 `hFileSize`, and `exitWith`. `make-patch.sh` refused them as unclassified, as
@@ -348,7 +348,7 @@ inputs to the build rather than part of the pristine tree.
 
 ## 8. Addendum, 2026-09-15: the series is one hunk behind the tree
 
-During stage 2 (DECISIONS.md D49, `build/ghc622-stage2/LOG.md`)
+During stage 2 ([DECISIONS.md](../../DECISIONS.md) [D49](../../DECISIONS.md#d49--stage-2-begun-the-mhs-built-ghc-compiles-its-own-source-interrupted), [`build/ghc622-stage2/LOG.md`](../../build/ghc622-stage2/LOG.md))
 `build/ghc-6.2.2-run1/ghc/compiler/main/GetImports.hs` gained an
 `#if defined(__MHS__)` branch (11 added lines, `-- mhs` comment): the driver
 reads a module's source through a text-mode handle to find its imports, and

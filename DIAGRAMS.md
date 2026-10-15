@@ -2,12 +2,12 @@
 
 Six views of the bootstrap chain, as Mermaid diagrams (GitHub renders them;
 elsewhere, paste into any Mermaid viewer). Each is drawn from a file in this
-repository, named above it, and re-read on 2026-10-01. README.md has the
-prose; DECISIONS.md has the reasons.
+repository, named above it, and re-read on 2026-10-01. [README.md](README.md) has the
+prose; [DECISIONS.md](DECISIONS.md) has the reasons.
 
 ## 1. The whole chain, one link per compiler
 
-From README.md and `default.nix`.
+From [README.md](README.md) and `default.nix`.
 
 ```mermaid
 flowchart LR
@@ -32,7 +32,7 @@ flowchart LR
 
 From `mhs/default.nix` and `mhs/bootstrap-seed.sh`. The Nix build deletes
 MicroHs's shipped `generated/*.c` before anything runs; the `build/` scripts
-use the shipped `mhs.c`, and D1 is the check that the two compilers agree.
+use the shipped `mhs.c`, and [D1](DECISIONS.md#d1--the-seed-is-c-compiler--hugs-source-not-microhss-shipped-comb) is the check that the two compilers agree.
 
 ```mermaid
 flowchart TB
@@ -79,7 +79,7 @@ one is D2 with the TALA layout, not Mermaid: the source is
 ## 5. What is compared with what
 
 The `compare3`, `compare4` and `compare5` targets of `build/Makefile`, and
-README.md's "What does not work" item 1. `stageN/*.hc` is what the stage N-1
+[ghc622/README.md](ghc622/README.md#what-does-not-work)'s "What does not work" item 1. `stageN/*.hc` is what the stage N-1
 compiler emitted.
 
 ```mermaid
@@ -96,7 +96,7 @@ flowchart LR
 
 ## 6. The road past 6.2.2
 
-Every rung below is built (`ghcNN/`, DECISIONS.md D52-D54). The floor
+Every GHC below is built (`ghcNN/`, [DECISIONS.md](DECISIONS.md) [D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)-[D54](DECISIONS.md#d54--hadrian-rungs-984--9124--9141-one-derivation-for-all-three-the-chain-reaches-the-newest-release)). The floor
 under each release is the minimum boot compiler its `configure.ac` accepts
 (read 2026-10-01); it is configure's check only, and 9.14.1 showed it can
 be stale: its configure says 9.6, its stage-0 build needs 9.10's

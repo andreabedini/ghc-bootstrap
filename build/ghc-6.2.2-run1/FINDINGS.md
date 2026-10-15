@@ -5,7 +5,7 @@ cache, dependency order). 226 of 235 modules OK; the 9 failures are GHCi, the
 dead ILX/Java backends and one shadowed module. Stop condition (a) reached.*
 
 Tree `build/ghc-6.2.2-run1/ghc/{compiler,includes,utils}`, log
-`build/ghc-6.2.2-run1/LOG.md`, results `build/probe-6.2.2-run1-final.tsv`,
+[`build/ghc-6.2.2-run1/LOG.md`](LOG.md), results `build/probe-6.2.2-run1-final.tsv`,
 patch `build/6.2.2-run1.patch`, script `ghc622/tools/probe-ordered.sh`.
 
 ## 1. Setup decisions

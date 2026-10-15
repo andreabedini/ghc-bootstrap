@@ -5,7 +5,7 @@ and exits 0.** So do eleven other programs covering Integer/GMP, Double, GC
 under 319 MB of allocation, stdin/stdout/stderr/files, exceptions and exit
 codes, `forkIO`/`MVar`/`Chan`, arrays, `Data.FiniteMap`, `System.Time`,
 `System.Directory`, `System.Random`, `Text.Regex`. This is the point where the
-4.08.2 chain died (D42: I/O handle setup in a 64-bit runtime); with 6.2.2 the
+4.08.2 chain died ([D42](../../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime): I/O handle setup in a 64-bit runtime); with 6.2.2 the
 handle layer just works. Two toolchain-class fixes were needed, one of them a
 must (`-fwrapv`); one compiler bug was found and traced to a shim bug another
 agent had already fixed, whose damage is confined to the interface files on
@@ -32,7 +32,7 @@ glibc has `regex.h`). Flags: `-DCOMPILING_STDLIB -I<ghc/includes> -I<ghc/rts>
 -I../include` from that Makefile plus the RTS's `-std=gnu89 -O -DNO_REGS
 -DUSE_MINIINTERPRETER -D__GLASGOW_HASKELL__=622`. Unlike the RTS (58
 cast-as-lvalue sites) and 4.08.2's cbits, the 2002-vintage cbits are clean C
-for gcc 16: the expected D40/D31 class did not occur, so `patches/` stays empty.
+for gcc 16: the expected [D40](../../DECISIONS.md#d40--the-rts-compiles-4545)/D31 class did not occur, so `patches/` stays empty.
 `Control/Concurrent_stub.c` is the `foreign export` stub the driver emitted
 while compiling `Control.Concurrent`; the Makefile puts it in the library
 (`STUBOBJS`), so `build-libbase.sh` does too.
@@ -61,13 +61,13 @@ pointing at `GHCziTopHandler_topHandler_closure`) and `__stginit_ZCMain`, as
 (`HAVE_LIBDL`); `ldd` shows only libm, libgmp and libc are actually bound.
 
 **Undefined symbols: none.** The first link of `main = return ()` succeeded
-with zero undefined references. The D41 checklist was all pre-satisfied:
+with zero undefined references. The [D41](../../DECISIONS.md#d41--it-links-and-compiled-haskell-runs) checklist was all pre-satisfied:
 `AutoApply.hc`/`StgStdThunks.hc`/`PrimOps.hc` etc. are in `libHSrts.a`
-(`build/rts622/FINDINGS.md` item 4); the `__encodeFloat` gap of D41 does not
+([`build/rts622/FINDINGS.md`](../rts622/FINDINGS.md) item 4); the `__encodeFloat` gap of [D41](../../DECISIONS.md#d41--it-links-and-compiled-haskell-runs) does not
 exist in 6.2.2 (`StgPrimFloat.c:104` defines `__encodeFloat` unconditionally;
 `PrimOps.h:200` declares it); `Concurrent_stub.o` covers the one `foreign
 export`; there is no `PrelHugs` to exclude. `-O -std=gnu89` still matters for
-the D41 reason (`Stable.h` `extern inline`) and is in every recipe.
+the [D41](../../DECISIONS.md#d41--it-links-and-compiled-haskell-runs) reason (`Stable.h` `extern inline`) and is in every recipe.
 
 ## 2. Run results
 
@@ -78,7 +78,7 @@ should print.
 | program | exit | exercised | verdict |
 |---|---|---|---|
 | `main` (`return ()`) | 0 | RTS init, scheduler, `ZCMain`, top handler, shutdown; `+RTS -S`: 1,024 bytes allocated, 0 GCs | ok |
-| `hello` (`putStrLn "hello"`) | 0 | **handle setup, stdout buffering, write**; `+RTS -S`: 29,112 bytes allocated, 0 GCs, 1 MB | **ok -- the D42 wall is gone** |
+| `hello` (`putStrLn "hello"`) | 0 | **handle setup, stdout buffering, write**; `+RTS -S`: 29,112 bytes allocated, 0 GCs, 1 MB | **ok -- the [D42](../../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime) wall is gone** |
 | `gc` | 0 | `foldl'` over 2M `Int`, `product [1..3000]` (Integer/GMP, 9131 digits), `reverse` 300k; `+RTS -S`: **318,946,448 bytes allocated, 291,635,432 copied, 1210 gen-0 + 8 gen-1 collections, 80 MB max residency, 166 MB in use, 0.28 s** | ok |
 | `io` | 3 (asked) | `getArgs`, `getProgName`, `getLine`, `getContents`, `IORef`, `writeFile`/`readFile`/`appendFile`/`openFile`+`hGetContents`, `hPutStrLn stderr`, `hSetBuffering`, `exitWith (ExitFailure 3)` | ok |
 | `exc` | 1 | `try`/`evaluate` of `div` by zero, `head []`, `error`, missing file (`IOError` text correct), `throwIO`+`catch`+`finally`, then an uncaught `ArithException` -> `Fail: divide by zero` on stderr, exit 1 | ok |
@@ -95,7 +95,7 @@ mini-interpreter's `StgRun`, `catch#`/`raise#`, MVars and the scheduler's
 thread switching, blocking on a handle, `foreign import`s into cbits and libc,
 GMP. Nothing 64-bit-specific misbehaved. In particular the `MBlock.h`
 `HEAP_ALLOCED` hack (low 32 bits of the address index a 4096-entry byte map,
-`build/research-6.2-x86_64.md` item 2) held up through 1218 collections and
+[`build/research-6.2-x86_64.md`](../research-6.2-x86_64.md) item 2) held up through 1218 collections and
 166 MB of heap: with `mmap` handing out contiguous megablocks near
 0x7f..00000000 the low 32 bits are effectively linear, and a false positive
 needs a *static* closure whose low 32 bits land on a heap megablock, which for
@@ -129,7 +129,7 @@ visibly affected, but any Haskell code that reasons about overflow with
 `Int#` is at risk in the same way.
 
 Fix: `-fwrapv` in `build-hc.sh` and in `link.sh`'s `.hc` compile. This is
-the same 2026-toolchain class as D40 (gcc 3.x did not exploit this
+the same 2026-toolchain class as [D40](../../DECISIONS.md#d40--the-rts-compiles-4545) (gcc 3.x did not exploit this
 particular undefined behaviour), and it is what GHC itself did later: from
 6.8 the driver passes `-fwrapv` to gcc for every via-C compile.
 Verified twice: recompiling only `GHC/Show.hc` with `-fwrapv` and linking
@@ -240,4 +240,4 @@ New: `build-cbits.sh`, `build-libbase.sh`, `link.sh`, `cbitsobj/`,
 `Float.iface.txt`, `Round.core.log`, `Round.inl.log`, `ifaces/`,
 `rv/` variant sources), this file. Edited: `build-hc.sh` (`-fwrapv`, `HCOBJ`).
 Not edited: anything under `libraries/base`, `hcobj/`, `build/rts622`,
-DECISIONS.md, README.md.
+[DECISIONS.md](../../DECISIONS.md), [README.md](../../README.md).

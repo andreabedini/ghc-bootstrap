@@ -151,7 +151,7 @@ Generated parsers go in `build/ghc-parsers/` and reach the compiler through
 patch series against the unmodified tarball, as `hugs/patches/` and `mhs/patches/` already do
 for Hugs and MicroHs.
 
-This is what `BOOTSTRAP-ANALYSIS.md` means by keeping the result auditable
+This is what the original plan ([How I found the route](README.md#how-i-found-the-route)) means by keeping the result auditable
 rather than "a fork that happens to compile": at any point it must be possible
 to diff what we changed against what upstream shipped.
 
@@ -514,7 +514,7 @@ same reason.
 The tree has 195 modules once `nativeGen/` is excluded; the 11 not loaded are
 unreachable from `Main`. So this is the compiler, not a subset.
 
-This is the Phase 2 goal from `BOOTSTRAP-ANALYSIS.md` — "a `ghc-on-mhs` shim
+This is the Phase 2 goal of the original plan ([How I found the route](README.md#how-i-found-the-route)) — "a `ghc-on-mhs` shim
 package ... plus a quilt-style patch series for language-level gaps" — and both
 halves are now known to be sufficient *for typechecking*. Code generation is a
 separate question and is what Phase 3 needs.
@@ -1284,7 +1284,7 @@ bootstrapping — `unlit` rejecting a trailing space. The other 29 are a 1999
 program meeting a 2026 toolchain (Haskell that stopped being legal, C that
 stopped being legal) and a machine word twice the size it expects. The
 bootstrapping problem, the thing this project set out to solve, turned out to be
-the small part. `PATCHES.md` has the breakdown.
+the small part. [notes/README.md](notes/README.md#the-ghc-4082-patch-series) has the breakdown.
 
 **The most useful single idea.** `hsc` is not a compiler you can invoke; it is
 the middle of a pipeline whose two ends were written in perl. Eight separate
@@ -1409,13 +1409,13 @@ an "unknown platform" build exactly as 4.08.2 was (D42), and the 4.08.2 chain
 stopped on that class of bug. 6.2 is the first GHC that knows x86-64 exists.
 Three measurements on 9 September, all in `build/`:
 
-1. *History* (`research-6.2-x86_64.md`). 6.2.x on x86-64 worked in exactly one
+1. *History* ([`research-6.2-x86_64.md`](build/research-6.2-x86_64.md)). 6.2.x on x86-64 worked in exactly one
    configuration, unregisterised via-C, which is the one we produce. Debian,
    Ubuntu, Gentoo and OpenBSD shipped it; it self-hosted and passed the
    testsuite on OpenBSD amd64. Registerised, NCG and GHCi arrived in 6.4/6.4.1.
    Known 6.2.2 defects on x86-64: `MBlock.h` `HEAP_ALLOCED` uses the low 32
    bits (breaks after 4GB allocated; fixed by one 6.4 commit), adjustors barf.
-2. *RTS* (`rts622/FINDINGS.md`). 6.2.2's `configure` runs on x86-64 with no
+2. *RTS* ([`rts622/FINDINGS.md`](build/rts622/FINDINGS.md)). 6.2.2's `configure` runs on x86-64 with no
    help (`--enable-hc-boot --enable-hc-boot-unregisterised`); 78/78 RTS objects
    compile with gcc 16 after **two** patches (58 cast-as-lvalue sites, the D40
    class, and one `static`/`extern` mismatch in `GC.c`); a C driver initialises
@@ -1424,7 +1424,7 @@ Three measurements on 9 September, all in `build/`:
    a Haskell program mhs compiles. The D42 return-convention mismatch is fixed
    by construction: 6.2.2's `PrimOps.hc` and `CgRetConv.lhs` both select on the
    register *count*.
-3. *Rebase* (`rebase622/FINDINGS.md`). Of the 217 edit hunks made for 6.0, 171
+3. *Rebase* ([`rebase622/FINDINGS.md`](build/rebase622/FINDINGS.md)). Of the 217 edit hunks made for 6.0, 171
    apply to 6.2.2 unchanged, 4 need a minute, 8 are obsolete, 34 belong to two
    files 6.2.2 replaced outright: `parser/Lex.lhs` (now alex-generated
    `Lexer.hs` with `Addr#` tables) and `utils/StringBuffer.lhs` (API shrank to
@@ -1506,7 +1506,7 @@ one combinator program, gcc turns it into a 2.9 MB `ghc`, and that binary
 compiles 137 of the 143 `.hs`/`.lhs` modules of 6.2.2's own `libraries/base`
 to `.hi` + `.hc`; all 137 `.hc` files then compile to `.o` with gcc against
 `build/rts622`'s headers, and every RTS symbol they reference is in
-`libHSrts.a`. Work in `build/ghc622-mhs` (`FINDINGS.md`, `LOG.md`,
+`libHSrts.a`. Work in `build/ghc622-mhs` ([`FINDINGS.md`](build/ghc622-mhs/FINDINGS.md), [`LOG.md`](build/ghc622-mhs/LOG.md),
 `build.sh`, `run-base.sh`, `build-hc.sh`).
 
 **D45's overturn tests did not fire.** The linked compiler did not fail in a
@@ -1552,7 +1552,7 @@ complete.
 linked against its own `base` and RTS, **prints `hello` and exits 0**. This is
 the exact point where the 4.08.2 chain died (D42: handle setup in a 64-bit
 runtime that had never seen one). Work in `build/ghc622-mhs`
-(`FINDINGS-link.md`, `link.sh`, `build-cbits.sh`, `build-libbase.sh`, `test/`).
+([`FINDINGS-link.md`](build/ghc622-mhs/FINDINGS-link.md), `link.sh`, `build-cbits.sh`, `build-libbase.sh`, `test/`).
 
 ```
 C compiler + Hugs source -> mhs -> ghc (6.2.2) -> .hc -> gcc -> ld -> hello
@@ -1611,7 +1611,7 @@ of the ladder, 6.2.2 compiling itself.
 **Overturned by:** nothing so far.
 
 ## D49 — Stage 2 begun: the mhs-built GHC compiles its own source; interrupted
-*2026-09-10, written up 2026-09-15 from `build/ghc622-stage2/LOG.md` and
+*2026-09-10, written up 2026-09-15 from [`build/ghc622-stage2/LOG.md`](build/ghc622-stage2/LOG.md) and
 `results.tsv`.* D48's next step, a native `ghc` (6.2.2 compiled by 6.2.2 via
 `.hc` and gcc, linked against `build/rts622` and the stage-1 base), was
 started the same morning in `build/ghc622-stage2` and stopped when the
@@ -1669,8 +1669,8 @@ starts wherever `mmap(NULL)` puts it, so under ASLR the heap's low 32 bits
 alias the executable's `.rodata`/`.data` (static closures, map entries
 18-29) in about 0.6% of processes, and the GC then evacuates static closures
 as heap objects. An `LD_PRELOAD` shim that pins the first `mmap`'s hint makes
-it 6/6 either way (`build/rts622/alias-test/mmap-alias.c`; FINDINGS.md
-section 9 has the gdb trace and the numbers).
+it 6/6 either way (`build/rts622/alias-test/mmap-alias.c`; [`build/rts622/FINDINGS.md`
+section 9](build/rts622/FINDINGS.md#9-patch-0003-heap_alloced-under-aslr-2026-09-16) has the gdb trace and the numbers).
 
 **Decision.** Patch the RTS rather than the environment: `HEAP_BASE
 0x500000000` on x86-64 and a 65536-entry map keyed on `p - HEAP_BASE` (a
@@ -1699,7 +1699,7 @@ compiles at plain `-O`), linked as `ghc-stage3`, and compiles Hello.hs to the
 same Abstract C as stage 2. `ghc-stage3` then compiled the 220 again
 (stage 4, 1 min 40 s): **218 `.hc` files byte-identical to stage 3's, all
 220 `.hi` identical**. The two differences are deterministic and explained
-in `build/ghc622-stage2/LOG.md`: an uninitialised upper word in a `Float`
+in [`build/ghc622-stage2/LOG.md`](build/ghc622-stage2/LOG.md): an uninitialised upper word in a `Float`
 literal (`PprAbsC.floatToWord` reads a 4-byte float array back as an 8-byte
 Int, a 6.2.2 64-bit defect that the RTS never sees because `PK_FLT` reads
 the low word), and one SRT with two entries swapped, from Unique assignment

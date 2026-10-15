@@ -68,9 +68,9 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | `hugs98-plus-Sep2006.tar.gz`, `MicroHs-0.16.8.0`, `cpphs-1.20.9.tar.gz` and `polyparse-1.12.tar.gz` (Hackage) | `hugs/default.nix`, `mhs/default.nix`, `cpphs/default.nix` | in the files |
 
 GMP 6.1.2 is the GMP every compiler before 8.0 links against: GMP 6.2's lazy
-`mpz_init` breaks their Integer (DECISIONS.md D52). The host's GMP serves
-8.0 and later. The release tarballs used to pick the rungs are those whose
-`configure.ac` accepts the previous rung as the bootstrapping compiler.
+`mpz_init` breaks their Integer ([DECISIONS.md](DECISIONS.md) [D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)). The host's GMP serves
+8.0 and later. The release tarballs used to pick the chain's GHCs are those whose
+`configure.ac` accepts the previous one as the bootstrapping compiler.
 
 ## Extractions and outputs
 

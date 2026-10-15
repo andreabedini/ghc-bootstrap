@@ -28,7 +28,7 @@ and gcc, linked against build/rts622 and the stage-1-built base).
   = topdir); base's library_dirs -> build/ghc622-mhs/lib (via libraries/
   base-lib), rts's extra_ld_opts = the 32 -u symbols of rts/package.conf.in
   and extra_cc_opts = -std=gnu89 -fwrapv so the driver's own via-C pipeline
-  gets the two 2026-toolchain flags (build-hc.sh / FINDINGS-link.md); unlit
+  gets the two 2026-toolchain flags (build-hc.sh / [FINDINGS-link.md](../ghc622-mhs/FINDINGS-link.md)); unlit
   and ghc-usage.txt copied from build/ghc622-mhs/topdir; includes ->
   src/.../ghc/includes; rts -> build/rts622; libraries/base -> the stage-1
   built base (read only).
@@ -94,7 +94,7 @@ and gcc, linked against build/rts622 and the stage-1-built base).
 
 ## State at interruption (last write 11:50; recorded 2026-09-15)
 
-The run died with the session (see DECISIONS.md D49). `results.tsv` has 84
+The run died with the session (see [DECISIONS.md](../../DECISIONS.md) [D49](../../DECISIONS.md#d49--stage-2-begun-the-mhs-built-ghc-compiles-its-own-source-interrupted)). `results.tsv` has 84
 rows of 220: **80 OK, 4 FAIL** (Ctype, Lexer, ParsePkgConf, DriverState, all
 fixed above and waiting for the resume). 77 of the 80 compiled at plain `-O`,
 three needed `-O -fno-strictness`. Last row written: `InstEnv`; next in
@@ -106,7 +106,7 @@ Outstanding before or at the resume:
 - The stage-1 fix (a) to `GetImports.hs` is in `build/ghc-6.2.2-run1` but
   the stage-1 binary `build/ghc622-mhs/ghc` (10:04) was not relinked, and
   `ghc622/make-patch.sh` has not been rerun (it will stop on the new hunk
-  until `series.conf` classifies it; `notes/phase4/FINDINGS.md` section 8).
+  until `series.conf` classifies it; [`notes/phase4/FINDINGS.md`](../../notes/phase4/FINDINGS.md#8-addendum-2026-09-15-the-series-is-one-hunk-behind-the-tree) section 8).
 - Resume: `FRESH=0` on the same order with `run-compiler.sh`; `Ctype`
   compiles from `fixups/` until the stage-1 binary carries fix (a).
 - Then `build-hc-stage2.sh` over the rest, `link-stage2.sh` (untested),
@@ -242,10 +242,10 @@ Outstanding before or at the resume:
   mmap 64 PB. Only ~5 MB of megablocks had been allocated, so this is NOT the
   4 GB HEAP_ALLOCED false-positive the MBlock.h hack warns about; it is the
   garbage-n bug. This reproduces, on unregisterised x86-64, the 2004 symptom
-  build/research-6.2-x86_64.md records ("`getMBlock: mmap: Invalid argument`
+  [build/research-6.2-x86_64.md](../research-6.2-x86_64.md) records ("`getMBlock: mmap: Invalid argument`
   with garbage sizes at the third mblock request; root cause not recorded")
   and matches its note that the real 64-bit mblock map / storage rework landed
-  in 6.4 (61ccfec, 2004-11-10). FINDINGS-link.md had flagged this area ("still
+  in 6.4 (61ccfec, 2004-11-10). [FINDINGS-link.md](../ghc622-mhs/FINDINGS-link.md) had flagged this area ("still
   dies after 4 GB of address space; the 6.4 backport is not needed yet") --
   it is needed now, though the trigger is garbage n, not the 4 GB wrap.
 - **Open.** Which computation in BlockAlloc.c/Storage.c overflows to produce
@@ -279,7 +279,7 @@ Outstanding before or at the resume:
   `getFS` via `mkFastString`, because the mhs FastString shim has no
   ByteArray#. Every .hi stage-2 can see -- the libraries (built by
   build/ghc622-mhs/ghc on 2026-09-10) and the 220 stage2/ modules -- is in
-  that format; stage-2's Binary is the pristine one (src/, D11) and reads
+  that format; stage-2's Binary is the pristine one (src/, [D11](../../DECISIONS.md#d11--the-ghc-tarball-stays-pristine-everything-else-is-a-side-directory-or-a-patch)) and reads
   length + raw bytes. Patch 0004 changes two wire formats: FastString (above)
   and Integer (pristine: tag byte + S#/J# limbs; 0004: Int8 sign + [Word8]
   base-256 limbs). Ratio is unchanged (two fields either way).
@@ -320,7 +320,7 @@ Outstanding before or at the resume:
   emit a small value as J#). Ratio was already the same two fields. The
   series.conf header for 0004 now states why the format must match.
 - Also folded in: the main/GetImports.hs `__MHS__` readBinaryFile edit that
-  DECISIONS.md (the 220-module loop entry) recorded as "tree edit, not yet
+  [DECISIONS.md](../../DECISIONS.md) (the 220-module loop entry) recorded as "tree edit, not yet
   in the patch series"; make-patch.sh refuses an unclaimed hunk, so it is now
   two RUNTIME manifest lines and a sentence in patch 0026's header.
 - Checks: `mhs -C -c` of Binary against a scratch copy of the .mhscache
@@ -452,7 +452,7 @@ Outstanding before or at the resume:
 ## The mblock map under ASLR: RTS patch 0003 (2026-09-16, 09:00-09:45)
 
 - scan-hi-stage2.sh with the native compiler over stage2/ (220), base (147)
-  and haskell98 (30): **no duplicated name in any interface** (the D47
+  and haskell98 (30): **no duplicated name in any interface** (the [D47](../../DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc)
   FastString collision is gone from the whole set). But `--show-iface
   parser/ParserCore.hi` segfaulted once in the 397 runs and then passed 160
   repeats; a gdb pass over all 397 saw nothing. Intermittent, ~1 in 400.
@@ -465,7 +465,7 @@ Outstanding before or at the resume:
   and evacuate() dies. Made deterministic with an LD_PRELOAD shim that pins
   the first mmap's hint (build/rts622/alias-test/mmap-alias.c): entries 19
   or 23 -> 6/6 segfaults in evacuate <- GarbageCollect; entries 4 or 2049 ->
-  6/6 passes. Full write-up: build/rts622/FINDINGS.md section 9.
+  6/6 passes. Full write-up: [build/rts622/FINDINGS.md](../rts622/FINDINGS.md#9-patch-0003-heap_alloced-under-aslr-2026-09-16) section 9.
 - Fix: ghc622/rts/patches/0003-mblock-map-window.patch -- HEAP_BASE
   0x500000000 on x86-64 (6.4's choice) and the map keyed on (p - HEAP_BASE)
   with 65536 entries, a 64 GB window; getMBlocks barfs on memory outside it.
@@ -490,7 +490,7 @@ Outstanding before or at the resume:
 - Not relinked: the twelve stage-1 test programs in build/ghc622-mhs/test
   (old archive; each ran once and was lucky). Still open: the stage-3
   Makefile target; committing today's changes (this patch, alias-test/,
-  FINDINGS.md section 9, DECISIONS.md D50, plus yesterday's list).
+  [rts622/FINDINGS.md section 9](../rts622/FINDINGS.md#9-patch-0003-heap_alloced-under-aslr-2026-09-16), [DECISIONS.md](../../DECISIONS.md) [D50](../../DECISIONS.md#d50--rts-patch-0003-the-megablock-map-gets-a-fixed-base-and-a-window), plus yesterday's list).
 
 ## Stage 3, stage 4 and the fixed-point check (2026-09-16, 09:45-10:05)
 
@@ -556,7 +556,7 @@ Outstanding before or at the resume:
   **compare5: stage 5 vs stage 4 .hc 220 identical, 0 differ.** The stage-2
   -> stage-3 differences did not propagate: a compiler that differs from
   ghc-stage3 only in Pretty.o and CoreUtils.o writes the same 220 files.
-- ghc-stage3 vs ghc-stage4: 38 bytes differ, in exactly the places D51
+- ghc-stage3 vs ghc-stage4: 38 bytes differ, in exactly the places [D51](../../DECISIONS.md#d51--stage-3-and-stage-4-the-native-compiler-rebuilds-itself-218-of-220-modules-byte-identical)
   predicted. obj-stage4 vs obj-stage3: 218 objects identical, utils_Pretty.o
   differs in 1 byte (the upper word of the 1.5f literal) and
   coreSyn_CoreUtils.o in 39 (the swapped SRT pair and its relocations). In

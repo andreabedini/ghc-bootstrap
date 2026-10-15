@@ -22,7 +22,7 @@ How this was established:
   is GHC, plus `+RTS -K2m -RTS`. `-agc` is the GHC-specific template (arrays,
   `Addr#` tables, `happyTcHack`), so it is dropped: happy-mhs2 with no flags uses
   the portable `HappyTemplate` in `build/happy-mhs/datadir` (`HAPPY_DATADIR`).
-  happy-mhs2 is the fixpoint-verified binary (notes/phase2/FINDINGS.md milestone).
+  happy-mhs2 is the fixpoint-verified binary ([notes/phase2/FINDINGS.md](../../notes/phase2/FINDINGS.md) milestone).
   The `.y` files are **not** cpp'd before happy: each has exactly one cpp line
   (`#include "HsVersions.h"`, `../HsVersions.h` in ParserCore.y), which passes
   through into the `.hs` and is resolved when the `.hs` is compiled with CPP.
@@ -38,7 +38,7 @@ How this was established:
   parenthesised synonym head unexpanded and cannot unify it with a function
   type). `ghc622/tools/fix-generated-parsers.sh` rewrites all three; `regen.sh`
   and `ghc622/tools/regen-generated.sh` call it after each happy run. Details and
-  the experiments in `build/ghc622-stage2/LOG.md` (2026-09-15).
+  the experiments in [`build/ghc622-stage2/LOG.md`](../ghc622-stage2/LOG.md) (2026-09-15).
 - **cpp for primops.** The Makefile's `% : %.pp` rule is
   `$(CPP) -undef -traditional -P -I$(GHC_INCLUDE_DIR) -x c ... | grep -v '^#pragma GCC'`.
   gcc's cpp does *not* reproduce the 6.0 `primops.txt` (tabs collapsed, comment
