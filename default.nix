@@ -29,7 +29,7 @@
 #   nix-build -A ghc914    GHC 9.14.1, Hadrian with that 9.12.4 (ghc914/; configure says
 #                          a 9.6 would do, stage 0 needs 9.10's ghc-internal)
 #                          Each rung is the newest release whose configure accepts the
-#                          one before as the bootstrapping compiler. Drafts until built.
+#                          one before as the bootstrapping compiler.
 #
 # The packages live in their own scope (lib.makeScope): inside it, callPackage
 # resolves hugs, mhs, cpphs, happy and ghc622 to these, not to nixpkgs'

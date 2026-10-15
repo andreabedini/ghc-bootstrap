@@ -238,6 +238,20 @@ setup for `stdout` and dies on a 64-bit assumption in the 1999 runtime
 Sources are pristine tarballs plus patches — nothing is edited in place, and the
 invariant is checked, not assumed.
 
+### With Nix
+
+The whole chain is in `default.nix`, one attribute per link, each built by
+the one before it:
+
+```sh
+nix-build -A ghc914              # Hugs -> mhs -> GHC 6.2.2 -> ... -> GHC 9.14.1
+nix-build -A ghc622.fixpoint     # GHC 6.2.2 through stage 5, checks the fixed point
+```
+
+`default.nix` pins nixpkgs; every other input is a tarball or commit listed
+in `SOURCES.md`, plus the patches in this repository. The rest of this
+section is the same chain without Nix, as it was first built.
+
 The scripts under `build/` and `notes/` find the checkout through
 `GHC_BOOTSTRAP_ROOT`, which `mise.toml` sets to the repository root. Run them
 under mise (`mise activate` in the shell, or `mise exec -- sh build/...`);
@@ -308,7 +322,7 @@ build scripts and findings.
 ## Layout
 
 ```
-DECISIONS.md          the decision log, D1-D54: every choice and every wrong turn
+DECISIONS.md          the decision log, D1-D55: every choice and every wrong turn
 BOOTSTRAP-ANALYSIS.md why this chain, and why not a shorter one (2026-09-02, with status notes)
 PATCHES.md            the two patch series, grouped by what each patch is really about
 DIAGRAMS.md, diagrams/ the chain as six diagrams (Mermaid, and D2 for the derivation graph): links, seed, tools, derivation graph, comparisons, road ahead

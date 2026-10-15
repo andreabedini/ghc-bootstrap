@@ -105,7 +105,8 @@ Here the 64-bit problems that surfaced were in the toolchain, not the
 source: `-fwrapv` and `-std=gnu89` on every `.hc` compile (D48), and the
 `HTYPE_*` block that gcc 16 stops configure from producing (D47).
 
-**One edit is not yet in the series.** `main/GetImports.hs` reads source
-through a text handle, which under the MicroHs runtime decodes UTF-8 and
-dies on `Ctype.lhs`; the `__MHS__` branch made during stage 2 is in the
-tree only (D49, `notes/phase4/FINDINGS.md` section 8).
+**One edit came late.** `main/GetImports.hs` reads source through a text
+handle, which under the MicroHs runtime decodes UTF-8 and dies on
+`Ctype.lhs`. The `__MHS__` branch was made during stage 2 (D49,
+`notes/phase4/FINDINGS.md` section 8) and is now the last hunk of
+`0026-runtime-wraps-and-driver-exit.patch`.
