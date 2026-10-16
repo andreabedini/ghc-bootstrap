@@ -6,7 +6,9 @@
 set -eu
 T=${1:?usage: hsc2hs-src.sh TREE PATCH OUT}; PATCH=${2:?}; O=${3:?}
 W=$(mktemp -d "${TMPDIR:-/tmp}/hsc2hs-src.XXXXXX")
-cp -r "$T/." "$W/"; chmod -R u+w "$W"
+# cp -a: fresh mtimes in copy order can leave configure older than aclocal.m4,
+# and make would then try to rerun autoconf, which fails on this tree.
+cp -a "$T/." "$W/"; chmod -R u+w "$W"
 make -s -C "$W/ghc/utils/hsc2hs" Config.hs > /dev/null
 (cd "$W/ghc/utils/hsc2hs" && patch -s -p1 < "$PATCH")
 mkdir -p "$O"

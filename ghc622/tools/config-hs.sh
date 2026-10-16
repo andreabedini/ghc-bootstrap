@@ -6,7 +6,9 @@
 set -eu
 T=${1:?usage: config-hs.sh TREE OVERRIDES OUT}; M=${2:?}; O=${3:?}
 W=$(mktemp -d "${TMPDIR:-/tmp}/config-hs.XXXXXX")
-cp -r "$T/." "$W/"; chmod -R u+w "$W"
+# cp -a: fresh mtimes in copy order can leave configure older than aclocal.m4,
+# and make would then try to rerun autoconf, which fails on this tree.
+cp -a "$T/." "$W/"; chmod -R u+w "$W"
 rm -f "$W/ghc/compiler/main/Config.hs"
 make -s -C "$W/ghc/compiler" -f Makefile -f "$M" main/Config.hs > /dev/null
 mkdir -p "$O"; cp "$W/ghc/compiler/main/Config.hs" "$O/Config.hs"
