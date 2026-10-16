@@ -22,7 +22,7 @@
 #          and the build fails if any differs.
 #
 #   gen 1  the parsers from the grammars by the chain's happy 1.19.5
-#          (happy/default.nix, plain backend); the happy built from them
+#          (happy/happy.nix, plain backend); the happy built from them
 #          regenerates both with -agc, as the release's were. The happy
 #          1.19.10 that wrote the shipped ones had its template cpp'd by gcc
 #          through Setup.lhs (`ghc -E -cpp` and a perl pass,

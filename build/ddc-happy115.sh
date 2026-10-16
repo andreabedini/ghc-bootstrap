@@ -11,6 +11,7 @@
 #
 # genA is not compared with anything: 1.15 writes different code from 1.19.5.
 # The patch is the source part of the one posted on issue #2.
+# happy/ddc115.nix is the same check in Nix (nix-build -A happy.ddc115).
 # Needs MHS and CPPHS: the store paths of `nix-build -A mhs -A cpphs`.
 set -eu
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"

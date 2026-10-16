@@ -43,6 +43,7 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | input | derivation | hash |
 |---|---|---|
 | `ghc-6.2.2-src.tar.bz2`, `ghc-6.6-src.tar.bz2` | `ghc622/nix/tree.nix`, `ghc66/ghc.nix` | as in the table above |
+| `happy-1.19.5.tar.gz` (Hackage), the `Happy_1_15` tag of github.com/haskell/happy (`fetchFromGitHub`, which hashes the unpacked tree, so not the hash of the tarball above) | `happy/happy.nix`, `happy/ddc115.nix` | in the files |
 | `ghc-6.10.4-src.tar.bz2` | `ghc610` | `d66a8e52572f4ff819fe5c4e34c6dd1e84a7763e25c3fadcc222453c0bd8534d` |
 | `ghc-6.12.3-src.tar.bz2` | `ghc612` | `sha256-bL2+QVAR8sfRXk2FB1jY05P3Bhe4jLMjfSxgK7YOXmg=` |
 | `ghc-7.4.2-src.tar.bz2` | `ghc74` | `sha256-8u4SiaM8xwU5KHEphBrMfq8WESu2DFm1pu6RiHv9g20=` |

@@ -14,7 +14,7 @@
 #
 # The tarball ships the generated src/Parser.hs and src/Scan.hs and, as
 # .boot files, the sources they came from. src/Parser.hs is regenerated
-# from Parser.y.boot by the chain's happy 1.19.5 (happy/default.nix, the
+# from Parser.y.boot by the chain's happy 1.19.5 (happy/happy.nix, the
 # mhs-built one, plain backend) and the tarball's is not used. src/Scan.hs,
 # alex's own lexer, can only come from an alex (alex 2.1.0 accepts Scan.x
 # but its template no longer fits alex 3's code), so the tarball's is the

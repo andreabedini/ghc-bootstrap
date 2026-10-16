@@ -13,7 +13,7 @@
 # header says so: the release's dist/ predates its own happy):
 #
 #   gen 1  src/Parser.hs and src/AttrGrammarParser.hs from the grammars by
-#          the chain's happy 1.19.5 (happy/default.nix, the mhs-built one,
+#          the chain's happy 1.19.5 (happy/happy.nix, the mhs-built one,
 #          plain backend); the happy built from them regenerates both with
 #          -agc, as the release's were, and that must equal what dist/
 #          shipped modulo blank lines, LINE pragmas (ghc66/cmp-generated.sh)

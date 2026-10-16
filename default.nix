@@ -7,6 +7,7 @@
 #   nix-build -A mhs       MicroHs, generation 1 run under Hugs   (mhs/bootstrap-seed.sh)
 #   nix-build -A cpphs     cpphs 1.20.9 from source, by mhs       (cpphs/default.nix)
 #   nix-build -A happy     happy 1.19.5 compiled by mhs           (build/fixpoint-happy.sh)
+#                          (happy/: .ddc115, its seed again from happy 1.15's)
 #   nix-build -A ghc622    GHC 6.2.2, compiled by mhs, then by itself to a fixed point,
 #                          installed (ghc622/: .tree .rts .stage1 .base .stage2 .stage3
 #                          .stage4 .stage5 .fixpoint)

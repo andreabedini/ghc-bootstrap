@@ -49,7 +49,7 @@ flowchart TB
 
 ## 3. The mhs-built tools, each closed by a fixed point
 
-From `cpphs/default.nix` and `happy/default.nix`.
+From `cpphs/default.nix` and `happy/happy.nix`.
 
 ```mermaid
 flowchart LR

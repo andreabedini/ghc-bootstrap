@@ -4,7 +4,7 @@
 #
 #   gen 1  src/Parser.hs and src/AttrGrammarParser.hs from the grammars
 #          Parser.ly and AttrGrammarParser.ly by the chain's happy 1.19.5
-#          (happy/default.nix, plain backend: that happy has only the plain
+#          (happy/happy.nix, plain backend: that happy has only the plain
 #          template). The Hackage tarball does not carry the grammars, only
 #          the generated modules, so they come from the 1.20.1.1 tag of
 #          github.com/haskell/happy.
