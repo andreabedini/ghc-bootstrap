@@ -13,11 +13,12 @@ says what they are, so a fresh checkout can be completed. Checksums are
 | `ghc-6.6-src.tar.bz2` | `79b2a29136d56c8120a526188297603304dc80d3093cda76fde939df7d4dcc7e` | `https://downloads.haskell.org/~ghc/6.6/ghc-6.6-src.tar.bz2` |
 | `hugs98-plus-Sep2006.tar.gz` | `aafaca9ca544572ebef70bbe86b5eb0abaa5d7c11c0b766d7db72a46b022bed5` | `https://www.haskell.org/hugs/downloads/2006-09/hugs98-plus-Sep2006.tar.gz` |
 | `happy-1.19.5.tar.gz` | `62f03ac11d7b4b9913f212f5aa2eee1087f3b46dc07d799d41e1854ff02843da` | `https://hackage.haskell.org/package/happy-1.19.5/happy-1.19.5.tar.gz` |
+| `happy-Happy_1_15.tar.gz` | `e993bbc172cfbee9612cc5ae248f6d57af90d9cad1fb5fb161312237d6957543` | `https://codeload.github.com/haskell/happy/tar.gz/refs/tags/Happy_1_15` (a GitHub archive of the tag, not a release tarball; it carries the `src/Parser.hs` that happy 1.14 wrote) |
 
 Each is read by a script of the chain run without Nix: 6.2.2 by
 `ghc622/reproduce-6.2.2.sh` (which also asserts its checksum) and
 `ghc622/make-patch.sh`, 6.6 by `build/ghc66-by-622/build-66.sh`, Hugs by
-`hugs/build-hugs.sh`, happy by `build/build-happy-mhs.sh`. The Nix
+`hugs/build-hugs.sh`, happy by `build/build-happy-mhs.sh`, happy 1.15 by `build/ddc-happy115.sh`. The Nix
 derivations fetch their own copies (below).
 
 ## `MicroHs/`
@@ -76,7 +77,8 @@ GMP 6.1.2 is the GMP every compiler before 8.0 links against: GMP 6.2's lazy
 
 Every `ghc-*` directory under `build/`, `build/ghc66-by-622/{src,src-verify}`,
 `build/ghc66-by-622/ghc622-inst/src`, `build/hugs/hugs98-plus-Sep2006`,
-`build/repro-622`, `build/rebase622/{ghc-6.2.2,try622}`, `build/happy-1.19.5` and
+`build/repro-622`, `build/rebase622/{ghc-6.2.2,try622}`, `build/happy-1.19.5`,
+`build/happy-ddc115/{happy-Happy_1_15,happy-1.19.5}` and
 `build/rts622/ghc-6.2.2` are extractions of the tarballs above, some with a
 patch series applied; the series and the scripts that apply them are tracked,
 the trees are not. Objects, interfaces, `.hc` files, archives, binaries,

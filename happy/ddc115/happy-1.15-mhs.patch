@@ -1,0 +1,301 @@
+Source part of the patch Alexandre Tunstall posted on issue #2
+(https://github.com/andreabedini/ghc-bootstrap/issues/2): happy 1.15 at the
+Happy_1_15 tag, built with mhs. The happy.cabal and templates/Makefile hunks
+are left out; build/ddc-happy115.sh does their work.
+
+--- a/src/Main.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/Main.lhs	2026-10-10 18:32:01.323674636 +0100
+@@ -16,18 +16,20 @@
+ > import Parser
+ > import First
+ > import LALR
+-> import Version
++> import Data.Version
++> import Paths_happy
+ > import ProduceCode (produceParser)
+ > import ProduceGLRCode 
+ > import Info (genInfoFile)
+ > import Target (Target(..))
+ > import GetOpt
+-> import Monad ( liftM )
+-> import System
+-> import Char
+-> import IO
+-> import Array( assocs, elems, (!) )
+-> import List( nub, isSuffixOf )
++> import Control.Monad ( liftM )
++> import System.Environment
++> import System.Exit
++> import Data.Char
++> import System.IO
++> import Data.Array( assocs, elems, (!) )
++> import Data.List( nub, isSuffixOf )
+ #if defined(mingw32_HOST_OS)
+ > import Foreign.Marshal.Array
+ > import Foreign
+@@ -543,7 +545,7 @@
+ 
+ > copyright :: String
+ > copyright = unlines [
+->  "Happy Version " ++ version ++ " Copyright (c) 1993-1996 Andy Gill, Simon Marlow (c) 1997-2005 Simon Marlow","",
++>  "Happy Version " ++ showVersion version ++ " Copyright (c) 1993-1996 Andy Gill, Simon Marlow (c) 1997-2005 Simon Marlow","",
+ >  "Happy is a Yacc for Haskell, and comes with ABSOLUTELY NO WARRANTY.",
+ >  "This program is free software; you can redistribute it and/or modify",
+ >  "it under the terms given in the file 'LICENSE' distributed with",
+@@ -574,7 +576,8 @@
+ > foreign import stdcall "GetModuleFileNameA" unsafe
+ >   getModuleFileName :: Ptr () -> CString -> Int -> IO Int32
+ #else
+-> getBaseDir :: IO (Maybe String) = do return Nothing
++> getBaseDir :: IO (Maybe String)
++> getBaseDir = Just . (++ "/templates") <$> getDataDir
+ #endif
+ > normalisePath :: String -> String
+ > -- Just changes '\' to '/'
+
+--- a/src/GenUtils.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/GenUtils.lhs	2026-10-10 18:19:08.589335470 +0100
+@@ -36,10 +36,10 @@
+ >	strspace, maybestr
+ >        ) where
+ 
+-> import Char  (isAlphaNum)
+-> import List
+-> import Ix    ( Ix(..) )
+-> import Array ( Array, listArray, array, (!) )
++> import Data.Char  (isAlphaNum)
++> import Data.List
++> import Data.Ix    ( Ix(..) )
++> import Data.Array ( Array, listArray, array, (!) )
+ 
+ %------------------------------------------------------------------------------
+ 
+
+--- a/src/Grammar.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/Grammar.lhs	2026-10-10 18:21:35.207709317 +0100
+@@ -23,9 +23,9 @@
+ > import GenUtils
+ > import AbsSyn
+ 
+-> import Array
+-> import Char
+-> import List
++> import Data.Array
++> import Data.Char
++> import Data.List
+ 
+ #ifdef DEBUG
+ 
+
+--- a/src/Lexer.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/Lexer.lhs	2026-10-10 18:22:43.053003984 +0100
+@@ -17,7 +17,7 @@
+ 
+ > import ParseMonad        
+ 
+-> import Char ( isSpace, isAlphaNum, isDigit, digitToInt )
++> import Data.Char ( isSpace, isAlphaNum, isDigit, digitToInt )
+ 
+ > data Token 
+ >       = TokenInfo String TokenId
+
+--- a/src/LALR.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/LALR.lhs	2026-10-10 18:25:43.730599703 +0100
+@@ -31,6 +31,13 @@
+ > import Array 	hiding (bounds)
+ > import List (nub)
+ 
++#elif defined(__MHS__)
++
++> import Control.Monad.ST
++> import Data.Array.ST
++> import Data.Array
++> import Data.List (nub)
++
+ #endif
+ 
+ This means rule $a$, with dot at $b$ (all starting at 0)
+
+--- a/src/ProduceCode.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/ProduceCode.lhs	2026-10-10 18:34:29.548862366 +0100
+@@ -8,27 +8,26 @@
+ 
+ > module ProduceCode (produceParser) where
+ 
+-> import Version		( version )
++> import Data.Version   ( showVersion )
++> import Paths_happy	( version )
+ > import Grammar
+ > import Target			( Target(..) )
+ > import GenUtils		( mapDollarDollar, str, char, nl, strspace,
+ >                                 interleave, interleave', maybestr, 
+ >                                 brack, brack' )
+ 
+-> import Maybe 			( isJust, isNothing )
+-> import Char
+-> import List
++> import Data.Maybe 			( isJust, isNothing )
++> import Data.Char
++> import Data.List
+ 
+-#if __GLASGOW_HASKELL__ >= 503
++#if __GLASGOW_HASKELL__ >= 503 || defined(__MHS__)
+ 
+ > import Control.Monad.ST
+-> import Array              ( Array )
++> import Data.Array         ( Array )
+ > import Data.Array.ST      ( STUArray )
+ > import Data.Array.Unboxed ( UArray )
+ > import Data.Array.MArray
+ > import Data.Array.IArray 
+-> 
+-> marray_indices a = Data.Array.MArray.indices a
+ 
+ #elif __GLASGOW_HASKELL__ > 408
+ 
+@@ -1112,7 +1111,7 @@
+ -- Misc.
+ 
+ > comment = 
+->	  "-- parser produced by Happy Version " ++ version ++ "\n\n"
++>	  "-- parser produced by Happy Version " ++ showVersion version ++ "\n\n"
+ 
+ > mkAbsSynCon fx t    	= str "HappyAbsSyn"   . shows (fx ! t)
+ > mkHappyVar n     	= str "happy_var_"    . shows n
+
+--- a/src/ProduceGLRCode.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/ProduceGLRCode.lhs	2026-10-10 18:47:18.631001839 +0100
+@@ -17,12 +17,13 @@
+ >                       , Options
+ >                       ) where
+ 
+-> import Version ( version )
++> import Data.Version ( showVersion )
++> import Paths_happy ( version )
+ > import GenUtils ( fst3, thd3, mapDollarDollar )
+ > import GenUtils ( str, char, nl, brack, brack', interleave, maybestr )
+ > import Grammar
+ 
+-#if __GLASGOW_HASKELL__ >= 503
++#if __GLASGOW_HASKELL__ >= 503 || defined(__MHS__)
+ 
+ > import System.IO
+ > import Data.Array
+@@ -154,16 +155,16 @@
+ >	--   parser tail or in sem. rules
+   
+ >   content base_defs opts 
+->    = str ("{-# OPTIONS " ++ opts ++ " #-}")    .nl 
+->    . str (unlines $ maybe [] fst header_parts) .nl
++>    = str ("{-# OPTIONS " ++ opts ++ " #-}")    . nl
++>    . str (unlines $ maybe [] fst header_parts) . nl
+ >    . nl
+->    . str (comment "data")                      .nl .nl
+->    . str ("module " ++ data_mod ++ " where")   .nl 
++>    . str (comment "data")                      . nl . nl
++>    . str ("module " ++ data_mod ++ " where")   . nl 
+ 
+ >     . nl
+->     . maybestr (fmap (unlines.snd) header_parts) .nl 
++>     . maybestr (fmap (unlines.snd) header_parts) . nl 
+ >     . nl
+->     . str base_defs .nl
++>     . str base_defs . nl
+ >     . nl
+ 
+ >    . let count_nls     = length . filter (=='\n')
+@@ -180,22 +181,22 @@
+ >       . nl
+ >       . nl
+ >       . maybestr trailer 
+->       .nl
+->       .nl
++>       . nl
++>       . nl
+ >       . str ("{-# LINE " ++ show post_trailer ++ " "
+ >		           ++ show (basename ++ "Data.hs") ++ "#-}") 
+ >       . nl
+ >       . nl
+ 
+->     . mkGSymbols g     .nl
++>     . mkGSymbols g     . nl
+ >     . nl
+->     . sem_def          .nl
++>     . sem_def          . nl
+ >     . nl
+->     . mkSemObjects  options (monad_sub g) sem_info      .nl
++>     . mkSemObjects  options (monad_sub g) sem_info      . nl
+ >     . nl
+->     . mkDecodeUtils options (monad_sub g) sem_info      .nl
++>     . mkDecodeUtils options (monad_sub g) sem_info      . nl
+ >     . nl
+->     . user_def_token_code (token_type g)                .nl
++>     . user_def_token_code (token_type g)                . nl
+ >     . nl
+ >     . table_text
+ 
+@@ -223,14 +224,14 @@
+ >                                   _                   -> False
+ 
+ > comment which
+->  = "-- parser (" ++ which ++ ") produced by Happy (GLR) Version " ++ version
++>  = "-- parser (" ++ which ++ ") produced by Happy (GLR) Version " ++ showVersion version
+ 
+ > user_def_token_code token_type
+->  = str "type UserDefTok = " . str token_type                      .nl
+->  . str "instance TreeDecode " . brack token_type . str " where"   .nl
+->  . str "\tdecode_b f (Branch (SemTok t) []) = [happy_return t]"   .nl
+->  . str "instance LabelDecode " . brack token_type . str " where"  .nl
+->  . str "\tunpack (SemTok t) = t"                                  .nl
++>  = str "type UserDefTok = " . str token_type                      . nl
++>  . str "instance TreeDecode " . brack token_type . str " where"   . nl
++>  . str "\tdecode_b f (Branch (SemTok t) []) = [happy_return t]"   . nl
++>  . str "instance LabelDecode " . brack token_type . str " where"  . nl
++>  . str "\tunpack (SemTok t) = t"                                  . nl
+ 
+ 
+ %-----------------------------------------------------------------------------
+
+--- a/src/Info.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/Info.lhs	2026-10-10 19:19:55.011171153 +0100
+@@ -8,14 +8,15 @@
+ 
+ > module Info (genInfoFile) where
+ 
+-> import Version		( version )
++> import Data.Version   ( showVersion)
++> import Paths_happy	( version )
+ > import LALR 			( Lr0Item )
+ > import GenUtils               ( str, interleave, interleave', ljustify )
+ > import Set
+ > import Grammar
+ 
+-> import Array
+-> import List (nub)
++> import Data.Array
++> import Data.List (nub)
+ 
+ Produce a file of parser information, useful for debugging the parser.
+ 
+@@ -55,7 +56,7 @@
+ 
+ >   showHeader 
+ >   	= banner ("Info file generated by Happy Version " ++ 
+->		  version ++ " from " ++ filename)
++>		  showVersion version ++ " from " ++ filename)
+ 
+ >   showConflicts
+ >	= str "\n"
+
+--- a/src/GetOpt.lhs	1970-01-01 01:00:01.000000000 +0100
++++ b/src/GetOpt.lhs	2026-10-10 19:21:09.317333276 +0100
+@@ -23,7 +23,7 @@
+ \begin{code}
+ module GetOpt (ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo, getOpt) where
+ 
+-import List(isPrefixOf)
++import Data.List(isPrefixOf)
+ 
+ data ArgOrder a                        -- what to do with options following non-options:
+    = RequireOrder                      --    no option processing after first non-option
+
