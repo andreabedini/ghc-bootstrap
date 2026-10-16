@@ -49,7 +49,8 @@ flowchart TB
 
 ## 3. The mhs-built tools, each closed by a fixed point
 
-From `cpphs/default.nix` and `happy/happy.nix`.
+From `cpphs/default.nix`, `happy/happy.nix` and `happy/ddc115.nix`. happy's seed is
+also checked by diverse double compilation from happy 1.15's (D56).
 
 ```mermaid
 flowchart LR
@@ -60,10 +61,14 @@ flowchart LR
     subgraph happy["happy 1.19.5"]
         hseed["happy-seed/<br/>Parser.hs, AttrGrammarParser.hs<br/>generation 2"] --> hb["happy built by mhs"] -->|"regenerates from .ly"| hregen["Parser.hs again"]
         hregen -. "cmp: byte for byte" .- hseed
+        h115["happy 1.15's Parser.hs<br/>written by happy 1.14"] --> hddc["happy 1.15, then 1.19.5<br/>from its output, by mhs"] -->|"regenerates from .ly"| hddcout["Parser.hs again"]
+        hddcout -. "diverse double compilation:<br/>byte for byte (D56)" .- hseed
     end
     mhs["mhs"] --> c1
     mhs --> hb
+    mhs --> hddc
     c2 -->|"cpphs --noline<br/>GenericTemplate"| hb
+    c2 --> hddc
 ```
 
 ## 4. GHC 6.2.2 as the Nix derivation graph
