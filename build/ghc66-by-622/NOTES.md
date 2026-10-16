@@ -1,7 +1,7 @@
 # GHC 6.6 built by the chain's GHC 6.2.2 — working notes
 
 Started 2026-09-25. Question (blog posts 1, 8, 9; Tournier's comment under
-Breitner 802: Guix's 6.6 rung "needs 5.04 at least"): can the 6.2.2 that the
+Breitner 802: Guix's 6.6 "needs 5.04 at least"): can the 6.2.2 that the
 chain produces build GHC 6.6?
 
 Layout:
@@ -94,7 +94,7 @@ clean runs. All four edits are `ghc-6.6-by-622.patch` (69 lines), which
 applies to the pristine tarball; `FRESH=1 TREE=<dir>` in build-66.sh
 re-extracts and applies it.
 
-What this build uses that a bootstrappable.org-style rung should not: the
+What this build uses that a bootstrappable.org-style build should not: the
 tarball's pre-generated compiler/parser/Parser.hs, Lexer.hs and
 ParserCore.hs (happy 1.19.5 is available for the .y files; there is no alex).
 Also unmeasured: registerised code (this is unregisterised via C throughout),

@@ -1435,7 +1435,7 @@ Three measurements on 9 September, all in `build/`:
 **Decision.** Drop 6.0. mhs compiles 6.2.2's compiler proper, configured for an
 x86-64 target so its `.hc` output has 8-byte words; 6.2.2's own RTS and
 libraries take it from there. The ladder 4.08.2 → 5.00.2 → 6.0 → 6.2 collapses
-to one rung, and the 4.08.2 64-bit port (D42) is no longer on the path.
+to one step, and the 4.08.2 64-bit port (D42) is no longer on the path.
 
 **Overturned by:** the 6.2.2 probe (label `6.2.2-run1`) stalling on something
 the 6.0 work did not meet — the alex lexer tables are the known unknown — or
@@ -1603,8 +1603,8 @@ D41's gaps exist in 6.2.2: `__encodeFloat` is defined unconditionally and
    (`build/ghc622-mhs/SWITCH-NOTE.txt`); all twelve programs relink and
    pass against it at `-O`, including the two that panicked before.
 
-**Decision.** The 6.2.2 pivot (D45) is vindicated end to end: every rung from
-a C compiler to a running Haskell program is built from source by the rung
+**Decision.** The 6.2.2 pivot (D45) is vindicated end to end: every step from
+a C compiler to a running Haskell program is built from source by the step
 before it, and the 64-bit runtime problems that ended the 4.08.2 chain do not
 exist here. What remains is hygiene, not discovery: a clean base rebuild with
 the fixed shim, folding the new edits into `phase4`, and then the next stage
@@ -1762,7 +1762,7 @@ the checkout's twelve test programs behave as with the boot compiler.
 GHC to drive it; stage 1 is GHC's source on the MicroHs runtime, about twenty
 times slower than native and dead on some modules at `-O`. From stage 3 on
 the compiler is native, and from inst.nix on the build system is the
-compiler's own. Every later rung is one `configure && make` derivation
+compiler's own. Every later version is one `configure && make` derivation
 (`ghc66`, `ghc610`, `ghc612`, ...).
 
 **The ladder.** Each release's `configure.ac` names the oldest GHC that may
@@ -1777,7 +1777,7 @@ libraries and stage 2, the unregisterised 6.10.4 compiles a stage 1 that then
 generates native x86-64 code for everything else. `ghc --info` of that
 6.12.3 says Unregisterised NO, NCG YES, tables next to code YES; it passes
 `common/test/T3.hs` with no diagnostics and is half the size. From 6.12 on the
-chain is registerised (`registerised ? true`), which makes every later rung
+chain is registerised (`registerised ? true`), which makes every later compiler
 several times faster to build. 6.12.3 needed its `includes/Rts.h` blocks for
 `__GNUC__ > 4`, never compiled in 2010, disabled (one defines macros as
 `#pragma GCC visibility`).
@@ -1809,7 +1809,7 @@ on that theory were a red herring and are gone.
 
 **Decision.** `gmp612/default.nix` builds GMP 6.1.2 (the last before the lazy
 `mpz_init`; `--disable-assembly`, `-std=gnu11` for gcc 15's C23 default, no
-`-no-pie` on a shared library), and every rung before 8.0 — stage 2's link,
+`-no-pie` on a shared library), and every build before 8.0 — stage 2's link,
 stages 3-5, boot, inst, happy 1.16, alex 2.1.0, 6.6, 6.10.4, 6.12.3, 7.4.2,
 7.8.4 — takes it instead of the host's GMP. 8.0's integer-gmp works on limbs
 and is fine with any GMP. The chain is rebuilt from the stage-2 link; the
@@ -1829,16 +1829,16 @@ passing its install check with `GmpZero` included; 7.4.2 compiles and runs
 `GmpZero` outside the build too. The fixed point is unchanged and stage 4's
 440 `.hc`/`.hi` are byte-identical to before the GMP change. **7.8.4** by
 7.4.2 followed (registerised, static, `DYNAMIC_* = NO`, GMP 6.1.2, 270 MB,
-install check passed), the last rung that needs GMP 6.1.2.
+install check passed), the last version that needs GMP 6.1.2.
 
 **Overturned by:** nothing yet.
 
 ---
 
-## D53 — The chain climbs 8.0.2 → 8.4.4 → 8.8.4 → 9.0.2 → 9.4.8 with `configure && make`; 9.8.4 is the first Hadrian rung
+## D53 — The chain climbs 8.0.2 → 8.4.4 → 8.8.4 → 9.0.2 → 9.4.8 with `configure && make`; 9.8.4 is the first Hadrian build
 *2026-10-02, `ghc80` … `ghc98`, `ghc90/StgCRunAsm-only-when-needed.patch`.*
 
-**Built today, each by the rung before it, each `nix-build -A ghcNN`:**
+**Built today, each by the one before it, each `nix-build -A ghcNN`:**
 8.0.2 (374 MB, 13 min), 8.4.4 (454 MB, 16 min), 8.8.4 (557 MB), 9.0.2
 (559 MB), all registerised with the native code generator, static, the
 threaded RTS way, `make -j16` (nixpkgs builds every 8.x and later in
@@ -1848,7 +1848,7 @@ outside the build, so D52's line is right: integer-gmp from 8.0 on works on
 limbs and does not care about the lazy `mpz_init`. 9.4.8 and 9.8.4: see the
 addendum.
 
-**What each rung asked for.** Every one of these was first checked against
+**What each version asked for.** Every one of these was first checked against
 how nixpkgs (8.0.2 in 18.09, 8.4.4 in 19.09, 8.8.4 in 20.09, 9.0.2 in 23.05,
 9.4.8 in 23.11) and Guix build the same release; none of the fixes below is
 about the boot compiler, each would hit a GHC of that version built any way.
@@ -1886,7 +1886,7 @@ about the boot compiler, each would hit a GHC of that version built any way.
   The 8.x RTSs are not affected: their `StgCRunAsm.S` carries the note.
 
 **9.4.8 does not need Hadrian.** The ladder (D52) had 9.4.8 as the first
-Hadrian-only rung. Its tarball still carries `mk/` and `ghc.mk`, and
+Hadrian-only version. Its tarball still carries `mk/` and `ghc.mk`, and
 `configure.ac` sets `CanBootWithMake = YES` for a boot compiler older than
 9.1 ("Note [Support for building ghc 9.4 with the make build system]",
 `MaxBootWithMakeGhcVersion`); nixpkgs 23.11 builds 9.4.8 with make (and
@@ -1950,18 +1950,18 @@ runs GHCi and links a `-threaded` program outside Nix that accepts `-N2
 -qg`. Three things the first 9.8.4 attempt exposed, each resolved where it
 belongs:
 
-- *No SMP.* `GhcWithSMP = NO` had come down from the 6.x rungs (an
+- *No SMP.* `GhcWithSMP = NO` had come down from the 6.x builds (an
   unregisterised build cannot have it). A NOSMP threaded RTS rejects `-N`
   and `-qg` as "unknown RTS option", and `hadrian.cabal` links Hadrian
   with `-with-rtsopts=-I0 -qg`, so the Hadrian the 9.4.8 had just built
   died at startup. **SMP is on from 8.8 on**, with GHCi: 8.8.4, 9.0.2 and
   9.4.8 rebuilt (`Support SMP YES`); 6.2.2-8.4.4 keep NO, they only ever
-  compile the next rung.
+  compile the next version.
 - *No GMP directory.* From 9.0, ghc-bignum records a GMP library directory
   only when configure is given `--with-gmp-libraries` (nixpkgs passes it
   for every GHC). Without it the 9.4.8 could not link a program outside
   Nix: its settings name the Nix gcc wrapper by store path, whose linker
-  searches no /lib64. The rungs up to 9.0 record `gcc` and resolve it on
+  searches no /lib64. The versions up to 9.0 record `gcc` and resolve it on
   PATH, which is why 8.0.2 had linked the host's libgmp "by accident".
   9.0, 9.4 and 9.8 configure with `--with-gmp-includes/-libraries`, and the
   install checks assert the directory in `ghc-pkg field ghc-bignum
@@ -1976,10 +1976,10 @@ them); harmless, only build time. **Overturned by:** nothing yet.
 
 ---
 
-## D54 — Hadrian rungs: 9.8.4 → 9.12.4 → 9.14.1, one derivation for all three; the chain reaches the newest release
+## D54 — Hadrian builds: 9.8.4 → 9.12.4 → 9.14.1, one derivation for all three; the chain reaches the newest release
 *2026-10-03, `common/hadrian-ghc.nix`, `ghc98`, `ghc912`, `ghc914`.*
 
-**Built today, each by the rung before it:** 9.12.4 (973 MB, ~45 min) and
+**Built today, each by the one before it:** 9.12.4 (973 MB, ~45 min) and
 9.14.1 (989 MB, ~55 min), both with Hadrian bootstrapped by bootstrap.py
 from a plan, both registerised, SMP, GHCi, static libraries, both passing
 `common/test/T3.hs`, linking a `-threaded` program outside Nix that takes
@@ -2038,7 +2038,7 @@ stack overrun is i386, `ELF64_ST_VISIBILITY` is in glibc's elf.h,
 export-heap-methods is the JavaScript backend, the rest are docs and
 PowerPC.
 
-**What is left on the host-fixes ledger for the Hadrian rungs:** the
+**What is left on the host-fixes ledger for the Hadrian builds:** the
 hp2ps C23 patch (9.8 only; 9.10 has it) and the HalfWord guard (9.14.1
 only; the branch has it). Everything else is the tarballs' own build
 systems, driven as their packagers drive them.
@@ -2048,7 +2048,7 @@ should be checked against it and dropped if it carries the branch's text;
 a 9.16 will want the 9.14's plan treatment.
 
 ## D55 — Generated code in the inputs: the audit, and the parsers and lexers of 6.10 to 9.14 regenerated from their grammars
-*2026-10-12, `common/regen-parsers.sh`, `common/cmp-regenerated.sh`, `ghc74/happy1195.nix`, `ghc74/alex327.nix`, `ghc88/happy11912.nix`, every rung from `ghc610` to `common/hadrian-ghc.nix`.*
+*2026-10-12, `common/regen-parsers.sh`, `common/cmp-regenerated.sh`, `ghc74/happy1195.nix`, `ghc74/alex327.nix`, `ghc88/happy11912.nix`, every directory from `ghc610` to `common/hadrian-ghc.nix`.*
 
 **The question.** README claimed code generated outside the chain entered
 it in three places (happy's seed, the mhs binary, cpphs). Asked whether that
@@ -2067,12 +2067,12 @@ deletes, regenerates or consumes.
 - Acknowledged seeds: `happy/happy-seed` (a GHC-9.14-built happy's
   output, D7/D14) and the `Scan.hs` of alex 2.1.0 and 3.2.7.4 (fixed
   points). The README named only the first.
-- Not acknowledged: **every rung from 6.10.4 to 9.14.1 built its parser and
+- Not acknowledged: **every version from 6.10.4 to 9.14.1 built its parser and
   lexer from upstream's happy and alex output.** The tarballs ship
   `Parser.hs`, `Lexer.hs`, the Cmm pair, `ParserCore.hs`, genprimopcode's
   and hpc's (from 9.4 `HaddockLex.hs`, from 9.12 `Lexer/String.hs`), and
   the chain's happy and alex were inputs on 6.10 and 9.4+ only for
-  `build-tool-depends`. Upstream's happy per rung, from the file headers:
+  `build-tool-depends`. Upstream's happy per version, from the file headers:
   1.18.4 (6.10, 6.12), 1.18.6 (7.4), 1.19.4 (7.8), 1.19.5 (8.0), 1.19.9
   (8.4), 1.19.12 (8.8, 9.0), 1.20.0 (9.4), 1.20.1.1 (9.8 to 9.14); alex
   output names no version. Also 6.2.2's `Lexer.hs` (alex 2.0 output
@@ -2080,7 +2080,7 @@ deletes, regenerates or consumes.
   with no alex to remake it), Cabal's `Distribution/Fields/Lexer.hs` (alex
   output committed in Cabal's tree, 8.4 to 9.8), and the alex 3.5.2.0 of
   9.12's Hadrian plan, built from its shipped `Scan.hs`.
-- `configure` scripts: autoconf output, run as shipped by every make rung
+- `configure` scripts: autoconf output, run as shipped by every make-built GHC
   and GMP. Guix and nixpkgs do the same (Guix's bootstrap phase runs
   autoreconf only when there is no configure); Debian regenerates
   (`dh_autoreconf` since compat 10); bootstrappable.org's best practices
@@ -2114,9 +2114,9 @@ by 1.19.5, 9.0.2 by 1.19.12, 9.8.4 to 9.14.1 by 1.20.1.1); otherwise, and
 for alex output, it is reported. The point of regenerating is that the
 build no longer depends on the shipped file; agreement is evidence on top.
 
-**The generators each rung's configure accepts**, and who builds them:
+**The generators each version's configure accepts**, and who builds them:
 
-| rung | happy floor | alex floor | used |
+| GHC | happy floor | alex floor | used |
 |---|---|---|---|
 | 6.10.4 | >= 1.15 | >= 2.1.0 | 6.6's happy 1.16, alex 2.1.0 (already inputs) |
 | 6.12.3, 7.4.2 | >= 1.16 | >= 2.1.0 | the same |
@@ -2155,7 +2155,7 @@ there). Its `data/AlexTemplate.hs` and `AlexWrappers.hs` are plain source:
 from 3.2.6 the generated lexer defines the `ALEX_*` macros and the
 compiler's cpp does the rest, so, unlike happy 1.19.12's `data/`, nothing
 there is cpp output. `ghc94/alex327.nix` moved to `ghc74/alex327.nix`,
-`alex317.nix` is gone, and every rung from 7.8.4 to 9.14.1 takes
+`alex317.nix` is gone, and every version from 7.8.4 to 9.14.1 takes
 `ghc74.alex327`; the ghc94 scope keeps happy 1.20.1.1 only (1.20, like
 1.19.6, wants an mtl 7.4.2 has not).
 
@@ -2239,7 +2239,7 @@ check moved out of `buildPhase`/`postBuild` into `checkPhase` with
 was built correctly": mhs's generation 3, cpphs's round 3, happy-mhs's
 regeneration, the seven happy/alex builds' shipped comparisons and
 generation-2 fixed points, 6.6's seven modules and `cmp-regenerated.sh` on
-every later rung. The rule is that the build makes every artefact (gen 3,
+every later version. The rule is that the build makes every artefact (gen 3,
 round 3, the regenerated parsers) and the check only compares, so a build
 with checks disabled still installs the same output. The installed-tree
 checks (`--version`, T3, GmpZero, the GMP directory) stay in

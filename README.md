@@ -73,7 +73,7 @@ in the git history). This is what became of them:
 | 1 | pick the target GHC by measuring, not by assuming | 4.08.2 scored best ([D2](DECISIONS.md#d2--target-ghc-4082-on-measurement-rather-than-on-the-guix-argument)). Later I concluded 6.x was out of reach ([D44](DECISIONS.md#d44--is-ghc-6x-within-mhss-reach-measured-not-estimated)) and I was wrong: it was one macro, `SLIT` ([D45](DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to-ghc-622)) |
 | 2 | a ghc-on-mhs shim layer plus a patch series over pristine tarballs | done for both 4.08.2 and 6.2.2; flattening GHC turned out to be unnecessary |
 | 3 | run the old GHC under mhs and close the loop to a native, self-hosting GHC | impossible on 4.08.2, whose 1999 runtime has 64-bit bugs ([D42](DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime)); done on 6.2.2 ([D47](DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc)-[D51](DECISIONS.md#d51--stage-3-and-stage-4-the-native-compiler-rebuilds-itself-218-of-220-modules-byte-identical)) |
-| 4 | fill Guix's gap from 6.10.4 to 7.8.4 | done, and carried on to 9.14.1 ([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)-[D54](DECISIONS.md#d54--hadrian-rungs-984--9124--9141-one-derivation-for-all-three-the-chain-reaches-the-newest-release)) |
+| 4 | fill Guix's gap from 6.10.4 to 7.8.4 | done, and carried on to 9.14.1 ([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)-[D54](DECISIONS.md#d54--hadrian-builds-984--9124--9141-one-derivation-for-all-three-the-chain-reaches-the-newest-release)) |
 
 The first chain used GHC 4.08.2. Its runtime has no x86-64 port, and I gave up
 on it at the seventh 64-bit bug; [notes/](notes/README.md) keeps that chain
@@ -141,7 +141,7 @@ a README:
 
 Each GHC is the newest release that accepts the previous one as its boot
 compiler. Each one passes `common/test/T3.hs` and whatever checks its
-derivation names ([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)-[D54](DECISIONS.md#d54--hadrian-rungs-984--9124--9141-one-derivation-for-all-three-the-chain-reaches-the-newest-release)). From 8.8 on the compilers have the standard
+derivation names ([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)-[D54](DECISIONS.md#d54--hadrian-builds-984--9124--9141-one-derivation-for-all-three-the-chain-reaches-the-newest-release)). From 8.8 on the compilers have the standard
 configuration: registerised, native code generator, GHCi, SMP, static
 libraries. A `-threaded` program they compile links outside Nix and runs with
 `-N`.

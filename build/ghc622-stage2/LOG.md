@@ -144,7 +144,7 @@ Outstanding before or at the resume:
   loop's 8 GB `ulimit -v` the process reached 7.7 GB RSS and died with
   SIGSEGV at 63 s; with a 16 GB limit it reached 15.9 GB RSS and died with
   SIGSEGV at 154 s. Resident memory grows well past the cell heap, so more
-  heap only buys time. Two consequences: (a) the `-O -fno-strictness` rung
+  heap only buys time. Two consequences: (a) the `-O -fno-strictness` retry
   is the right outcome for these modules, not a tuning failure, and the
   compiled code differs only in optimisation; (b) the runtime segfaults
   rather than reporting the failed allocation when `ulimit -v` bites, which

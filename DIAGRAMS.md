@@ -96,7 +96,7 @@ flowchart LR
 
 ## 6. The road past 6.2.2
 
-Every GHC below is built (`ghcNN/`, [DECISIONS.md](DECISIONS.md) [D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)-[D54](DECISIONS.md#d54--hadrian-rungs-984--9124--9141-one-derivation-for-all-three-the-chain-reaches-the-newest-release)). The floor
+Every GHC below is built (`ghcNN/`, [DECISIONS.md](DECISIONS.md) [D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)-[D54](DECISIONS.md#d54--hadrian-builds-984--9124--9141-one-derivation-for-all-three-the-chain-reaches-the-newest-release)). The floor
 under each release is the minimum boot compiler its `configure.ac` accepts
 (read 2026-10-01); it is configure's check only, and 9.14.1 showed it can
 be stale: its configure says 9.6, its stage-0 build needs 9.10's
