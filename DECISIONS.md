@@ -94,6 +94,10 @@ seed-derived) detects a Thompson attack; a self-fixpoint proves only
 self-consistency. Closing that gap needs a second, independent producer of
 happy's parser — feasible at 148 lines of grammar, but not done here.
 
+**Overturned by:** the limitation, by [D56](#d56--happys-seed-by-diverse-double-compilation-from-happy-115):
+happy 1.15's parser, which happy 1.14 wrote, is that second producer, and it
+leads to the same seed byte for byte.
+
 ---
 
 ### D8 — Artifacts live in `build/` inside the project, not in `$TMPDIR`
@@ -2276,5 +2280,52 @@ both parsers with `--template` pointing at that gcc-made template, and the
 check compares those with the tarball's. Both are as shipped. gen 1, gen 2
 and the installed happy keep 1.19.12's own templates, and the fixed point
 is unchanged. Nothing from 8.4.4 up was built yet.
+
+**Overturned by:** nothing yet.
+
+## D56 — happy's seed, by diverse double compilation from happy 1.15
+*2026-10-17, `happy/ddc115.nix`, `happy/ddc115/`, `build/ddc-happy115.sh`; [issue #2](https://github.com/andreabedini/ghc-bootstrap/issues/2).*
+
+**The question.** Issue #2 (Alexandre Tunstall, 2026-10-16) proposed
+booting happy from 1.15, the `Happy_1_15` tag of happy's repository, with a
+patch that builds it with mhs. The tag is not seedless: `src/Parser.hs` sits
+next to `src/Parser.ly`, and its header says `parser produced by Happy
+Version 1.14`. The 1.15 tarball on Hackage has neither file, which is why D5
+passed it over. Starting the chain from it would trade one seed for another.
+But it is the second, independent producer of happy's parsers that D7 said
+was missing.
+
+**The check.** Four steps, each one compiled by the chain's mhs:
+
+```
+happy 1.15  from the Parser.hs that happy 1.14 wrote (the source part of the issue's patch)
+genA        happy 1.15 generates happy 1.19.5's Parser.hs and AttrGrammarParser.hs
+happyA      happy 1.19.5 from genA
+genB        happyA regenerates them    -> must equal happy/happy-seed/
+```
+
+genA is not compared with anything, because 1.15 writes different code from
+1.19.5: it differs from the seed by 217 and 165 diff lines.
+
+**Result.** genB is `happy/happy-seed/` byte for byte, 1,313 and 931 lines
+(sha256 `918418cf…` and `efc3f838…`). The seed is now what two unrelated
+starting points converge on: the output of a happy 1.19.12 my GHC 9.14 built
+in 2026, and the output of a happy 1.14 from 2005. A compromise carried in the
+seed would have to be in both. `nix-build -A happy.ddc115` checks this, and
+`build/ddc-happy115.sh` does the same outside Nix.
+
+**What it does not cover.** mhs compiles both sides, so this says nothing
+about mhs; that is D1. Both happy sources are upstream's, taken as they are.
+The happy 1.15 build also regenerates its own `Parser.hs`, which the script
+reports and does not check: it differs from the shipped one in 92 lines, all
+template and preprocessor (the version line, `LINE` pragmas, blank lines,
+macros that cpphs leaves unexpanded inside the template's commented-out
+block, one space).
+
+**Why a separate derivation.** A check phase in `happy/happy.nix` would
+change happy's derivation, and with it every derivation of the chain after
+it. `happy/default.nix` exposes `happy.ddc115` (and `happy.tests.ddc115`) as
+the ghc66 and ghc622 directories expose theirs, and `happy` itself is
+unchanged: its drv is still `8c7bq419…`, `ghc914`'s still `76074vz8…`.
 
 **Overturned by:** nothing yet.
