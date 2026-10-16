@@ -341,7 +341,7 @@ Outstanding before or at the resume:
 - **build.sh `all` relinked the old program.** The first relink (pueue-agent
   task 20, `build.sh all`, 9 min) produced a binary that still wrote the list
   encoding: `test/FmtCheck.hs` compiled by it and decoded with
-  `test/hidict.py` (a Python reader of the pristine dictionary format) had
+  `test/hidict.py` (now `ghc622/tools/hidict.py`; a Python reader of the pristine dictionary format) had
   the same bad first length as before, and so did the `GHC/Base.hi` the base
   rebuild (task 22, killed) had just written. Cause: `all` was `hs` + `cc`,
   but `cc` links `ghc-data.c` + `ffi.c` (the comb route, which is what every

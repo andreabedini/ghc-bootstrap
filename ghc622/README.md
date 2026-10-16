@@ -90,7 +90,7 @@ The shims are on the `-i` path in this order: `hsboot`, `shims`,
 
 ## The patch series
 
-`patches/` holds 26 patches (257 hunks in 102 files) against the pristine
+`patches/` holds 26 patches (259 hunks in 103 files) against the pristine
 tarball. Applied to a clean extraction, they reproduce the working tree. The
 4.08.2 series had a large group of patches for x86-64; this one has none,
 because 6.2.2 already knows x86-64 exists. Almost all of it is the Haskell of

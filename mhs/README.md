@@ -31,6 +31,6 @@ The output is the source tree with `bin/` in it; `mhs` runs in place and finds
 |---|---|
 | `default.nix` | the derivation |
 | `bootstrap-seed.sh` | the same chain without Nix: Hugs, generations 1 to 3, and the comparison with the shipped C |
-| `patches/0001-microhs-hugs-shim.patch` | a `Data.Version` shim for MicroHs's Hugs override tree, because Hugs's `Data.Version` predates `makeVersion` |
+| `patches/0001-microhs-hugs-shim.patch` | MicroHs's Hugs override tree (`hugs/`), six files: shims for what Hugs's 2006 libraries lack (`Data.Version.makeVersion`, `Text.Read.readMaybe`, `System.Directory.listDirectory`, `setEnv`, `getExecutablePath`, two `System.IO.Serialize` stubs), `MHSPrelude` fixes (`try` at `Exception`, the `Data.Int`/`Data.Word` re-exports, `NFData ByteString`), and `getTimeMilli` reduced mod 1e9 to fit Hugs's 32-bit `Int` |
 
 The findings are in [`notes/phase0/FINDINGS.md`](../notes/phase0/FINDINGS.md).

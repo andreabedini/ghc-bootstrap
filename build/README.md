@@ -9,7 +9,13 @@ Only the scripts, findings and result tables are tracked. The trees, objects
 and binaries the scripts produce (`ghc-6.2.2-run1/ghc`, `ghc622-mhs/ghc`,
 `rts622/ghc-6.2.2`, `repro-622/`, ...) are ignored and appear once the
 scripts run. The scripts find the checkout through `GHC_BOOTSTRAP_ROOT`; run
-them with `mise exec -- sh build/...`. The [ghc622 README](../ghc622/README.md#without-nix)
+them with `mise exec -- sh build/...`.
+
+Some notes name files that are no longer here. The whole-tree diffs
+(`6.2.2-run1.patch`, `6.0-run2.patch`, `rebase622/6.0-current.patch`) and the
+old probe tables were removed; `6.2.2-run1.patch` lives on as the series in
+`ghc622/patches/`. `convert-lexer.py`, `gen-htypes.c`, `hidict.py` and
+`genprimopcode-Main.hs.patch` moved to `ghc622/tools/`. The [ghc622 README](../ghc622/README.md#without-nix)
 gives the order to run them in.
 
 ## Files at the top

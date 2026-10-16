@@ -137,7 +137,7 @@ also imports `Control.Applicative(Applicative(..))` and `Control.Monad (ap)`
 
 ## Patches
 
-`patches/genprimopcode-Main.hs.patch` — one line in
+`patches/genprimopcode-Main.hs.patch` (now `ghc622/tools/genprimopcode-Main.hs.patch`) — one line in
 `ghc/utils/genprimopcode/Main.hs`: `filter (not.dodgy)` -> `filter (not . dodgy)`
 (`-- mhs: "not.dodgy" lexes as record-dot selection`; mhs reports
 `Cannot satisfy constraint: HasField "dodgy"`). It is for compiling the tool

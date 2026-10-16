@@ -15,7 +15,7 @@ nix-build -A hugs
 |---|---|
 | `default.nix` | the derivation: `hugs98-plus-Sep2006.tar.gz` (see [`SOURCES.md`](../SOURCES.md)), the two patches, configure and make |
 | `build-hugs.sh` | the same build without Nix, into `build/hugs`; its header explains the three fixes a 2026 gcc needs |
-| `patches/0002-hugs-pattern-guards.patch` | pattern guards, which Hugs never implemented and MicroHs's source uses in about 200 places |
+| `patches/0002-hugs-pattern-guards.patch` | pattern guards, which Hugs never implemented and MicroHs's source uses in at least 64 places |
 | `patches/0003-hugs-bigger-control-stack.patch` | a bigger control stack (`NUM_STACK`), so Hugs can interpret the MicroHs compiler |
 
 ## Notes

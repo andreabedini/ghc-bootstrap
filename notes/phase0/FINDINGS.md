@@ -8,17 +8,17 @@ source only**, with no pre-generated combinator file. See [How I found the route
 
 **`C compiler + Hugs source -> a working MicroHs`, with no pre-generated
 combinator file — verified, and cross-checked against MicroHs's shipped seed.**
-Reproduce with `./bootstrap-seed.sh`.
+Reproduce with `mhs/bootstrap-seed.sh`.
 
 | Step | Status |
 |---|---|
 | Build Hugs 98 plus (Sep 2006) on a 2026 toolchain | **works** (3 fixes, see `build-hugs.sh`) |
 | `runhugs` runs real Haskell 98 (incl. `Data.Map`, FFI-backed IO) | **works** |
-| MicroHs `hugs/` shim typechecks under Hugs | **works after a 1-line fix** (`patches/0001`) |
+| MicroHs `hugs/` shim typechecks under Hugs | **works after a 1-line fix** (`mhs/patches/0001`) |
 | MicroHs compiler source parses under Hugs | **fails — pattern guards** |
-| *(then)* pattern guards implemented in Hugs | **works** (`patches/0002`) |
+| *(then)* pattern guards implemented in Hugs | **works** (`hugs/patches/0002`) |
 | MicroHs compiler source parses under patched Hugs | **works** |
-| MicroHs typechecks under patched Hugs | **works** (`patches/0001`, 12 one-line gaps) |
+| MicroHs typechecks under patched Hugs | **works** (`mhs/patches/0001`, 12 one-line gaps) |
 | MicroHs *runs* under Hugs and emits C for itself | **works** (`generated/hmhs.c`, 2,063,036 bytes) |
 | that C compiles to a native `mhs` | **works** (`bin/hmhs`, 1,063,976 bytes) |
 | fixpoint: gen2 == gen3 | **works**, byte identical |
@@ -52,7 +52,7 @@ under Hugs* to emit C for itself. On master (`1474221`) it fails twice:
 
 - `hugs/MHSPrelude.hs:128` — the shim annotates `try` as
   `IO (Either IOError Handle)`, but Hugs's `Control.Exception.try` returns
-  `IO (Either Exception Handle)`. One-line fix in `patches/0001`.
+  `IO (Either Exception Handle)`. One-line fix in `mhs/patches/0001`.
 - `src/MicroHs/Expr.hs:535` — **pattern guards**:
   `loop ts (EVar i) | Just n <- getTupleConstr i, length ts == n = Just ts`
 
@@ -90,7 +90,7 @@ Hugs path. That is **too strong**: the path exists and is 95% there, but it does
 not run today. The corrected claim is that the seed is *one contained Hugs
 feature away*, not that it works.
 
-## 4. Pattern guards, implemented (`patches/0002-hugs-pattern-guards.patch`)
+## 4. Pattern guards, implemented (`hugs/patches/0002-hugs-pattern-guards.patch`)
 
 Done, in `parser.y` alone — 292 diff lines, no other file touched.
 
@@ -212,7 +212,7 @@ reported the wrong line.
   `make check` target references a `tests/` directory that is not shipped, so
   there is no upstream suite to run.)
 - **MicroHs, end to end**: with `Interactive.hs` back to its upstream form (the
-  §5 workaround dropped from `patches/0001`), all 250 modules typecheck under
+  §5 workaround dropped from `mhs/patches/0001`), all 250 modules typecheck under
   the patched Hugs, `generated/hmhs.c` comes out **byte-identical** to the run
   in §8, and the compiler built from it still emits the same `mhs2.c`
   (`09f85536…`). The desugaring change is invisible downstream.
@@ -241,7 +241,7 @@ modules and was worked around with a type annotation.
 
 Duplicating more cannot fix this; the qualifiers have to be matched **once**, in
 a place both the guard and the body can see. That is what the desugaring in §4
-now does, so the annotation is gone from `patches/0001` and `Interactive.hs` is
+now does, so the annotation is gone from `mhs/patches/0001` and `Interactive.hs` is
 back to its upstream form. `tests/PatternGuards.hs` cases 13-15 pin the
 behaviour down, including the same shape behind two dependent generators and
 behind a `let` qualifier.
@@ -268,7 +268,8 @@ width); the practical answer is to fix instances as they appear.
 ## 7. The shim grind, and how far it got
 
 Each blocker was a one-line gap in MicroHs's own `hugs/` tree
-(`patches/0001-microhs-hugs-shim.patch`, 5 files):
+(`mhs/patches/0001-microhs-hugs-shim.patch`, 5 files at the time; a sixth,
+`hugs/System/Directory.hs`, came with MicroHs 0.16.8.0):
 
 | Error | Fix |
 |---|---|
@@ -282,7 +283,7 @@ Each blocker was a one-line gap in MicroHs's own `hugs/` tree
 | `Ambiguous variable occurrence "makeVersion"` | `MHSPrelude` defined it too — dropped, `Data.Version` is now the single source |
 | `Undefined variable "setEnv"` | base 4.7+; no-op shim |
 | `cannot find config file: mhs.conf` | `make mhs.conf` |
-| `Control stack overflow` | two independent limits, see below (`patches/0003`) |
+| `Control stack overflow` | two independent limits, see below (`hugs/patches/0003`) |
 | `Program error: arithmetic overflow` | §6 |
 
 ### The two stack limits
@@ -355,15 +356,16 @@ mhs/bootstrap-seed.sh              # the whole chain, ending in two cmp checks
 or step by step:
 
 ```sh
-cd phase0
-./build-hugs.sh                       # applies patches/0002 and 0003, needs bison
-export PATH=$PWD/prefix/bin:$PATH
-runhugs -98 tests/PatternGuards.hs    # pattern-guard test suite
-cd ../MicroHs
-git apply ../mhs/patches/0001-microhs-hugs-shim.patch
+hugs/build-hugs.sh                    # applies hugs/patches/0002 and 0003, needs bison
+export PATH=$PWD/build/hugs/prefix/bin:$PATH
+runhugs -98 notes/phase0/tests/PatternGuards.hs   # pattern-guard test suite
+tar xzf MicroHs-0.16.8.0.tar.gz && mv MicroHs-0.16.8.0 MicroHs
+cd MicroHs
+patch -p1 < ../mhs/patches/0001-microhs-hugs-shim.patch
 make mhs.conf
 ulimit -s unlimited
 make generated/hmhs.c bin/hmhs
 ```
 
-Logs from this run: `configure*.log`, `build*.log`, `hmhs.log`.
+The logs of the 2026-09-02 run (`configure*.log`, `build*.log`, `hmhs.log`)
+are not in the repository.

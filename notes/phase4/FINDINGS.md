@@ -33,6 +33,11 @@ notes/phase4/
   FINDINGS.md             this file
 ```
 
+Only this file is still here. The series and its scripts have since moved to
+`ghc622/` (`patches/`, `series.conf`, `make-patch.sh`, `reproduce-6.2.2.sh`)
+and the tools to `ghc622/tools/` (`split-patch.py`, `regen-generated.sh`,
+`genprimopcode-Main.hs.patch`, `convert-lexer.py`).
+
 ## 2. What `reproduce-6.2.2.sh` does
 
 `sh ghc622/reproduce-6.2.2.sh [dest]` (default `build/repro-622`; 3-4 minutes,
@@ -138,7 +143,7 @@ system for lack of memory while another agent was linking; the recorded run
 `ghc622/patches/0001-0025`, 249 hunks over 101 files under `ghc/compiler`,
 each with a header naming the mhs limitation. Everything else in the tree is
 generated (section 2) or pristine. Same content as `build/6.2.2-run1.patch`
-(187 three-line-context hunks), split by concern:
+(187 three-line-context hunks; no longer in the repository), split by concern:
 
 | patch | hunks | files | concern |
 |---|---:|---:|---|
@@ -235,7 +240,7 @@ unregisterised defines. `ghc/includes/Makefile` would pass them through
 `mk/bootstrap.mk`; the recipe passes them by hand.
 
 **`parser/Lexer.hs`** -- the tarball ships alex 2.0's `-g` output, so no alex is
-needed; `convert-lexer.py` (identical to `build/lexer622/convert-lexer.py`,
+needed; `convert-lexer.py` (identical to `build/lexer622/convert-lexer.py`, since removed,
 `cmp` clean) decodes the four `Addr#` tables into boxed arrays and asserts
 every line it touches against the pristine text.
 
@@ -247,7 +252,7 @@ every line it touches against the pristine text.
 Foreign.C; SysTools' `< 603` branch), `Foreign.hs` (PrelForeign + Foreign.Ptr/
 Marshal.Utils/Marshal.Array/Storable; shadows `ghc622/shims-ghc/Foreign.hs`),
 `StringBuffer.hs` (the 118-line shim for 6.2.2's 11-function API, identical to
-`build/lexer622/StringBuffer.hs`), and `Language/Haskell/THSyntax.hs` =
+`build/lexer622/StringBuffer.hs`, since removed), and `Language/Haskell/THSyntax.hs` =
 6.2.2's `libraries/haskell-src/Language/Haskell/THSyntax.hs` with four edits
 (`import Prelude hiding ((<>))`; `MonadIO` from `Control.Monad.IO.Class`
 instead of `Control.Monad.Trans`; `Functor`/`Applicative Q`; `MonadFail Q`);
@@ -335,7 +340,7 @@ reproduces" the tree.
 `ghc/includes/config.h` also gained 34 `HTYPE_*` defines: configure's
 `FPTOOLS_CHECK_HTYPE` probes are K&R C that gcc 16 rejects, so the rule's
 output left them `#undef`. `reproduce-6.2.2.sh` now compiles and runs
-`ghc622/tools/gen-htypes.c` (a copy of `build/ghc622-mhs/gen-htypes.c`) and appends
+`ghc622/tools/gen-htypes.c` (a copy of `build/ghc622-mhs/gen-htypes.c`, since removed) and appends
 its output after the DerivedConstants step. The counts "25 patches / 249
 hunks / 101 files" earlier in this file describe the series before this
 addendum.

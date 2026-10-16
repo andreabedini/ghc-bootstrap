@@ -1398,10 +1398,11 @@ run reported no summary. Do not edit a script that is running.
 to be wrong in the useful direction: `SLIT`/`FSLIT` were redefined over boxed
 `String` in `HsVersions.h` (with a `LitString` shim in `FastString`) and the
 6.0 tree went 12 → 116 → 206 → 214 of 264 between 3 and 9 September, with
-`Main` typechecking. The full count is in `build/probe-6.0-run3-final.tsv`;
-of the 50 failures, 31 are ilxGen test programs that should never have been in
-the order file. The work is captured in `build/6.0-run2.patch` (regenerated as
-`build/rebase622/6.0-current.patch`: 103 files, 244 hunks).
+`Main` typechecking. The full count was in `build/probe-6.0-run3-final.tsv`
+(no longer in the repository); of the 50 failures, 31 are ilxGen test
+programs that should never have been in the order file. The work was captured
+in `build/6.0-run2.patch` (regenerated as `build/rebase622/6.0-current.patch`:
+103 files, 244 hunks; neither is in the repository any more).
 
 **Why 6.0 is the wrong target anyway.** 6.0 has no x86-64 entry: the only
 `x86_64` in its tree is the `config.h` we generated. An x86-64 build of 6.0 is
@@ -1466,9 +1467,9 @@ and `JavaGen` back ends.
 **The known unknown was small.** The alex-generated `Lexer.hs` carried its DFA
 as `Addr#` string literals indexed with `indexInt16OffAddr#`. Those tables are
 16-bit little-endian signed entries with no big-endian branch, so
-`build/lexer622/convert-lexer.py` keeps the literals and decodes them once at
-startup into a boxed `Array Int Int`; the DFA and every token action are
-untouched. A token-dump driver built with mhs lexes a sample program, 79
+`convert-lexer.py` (now `ghc622/tools/convert-lexer.py`) keeps the literals
+and decodes them once at startup into a boxed `Array Int Int`; the DFA and
+every token action are untouched. A token-dump driver built with mhs lexes a sample program, 79
 MicroHs library modules and the lexer's own source with the expected tokens and
 spans. The new `StringBuffer` is a 118-line shim over `Array Int Char`. Parsers
 and primop tables were regenerated with our own happy and genprimopcode
@@ -1481,7 +1482,7 @@ two signature/binding splits (`SysTools.getBaseDir`,
 `RnSource` imports), one empty statement after `do {` in the new `TcArrows`,
 two new `_scc_` pragmas, a `#error GHC >= 5.00` guard in `SysTools`, and the
 6.2.2 `THSyntax` in place of 6.0's. Patch: `build/6.2.2-run1.patch`, 101 files,
-187 hunks, generated files excluded.
+187 hunks, generated files excluded (since split into `ghc622/patches/`).
 
 **One bug found that 6.0 also has.** Under the shims `FastInt` is a lazy `Int`,
 so `SrcLoc` built one thunk per character while lexing and overflowed the mhs
@@ -1534,8 +1535,9 @@ in a pass that prints nothing before it dies, and are still open.
 **One 2026-toolchain item, the same class as D31/D40:** configure's
 `FPTOOLS_CHECK_HTYPE` probes have a K&R `main()`, which gcc 16 rejects, so
 every `HTYPE_*` was left undefined and `Foreign.Storable` (with 96 modules
-behind it) would not compile. `build/ghc622-mhs/gen-htypes.c` reruns the
-probes' logic and its output is appended to our `ghc/includes/config.h`.
+behind it) would not compile. `gen-htypes.c` (now `ghc622/tools/gen-htypes.c`)
+reruns the probes' logic and its output is appended to our
+`ghc/includes/config.h`.
 
 **Not shown yet:** a link. That needs the four `.hsc` modules of base (there is
 no `hsc2hs` in the chain yet), base's `cbits`, and `libHSbase.a`. Until a
@@ -1675,7 +1677,7 @@ section 9](build/rts622/FINDINGS.md#9-patch-0003-heap_alloced-under-aslr-2026-09
 **Decision.** Patch the RTS rather than the environment: `HEAP_BASE
 0x500000000` on x86-64 and a 65536-entry map keyed on `p - HEAP_BASE` (a
 64 GB window) with `getMBlocks` refusing memory outside it
-(`patches/0003-mblock-map-window.patch`). This is what 6.4 did in spirit, a
+(`ghc622/rts/patches/0003-mblock-map-window.patch`). This is what 6.4 did in spirit, a
 fixed heap base on x86-64, without its two-level map: the window is enough
 under the 8 GB `ulimit -v` every compile runs with, and the patch is 30
 lines against two files rather than a storage-manager backport. Rejected:
