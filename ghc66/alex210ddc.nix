@@ -19,7 +19,8 @@
 # Setup.lhs's cpp step done with gcc's cpp, as GHC's -E runs it
 # (`-undef -traditional`), and cpp-template.sh's perl.
 # alex210ddc/alex-2.1.0-mhs.patch has the source changes mhs needs.
-# Output: genA/, genB/, ghc66/ and report.txt.
+# Output: bin/alex (alexB, which alexchain.nix runs), share/alex-2.1.0/ (its
+# templates), genA/, genB/, ghc66/ and report.txt.
 { stdenv
 , perl
 , mhs
@@ -75,7 +76,7 @@ stdenv.mkDerivation {
     version :: Version
     version = Version [2,1,0] []
     getDataDir :: IO FilePath
-    getDataDir = return "$W/tpl"
+    getDataDir = return "$out/share/alex-2.1.0"
     EOF
 
     mkdir shipped; mv src/Parser.hs src/Scan.hs shipped/
@@ -128,6 +129,8 @@ stdenv.mkDerivation {
     runHook preInstall
     mkdir -p $out
     cp -r work/genA work/genB work/ghc66 report.txt $out/
+    install -Dm755 work/alexB $out/bin/alex
+    mkdir -p $out/share/alex-2.1.0; cp work/tpl/* $out/share/alex-2.1.0/
     runHook postInstall
   '';
 }

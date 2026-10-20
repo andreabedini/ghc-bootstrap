@@ -1,0 +1,21 @@
+alex 3.2.7.4 (Hackage tarball), built with mhs for ghc66/alexchain.nix: the
+one source change. MicroHs has no DatatypeContexts, and the context on RSet
+constrains nothing (every function on RSet carries its own).
+
+The rest is outside the source: alexchain/shims/ (Data.Map with what alex 3
+needs beyond common/shims', Data.IntMap, Data.Array.Base's unsafeRead), and
+-D__GLASGOW_HASKELL__=810 with -D'MIN_VERSION_base(a,b,c)=1', so the code
+takes its modern-base branches (Control.Exception.bracketOnError,
+hSetEncoding utf8, Semigroup) and the generated Scan.hs its Data.Array ones.
+
+--- a/src/Data/Ranged/RangedSet.hs
++++ b/src/Data/Ranged/RangedSet.hs
+@@ -41,7 +41,7 @@
+
+ -- | An RSet (for Ranged Set) is a list of ranges.  The ranges must be sorted
+ -- and not overlap.
+-newtype DiscreteOrdered v => RSet v = RSet {rSetRanges :: [Range v]}
++newtype RSet v = RSet {rSetRanges :: [Range v]}
+    deriving (Eq, Show, Ord)
+
+ #if MIN_VERSION_base(4,9,0)
