@@ -4,6 +4,8 @@
 #   nix-build -A ghc66           GHC 6.6, configure and make with 6.2.2 (ghc.nix)
 #   nix-build -A ghc66.happy116  happy 1.16, compiled by 6.2.2; seedless, fixed point (happy116.nix)
 #   nix-build -A ghc66.alex210   alex 2.1.0, compiled by 6.2.2; Scan.hs by fixed point (alex210.nix)
+#   nix-build -A ghc66.alex210ddc  that Scan.hs again, from a hand-written scanner, by mhs:
+#                                diverse double compilation (alex210ddc.nix)
 #
 # happy 1.16 and alex 2.1.0 are the versions that made the parsers and lexers
 # the 6.6 tarball ships; ghc.nix deletes those and lets 6.6's own Makefile
@@ -18,7 +20,8 @@ let
   parts = lib.makeScope newScope (self: {
     happy116 = self.callPackage ./happy116.nix { };
     alex210 = self.callPackage ./alex210.nix { };
+    alex210ddc = self.callPackage ./alex210ddc.nix { ghc66src = self.ghc.src; };
     ghc = self.callPackage ./ghc.nix { inherit gdbModule; };
   });
 in
-parts.ghc // { inherit (parts) happy116 alex210; }
+parts.ghc // { inherit (parts) happy116 alex210 alex210ddc; }

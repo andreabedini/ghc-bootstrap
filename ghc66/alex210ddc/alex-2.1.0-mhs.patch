@@ -1,0 +1,160 @@
+alex 2.1.0 (Hackage tarball), built with mhs for ghc66/alex210ddc.nix. Every
+change is under `#if defined(__MHS__)` or keeps the meaning of the code:
+
+  Main.hs        Control.Exception's bracketOnError, in place of the local one
+                 built on block/unblock, which MicroHs does not have
+  Map.hs         a branch over the chain's Data.Map shim (common/shims), which
+                 lacks unionWith, mapWithKey and fromListWith, and whose fromList
+                 keeps the first of duplicate keys where containers' keeps the last
+  NFA.hs,        Functor and Applicative instances for the NFAM and P monads
+  ParseMonad.hs  (superclasses of Monad in MicroHs's base)
+  Output.hs      unsafeRead as readArray (the shim's Data.Array.Base has none;
+                 its one use is on an array whose lower bound is 0), and
+                 `paren.outputAcc` spaced to `paren . outputAcc`: MicroHs reads
+                 `a.b` as a record field selection
+
+The build also passes -D__GLASGOW_HASKELL__=604, so Map.hs and the generated
+Scan.hs take the GHC >= 6.3 branches (Data.Map, Data.Array), and an empty
+ghcconfig.h for the generated Scan.hs's #include.
+
+diff -ru a/src/Main.hs b/src/Main.hs
+--- a/src/Main.hs
++++ b/src/Main.hs
+@@ -21,7 +21,11 @@
+ import Util ( hline )
+ import Paths_alex ( version, getDataDir )
+ 
++#if defined(__MHS__)
++import Control.Exception ( bracketOnError )
++#else
+ import Control.Exception as Exception ( block, unblock, catch, throw )
++#endif
+ import Control.Monad ( when, liftM )
+ import Data.Char ( chr )
+ import Data.List ( isSuffixOf )
+@@ -303,6 +307,7 @@
+ dieAlex :: String -> IO a
+ dieAlex s = getProgramName >>= \prog -> die (prog ++ ": " ++ s)
+ 
++#if !defined(__MHS__)
+ bracketOnError
+ 	:: IO a		-- ^ computation to run first (\"acquire resource\")
+ 	-> (a -> IO b)  -- ^ computation to run last (\"release resource\")
+@@ -316,3 +321,4 @@
+ 	   (\e -> do { after a; throw e })
+     return r
+  )
++#endif
+diff -ru a/src/Map.hs b/src/Map.hs
+--- a/src/Map.hs
++++ b/src/Map.hs
+@@ -13,7 +13,24 @@
+ 
+ import Prelude hiding ( lookup )
+ 
+-#if __GLASGOW_HASKELL__ >= 603
++#if defined(__MHS__)
++import Data.Map hiding ( fromList )
++
++-- The chain's Data.Map shim (common/shims) lacks the last three, and its
++-- fromList keeps the first of duplicate keys; containers' keeps the last
++-- (mk_int_dfa's mp' can have duplicates when two start codes share a state).
++fromList :: Ord k => [(k,a)] -> Map k a
++fromList = foldl (\m (k,a) -> insert k a m) empty
++
++unionWith :: Ord k => (a -> a -> a) -> Map k a -> Map k a -> Map k a
++unionWith c l r = foldr (\(k,a) m -> insertWith c k a m) r (toAscList l)
++
++mapWithKey :: Ord k => (k -> a -> b) -> Map k a -> Map k b
++mapWithKey f m = fromList [ (k, f k a) | (k,a) <- toAscList m ]
++
++fromListWith :: Ord k => (a -> a -> a) -> [(k,a)] -> Map k a
++fromListWith c = foldl (\m (k,a) -> insertWith c k a m) empty
++#elif __GLASGOW_HASKELL__ >= 603
+ import Data.Map
+ #else
+ import Data.FiniteMap
+diff -ru a/src/NFA.hs b/src/NFA.hs
+--- a/src/NFA.hs
++++ b/src/NFA.hs
+@@ -23,7 +23,7 @@
+ import qualified Map hiding ( Map )
+ import Util ( str, space )
+ 
+-import Control.Monad ( zipWithM, zipWithM_ )
++import Control.Monad ( zipWithM, zipWithM_, ap, liftM )
+ import Data.Array ( Array, (!), array, listArray, assocs, bounds )
+ --import Debug.Trace
+ 
+@@ -167,6 +167,13 @@
+ 
+ newtype NFAM a = N {unN :: SNum -> MapNFA -> (SNum, MapNFA, a)}
+ 
++instance Functor NFAM where
++  fmap = liftM
++
++instance Applicative NFAM where
++  pure = return
++  (<*>) = ap
++
+ instance Monad NFAM where
+   return a = N $ \s n -> (s,n,a)
+ 
+diff -ru a/src/Output.hs b/src/Output.hs
+--- a/src/Output.hs
++++ b/src/Output.hs
+@@ -17,7 +17,9 @@
+ 
+ import Control.Monad.ST ( ST, runST )
+ import Data.Array ( Array )
++#if !defined(__MHS__)
+ import Data.Array.Base ( unsafeRead )
++#endif
+ import Data.Array.ST ( STUArray, newArray, readArray, writeArray, freeze )
+ import Data.Array.Unboxed ( UArray, bounds, assocs, elems, (!), array, listArray )
+ import Data.Bits
+@@ -71,7 +73,7 @@
+ 
+     outputAccs :: [Accept Code] -> ShowS
+     outputAccs accs
+-	= brack (interleave_shows (char ',') (map (paren.outputAcc) accs))
++	= brack (interleave_shows (char ',') (map (paren . outputAcc) accs))
+ 
+     outputAcc (Acc prio Nothing Nothing NoRightContext)
+ 	= str "AlexAccSkip"
+@@ -334,3 +336,10 @@
+ 
+ hexDig i | i <= 9    = chr (i + ord '0')
+ 	 | otherwise = chr (i - 10 + ord 'a')
++
++#if defined(__MHS__)
++-- the chain's Data.Array.Base (common/shims) has no unsafeRead; fits uses
++-- it on check, whose lower bound is 0, so it is readArray
++unsafeRead :: STUArray s Int Int -> Int -> ST s Int
++unsafeRead = readArray
++#endif
+diff -ru a/src/ParseMonad.hs b/src/ParseMonad.hs
+--- a/src/ParseMonad.hs
++++ b/src/ParseMonad.hs
+@@ -18,6 +18,7 @@
+ import CharSet ( CharSet )
+ import Map ( Map )
+ import qualified Map hiding ( Map )
++import Control.Monad ( ap, liftM )
+ 
+ -- -----------------------------------------------------------------------------
+ -- The input type
+@@ -70,6 +71,13 @@
+ 
+ newtype P a = P { unP :: PState -> Either ParseError (PState,a) }
+ 
++instance Functor P where
++  fmap = liftM
++
++instance Applicative P where
++  pure = return
++  (<*>) = ap
++
+ instance Monad P where
+  (P m) >>= k = P $ \env -> case m env of
+ 			Left err -> Left err

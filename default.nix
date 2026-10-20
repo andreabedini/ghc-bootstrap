@@ -12,7 +12,8 @@
 #                          installed (ghc622/: .tree .rts .stage1 .base .stage2 .stage3
 #                          .stage4 .stage5 .fixpoint)
 #   nix-build -A ghc66     GHC 6.6, configure and make with that 6.2.2
-#                          (ghc66/: .happy116 .alex210)
+#                          (ghc66/: .happy116 .alex210; .alex210ddc, alex's Scan.hs
+#                          again from a hand-written scanner)
 #   nix-build -A ghc610    GHC 6.10.4, configure and make with that 6.6 (ghc610/)
 #   nix-build -A ghc612    GHC 6.12.3, configure and make with that 6.10.4 (ghc612/)
 #   nix-build -A ghc74     GHC 7.4.2, configure and make with that 6.12.3 (ghc74/: .happy1195 .alex327,
