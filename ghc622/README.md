@@ -68,13 +68,13 @@ The record is [D45](../DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to
 | Path | What it is |
 |---|---|
 | `default.nix`, `nix/` | the derivations in the table above; the stages are a scope of their own |
-| `patches/` | the compiler patch series, 0001 to 0026 (see below), generated from `series.conf` by `make-patch.sh` |
+| `patches/` | the compiler patch series, 0001 to 0026 without 0024 (see below), generated from `series.conf` by `make-patch.sh` |
 | `series.conf`, `make-patch.sh` | the series definition (each patch's header and hunk classes) and the script that splits the working tree's diff into patches with `tools/split-patch.py` |
 | `reproduce-6.2.2.sh` | the compiler tree without Nix: the pristine tarball, the series, and the generated files |
 | `rts/patches/` | three RTS patches: cast-as-lvalue (58 sites), a `static`/`extern` mismatch in the GC, and the megablock map window ([D50](../DECISIONS.md#d50--rts-patch-0003-the-megablock-map-gets-a-fixed-base-and-a-window)) |
 | `rts/genapply-shim/` | the `Text.PrettyPrint` that `genapply` needs |
-| `hsboot/` | 32 `.hs-boot` files for the compiler's module cycles, converted by hand from GHC's `.hi-boot` files |
-| `shims/` | the ghc-on-mhs shims stage 1 needs on top of `common/shims`: `FastString`, `StringBuffer`, `Parsec`, `THSyntax`, ... |
+| `hsboot/` | 31 `.hs-boot` files for the compiler's module cycles, converted by hand from GHC's `.hi-boot` files |
+| `shims/` | the ghc-on-mhs shims stage 1 needs on top of `common/shims`: `FastString`, `StringBuffer`, `Parsec`, ... |
 | `shims-ghc/` | shims for GHC's own internal modules (`PrelBase`, `GlaExts`, `GhcCompat`, ...), first written for 4.08.2 |
 | `shims-h98/` | the Haskell 98 modules (`List`, `IO`, `Monad`, ...) over MicroHs's library |
 | `stage1/` | what linking stage 1 needs: `comb2c.py` (mhs's combinator output as a C array), C stubs and FFI glue |
@@ -90,7 +90,7 @@ The shims are on the `-i` path in this order: `hsboot`, `shims`,
 
 ## The patch series
 
-`patches/` holds 26 patches (259 hunks in 103 files) against the pristine
+`patches/` holds 25 patches (256 hunks in 102 files) against the pristine
 tarball. Applied to a clean extraction, they reproduce the working tree. The
 4.08.2 series had a large group of patches for x86-64; this one has none,
 because 6.2.2 already knows x86-64 exists. Almost all of it is the Haskell of
@@ -101,10 +101,21 @@ because 6.2.2 already knows x86-64 exists. Almost all of it is the Haskell of
 | Haskell that stopped being legal | 0002, 0005, 0007-0017, 0019-0022 | `SLIT`/`FSLIT` over boxed `String` (the [D44](../DECISIONS.md#d44--is-ghc-6x-within-mhss-reach-measured-not-estimated) blocker, 13 hunks); `Ctype.lhs` transcoded from Latin-1 (mhs's lexer wants UTF-8); `_scc_`; `do { ;`; double and trailing commas; duplicate and abstract import items; Functor/Applicative/MonadFail instances; `f.g` -> `f . g`; `(<>)` hidden; pre-addendum `foreign import`; unboxed literals; `f :: T = e` split; array indexing and pointer casts through `GhcCompat` |
 | Portable serialisation | 0004, 0018 | `Binary.hs` without `ByteArray#`; float bit-casts |
 | MicroHs runtime semantics | 0006, 0025, 0026 | the `mk_supply#` CAF (mhs memoises `unsafeInterleaveIO`); strict `!FastInt` in `SrcLoc` (a lazy `Int` under the shims); arithmetic that must wrap, `hFileSize`, `exitWith` (the gaps found in [D47](../DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc)); `GetImports` reading source as bytes |
-| Build plumbing | 0003, 0023, 0024 | the `MachDeps.h` include path; a `#error GHC >= 5.00` guard; non-GHCi stubs in `TcSplice` |
+| Build plumbing | 0003, 0023 | the `MachDeps.h` include path; a `#error GHC >= 5.00` guard |
 | Bootstrapping proper | 0001 | `unlit` and a trailing space, as in 4.08.2 |
 
 Again, only one patch is actually about bootstrapping.
+
+There is no 0024. It stubbed out `typecheck/TcSplice.lhs` for a build
+without GHCi, but without GHCi nothing imports that module, so mhs never
+reads it; GHC's own Makefile and our stage-2 module list
+(`tools/make-order.py`) leave it out too. The patch
+was a leftover from the GHC 6.0 attempt, which compiled every module in the
+tree. I dropped it on 2026-10-22, after checking that stage 1's `ghc.comb`
+is byte-identical without it once the tree's store path is normalised. The
+files that existed only for TcSplice went with it: its `.hs-boot` file and
+the `GHC.Base`, `Language.Haskell.THSyntax` and `Text.PrettyPrint.HughesPJ`
+shims.
 
 **Nothing in the series is about x86-64.** The RTS patches in `rts/patches`
 fix C that stopped being legal (58 cast-as-lvalue sites, one `static`/`extern`
@@ -137,7 +148,7 @@ sh ghc622/reproduce-6.2.2.sh            # -> build/repro-622/ghc, 3-4 minutes
 ```
 
 The script does the following:
-- applies the 26 patches;
+- applies the 25 patches;
 - runs GHC's own configure and `config.h` rule;
 - makes `DerivedConstants.h` from `mkDerivedConstants.c` with the
   unregisterised flags, and the `HTYPE_*` block;
@@ -191,7 +202,7 @@ As of 2026-09-23, these are the things I know are not right:
    Neither difference propagates: stage 5 equals stage 4 in all 220 `.hc`
    files ([D51](../DECISIONS.md#d51--stage-3-and-stage-4-the-native-compiler-rebuilds-itself-218-of-220-modules-byte-identical)).
 2. **The reproduction without Nix depends on the host's headers.**
-   `reproduce-6.2.2.sh` applies all 26 patches exactly. On a machine whose
+   `reproduce-6.2.2.sh` applies all 25 patches exactly. On a machine whose
    kernel headers define `EFTYPE` it writes `CONST_EFTYPE 134` where the
    reference tree has `-1` ([`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md#3-verification) section 3).
 3. **Nine compiler modules do not typecheck under mhs**, none of them on
