@@ -1,5 +1,5 @@
---- src/parser.y.orig	2026-09-02 03:35:34.722846586 +0800
-+++ src/parser.y	2026-09-02 07:25:59.135640453 +0800
+--- src/parser.y.orig	2026-10-28 16:03:26.380145136 +0800
++++ src/parser.y	2026-10-28 16:03:26.370145028 +0800
 @@ -49,6 +49,13 @@
  static List   local checkCtxt	 Args((List));
  static Cell   local checkPred	 Args((Cell));
@@ -65,7 +65,7 @@
  	  ;
  
  stmts     : stmts1                      {$$ = $1;}
-@@ -1210,6 +1228,224 @@
+@@ -1210,6 +1228,238 @@
      return dqs;
  }
  
@@ -127,6 +127,11 @@
 + * $3 and $4 -- the line and the rhs -- stay shadowed by the parser (see
 + * gcShadow), so mkGuard pushes the list itself before it allocates anything.
 + * Pushes are balanced so the parser's own use of sp (see gcShadow) is intact.
++ * A value that is built from the stack is computed into a local first and
++ * pushed afterwards: push(c) expands to stack(++sp)=(c), and C leaves the
++ * order of the increment and the reads of sp inside c unspecified, so
++ * push(f(top())) can hand f the empty slot above the stack.  gcc reads
++ * first, but another compiler need not.
 + *
 + * Just and Nothing are Names linked by linkPreludeCM, which runs only once
 + * the Prelude has been through checkDefns -- after it has been parsed.  A
@@ -168,9 +173,10 @@
 +
 +	case FROMQUAL : push(guardSel(tl(qs),rhs,line));
 +			push(cons(pair(WILDCARD,pair(line,nameNothing)),NIL));
-+			push(cons(pair(fst(snd(hd(qs))),
-+				       pair(line,pushed(1))),
-+				  top()));
++			r = cons(pair(fst(snd(hd(qs))),
++				      pair(line,pushed(1))),
++				 top());
++			push(r);
 +			r = ap(CASE,pair(snd(snd(hd(qs))),top()));
 +			drop(); drop(); drop();
 +			return r;
@@ -185,8 +191,10 @@
 +    Cell r = NIL;
 +    push(cons(pair(WILDCARD,pair(line,nameFalse)),NIL));
 +    push(pair(line,nameTrue));
-+    push(pair(ap(nameJust,WILDCARD),top()));
-+    push(cons(top(),pushed(2)));
++    r = pair(ap(nameJust,WILDCARD),top());
++    push(r);
++    r = cons(top(),pushed(2));
++    push(r);
 +    r = ap(CASE,pair(mkVar(t),top()));
 +    drop(); drop(); drop(); drop();
 +    return r;
@@ -199,8 +207,10 @@
 +    Text w = inventText();		/* a fresh cell per occurrence: the */
 +					/* pattern and the body must not    */
 +    push(pair(line,mkVar(w)));		/* share cells (see above)	    */
-+    push(pair(ap(nameJust,mkVar(w)),top()));
-+    push(singleton(top()));
++    r = pair(ap(nameJust,mkVar(w)),top());
++    push(r);
++    r = singleton(top());
++    push(r);
 +    r = ap(CASE,pair(mkVar(t),top()));
 +    drop(); drop(); drop();
 +    return r;
@@ -243,16 +253,20 @@
 +					/* by the parser itself; see	    */
 +					/* gcShadow.)			    */
 +    if (!bind) {			/* only boolean qualifiers, so the  */
-+	push(guardTest(top()));		/* body needs nothing bound for it  */
++	r = guardTest(top());		/* body needs nothing bound for it  */
++	push(r);
 +	r = pair(NIL,pair(line,pair(top(),rhs)));
 +	drop(); drop();
 +	return r;
 +    }
 +
 +    t = inventText();
-+    push(guardSel(top(),rhs,line));			     /* [qs,sel]    */
-+    push(pair(line,top()));				     /* [..,srhs]   */
-+    push(singleton(ap(PATBIND,pair(mkVar(t),top()))));	     /* [..,binds]  */
++    r = guardSel(top(),rhs,line);			     /* [qs,sel]    */
++    push(r);
++    r = pair(line,top());				     /* [..,srhs]   */
++    push(r);
++    r = singleton(ap(PATBIND,pair(mkVar(t),top())));	     /* [..,binds]  */
++    push(r);
 +    push(pgTest(t,line));				     /* [..,test]   */
 +    push(pgBody(t,line));				     /* [..,body]   */
 +    r = pair(pushed(2),pair(line,pair(pushed(1),top())));
