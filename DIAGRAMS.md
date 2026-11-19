@@ -49,8 +49,12 @@ flowchart TB
 
 ## 3. The mhs-built tools, each closed by a fixed point
 
-From `cpphs/default.nix`, `happy/happy.nix` and `happy/ddc115.nix`. happy's seed is
-also checked by diverse double compilation from happy 1.15's (D56).
+From `cpphs/default.nix`, `happy/happy.nix`, `happy/ddc115.nix`,
+`ghc66/alex210ddc.nix` and `ghc66/alexchain.nix`. happy's seed is also
+checked by diverse double compilation from happy 1.15's (D56). alex's
+`Scan.hs` is, from a scanner written by hand (D57); the alexes the GHCs are
+built with come later, from their tarballs' `Scan.hs`, and agree with these
+on every GHC lexer (`ghc66/alexchain-lexers.nix`).
 
 ```mermaid
 flowchart LR
@@ -64,9 +68,17 @@ flowchart LR
         h115["happy 1.15's Parser.hs<br/>written by happy 1.14"] --> hddc["happy 1.15, then 1.19.5<br/>from its output, by mhs"] -->|"regenerates from .ly"| hddcout["Parser.hs again"]
         hddcout -. "diverse double compilation:<br/>byte for byte (D56)" .- hseed
     end
+    subgraph alex["alex 2.1.0 and 3.2.7.4"]
+        ahand["Scan.hs for alex 2.1.0<br/>written by hand"] --> aA["alex 2.1.0<br/>by mhs"] -->|"from Scan.x"| agen["Scan.hs"]
+        agen -. "the tarball's, modulo<br/>blank lines and LINE pragmas" .- atar["alex 2.1.0's<br/>shipped Scan.hs"]
+        agen --> aB["alex 2.1.0 again<br/>regenerates it byte for byte"] -->|"from 3.2.7.4's Scan.x"| a3["alex 3.2.7.4<br/>by mhs"] -->|"from Scan.x"| a3gen["Scan.hs"]
+        a3gen -. "byte for byte (D57)" .- a3tar["alex 3.2.7.4's<br/>shipped Scan.hs"]
+    end
     mhs["mhs"] --> c1
     mhs --> hb
     mhs --> hddc
+    mhs --> aA
+    hb -->|"Parser.y"| aA
     c2 -->|"cpphs --noline<br/>GenericTemplate"| hb
     c2 --> hddc
 ```
@@ -111,7 +123,7 @@ ghc-internal, so 9.12.4 is on the ladder.
 flowchart LR
     g622["6.2.2<br/>done"] --> g66["6.6<br/>done<br/>needs ≥ 5.04"] --> g610["6.10.4<br/>done<br/>≥ 6.4"] --> g612["6.12.3<br/>done<br/>≥ 6.8"] --> g742["7.4.2<br/>done<br/>≥ 6.12"] --> g784["7.8.4<br/>done<br/>≥ 7.4"] --> g802["8.0.2<br/>done<br/>≥ 7.8"] --> g844["8.4.4<br/>done<br/>≥ 8.0"] --> g884["8.8.4<br/>done<br/>≥ 8.4"] --> g902["9.0.2<br/>done<br/>≥ 8.8"] --> g948["9.4.8<br/>done<br/>≥ 9.0, make kept for a boot < 9.1"] --> g984["9.8.4<br/>done<br/>≥ 9.4, Hadrian"] --> g9124["9.12.4<br/>done<br/>≥ 9.6"] --> g9141["9.14.1<br/>done<br/>configure says ≥ 9.6, stage 0 needs ≥ 9.10"]
     subgraph g66parts["built by 6.2.2 for 6.6"]
-        h116["happy 1.16<br/>seedless fixed point"] --> a210["alex 2.1.0<br/>Scan.hs by fixed point"]
+        h116["happy 1.16<br/>seedless fixed point"] --> a210["alex 2.1.0<br/>Scan.hs by fixed point,<br/>checked by D57's"]
     end
     g66parts --> g66
 ```

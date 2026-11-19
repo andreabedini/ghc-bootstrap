@@ -21,7 +21,7 @@ nix-build -A ghc74.alex327    # alex 3.2.7.4, compiled by 7.4.2
 | `ghc.nix` | GHC 7.4.2 |
 | `mtl.nix` | mtl 1.1.1.1 from 7.4.2's tree. 7.4.2 builds it but never installs it, and happy 1.19.5 needs it |
 | `happy1195.nix` | happy 1.19.5, regenerated from its grammars, taken to a fixed point, and compared with the parsers the tarball ships. It serves 7.8.4 to 8.8.4 |
-| `alex327.nix` | alex 3.2.7.4; its lexer `Scan.hs` is the tarball's, discharged by a fixed point. It serves every GHC from 7.8.4 to 9.14.1 |
+| `alex327.nix` | alex 3.2.7.4; its lexer `Scan.hs` is the tarball's, checked by a fixed point and against `ghc66.alexChain`, an alex 3.2.7.4 traced back to a hand-written scanner ([D57](../DECISIONS.md#d57--alexs-own-lexer-by-diverse-double-compilation-from-a-hand-written-scanner)). It serves every GHC from 7.8.4 to 9.14.1 |
 
 ## Notes
 

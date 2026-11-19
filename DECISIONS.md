@@ -2329,3 +2329,93 @@ the ghc66 and ghc622 directories expose theirs, and `happy` itself is
 unchanged: its drv is still `8c7bq419…`, `ghc914`'s still `76074vz8…`.
 
 **Overturned by:** nothing yet.
+
+## D57 — alex's own lexer, by diverse double compilation from a hand-written scanner
+*2026-10-20 and 2026-11-19, `ghc66/alex210ddc.nix`, `ghc66/alex210ddc/`,
+`ghc66/alexchain.nix`, `ghc66/alexchain/`, `ghc66/alexchain-lexers.nix`;
+Discourse thread 6205, [#102](https://discourse.haskell.org/t/what-s-needed-to-bootstrap-ghc-with-hugs/6205/102) and #104.*
+
+**The question.** alex is written in alex: `src/Scan.hs`, its lexer, is
+alex's output on `src/Scan.x`, and every alex tarball ships it. The chain
+builds alex 2.1.0 (`ghc66.alex210`, for 6.6 to 7.4.2) and 3.2.7.4
+(`ghc74.alex327`, for 7.8.4 to 9.14.1) from those files and checks each one
+by a fixed point. On Discourse (#93) the proposal for GHC 6.2.2's shipped
+`Lexer.hs` was to build alex with mhs and regenerate it. Janus Troelsen
+(#102) pointed out that this discharges nothing: the mhs-built alex still
+runs a generated `Scan.hs`, probably from the same alex that generated
+`Lexer.hs`, so the two are not independent. Nothing in the chain had ever
+made an alex `Scan.hs` from a source that was not alex output. This is the
+gap D7 left for happy, which D56 closed.
+
+**The check.** `ghc66/alex210ddc/Scan.hs` is a scanner for alex 2.1.0
+written by hand from `Scan.x` (337 lines). It copies `Scan.x`'s Haskell (the
+token types and the code after the rules), as alex itself does, and writes
+each macro and rule as a regular expression over a few combinators.
+`alexScan` takes the longest match, the earlier rule winning a tie, as
+alex's DFA does. Then, every alex compiled by the chain's mhs:
+
+```
+alexA   alex 2.1.0 with the hand-written Scan.hs
+genA    alexA on Scan.x                -> the tarball's Scan.hs, modulo blank lines and LINE pragmas
+alexB   alex 2.1.0 with genA
+genB    alexB on Scan.x                -> genA, byte for byte
+step 1  alexB on 3.2.7.4's Scan.x      (2.1.0 accepts it as it is)
+alex3A  alex 3.2.7.4 with step 1's Scan.hs
+gen3A   alex3A -g on src/Scan.x        -> the tarball's src/Scan.hs, byte for byte
+alex3B  alex 3.2.7.4 with alex3A's plain output
+gen3B   alex3B on Scan.x, -g and plain -> gen3A's, byte for byte
+```
+
+The first four lines are `ghc66.alex210ddc`, the rest `ghc66.alexChain`.
+mhs cannot compile `-g` output (unboxed `Addr#` tables), so each alex 3 is
+built from plain output and the `-g` output is what is compared. Step 1 is
+not compared with anything: 2.1.0 writes different code from 3.2.7.4.
+
+**Result.** genA differs from alex 2.1.0's shipped `Scan.hs` in 41 raw diff
+lines, all blank lines and `LINE` pragmas, and genB is genA (389 lines).
+gen3A is alex 3.2.7.4's shipped `src/Scan.hs` byte for byte (717 lines,
+sha256 `ef1bcc75…`). alexA and alexB also agree with each other on GHC
+6.6's `Lexer.x` and `CmmLex.x`, and with the shipped `Lexer.hs` and
+`CmmLex.hs` modulo blank lines and `LINE` pragmas.
+
+`ghc66.alexChainLexers` then ties the two paths together. It runs
+`ghc66.alex210` against alexB, and `ghc74.alex327` against alex3B, on every
+alex grammar of the GHC releases each one serves, with the flags the chain
+uses (`-g`, and `--latin1 --ghc` for Cabal's lexer from 8.4.4 to 9.8.4).
+It also compares alex 3.2.7.4's own `Scan.hs` from each. Every pair has to
+be byte-identical.
+
+**GHC 6.2.2's `Lexer.hs`.** 6.2.2 is built from the `parser/Lexer.hs` its
+tarball ships, alex 2.0's output, because no alex exists before it. Now
+`alex210ddc` also runs alexA and alexB on 6.2.2's `Lexer.x` and compares
+alexB's output with the shipped file (`alex210ddc/cmp-tables.pl`). The DFA
+is the same: the four tables read as integers (315 states, 10,712 entries
+in `alex_table` and `alex_check`; alex 2.0 writes `alex_base` in 16-bit
+words, 2.1.0 in 32-bit ones), and `alex_accept`. So are the 1,010 lines of
+Haskell before alex's template, modulo `LINE` pragmas, blank lines and the
+`ghcconfig.h` include that 2.1.0 adds. The template is alex's own code and
+differs between 2.0 and 2.1.0; it is not compared.
+
+**What it does not cover.** mhs compiles every alex here (D1). The alex
+sources are upstream's, as released. The hand-written scanner is trusted
+only as far as its output goes: what is checked is that it produces the
+shipped `Scan.hs`, not that it is a correct lexer for every input. The alex
+3.5.2.0 in Hadrian's bootstrap plan (9.12.4 and 9.14.1) is still built from
+its shipped `Scan.hs` with no check.
+
+**Why the chain keeps its alexes.** `ghc66.alex210` and `ghc74.alex327`
+still start from their tarballs' `Scan.hs`. Switching them to the
+hand-written path would change the derivation of every GHC from 6.6 on and
+build them from the same bytes: gen3A is the 3.2.7.4 tarball's file, and
+genA differs from 2.1.0's only in blank lines and `LINE` pragmas. Like
+`happy.ddc115`, these are checks beside the chain, and the alexes the GHCs
+use are tied to them by `alexChainLexers`.
+
+**Along the way.** `common/shims/Data/Map.hs`'s `fromList` kept the first
+of duplicate keys, where containers keeps the last. alex 2.1.0 depends on
+the containers behaviour (`mk_int_dfa`'s map repeats a key when two start
+codes share a state). The alex patches had worked around it, and nothing
+else in the chain could tell the difference. The shim now matches
+containers. That changes happy's derivation and everything after it.
+
+**Overturned by:** nothing yet.
