@@ -14,6 +14,15 @@
 # cmm/CmmLex.x, which must equal the 6.6 tarball's Lexer.hs and CmmLex.hs
 # as cmp-generated.sh compares them (ghc.nix makes those with alex210).
 #
+# They must also agree on GHC 6.2.2's parser/Lexer.x. 6.2.2 is built from
+# the Lexer.hs its tarball ships, which alex 2.0 wrote, since no alex exists
+# before it. alex 2.1.0's output must have the same DFA (cmp-tables.pl: the
+# four tables as integers, alex 2.0's 16-bit alex_base against 2.1.0's
+# 32-bit one, and alex_accept) and the same Haskell up to alex's template
+# (the actions and Lexer.x's code), modulo LINE pragmas, blank lines and
+# the ghcconfig.h include that 2.1.0 adds. The template is alex's, and the
+# two versions' differ.
+#
 # GHC plays no part: alex is compiled by mhs, its Parser.hs is made by the
 # chain's happy 1.19.5 (portable template, no -agc), and the templates are
 # Setup.lhs's cpp step done with gcc's cpp, as GHC's -E runs it
@@ -22,6 +31,7 @@
 # Output: bin/alex (alexB, which alexchain.nix runs), share/alex-2.1.0/ (its
 # templates), genA/, genB/, ghc66/ and report.txt.
 { stdenv
+, fetchurl
 , perl
 , mhs
 , cpphs
@@ -29,6 +39,13 @@
 , alex210
 , ghc66src
 }:
+let
+  # the pristine GHC 6.2.2 tarball, as ghc622/nix/tree.nix fetches it
+  ghc622src = fetchurl {
+    url = "https://downloads.haskell.org/~ghc/6.2.2/ghc-6.2.2-src.tar.bz2";
+    sha256 = "a0fe7eb8d447f25fbc616cdbce2bb4e03961a884c2c37969d1e23588b588a852";
+  };
+in
 stdenv.mkDerivation {
   pname = "alex-ddc";
   version = "2.1.0";
@@ -104,6 +121,13 @@ stdenv.mkDerivation {
         (cd ghc-6.6/compiler && $W/alex$g -t $W/tpl -g $x.x -o $W/ghc66/$(basename $x).$g.hs)
       done
     done
+
+    echo "== GHC 6.2.2's Lexer.x by alexA and alexB =="
+    mkdir -p $W/ghc622
+    tar xjf ${ghc622src} ghc-6.2.2/ghc/compiler/parser/Lexer.x ghc-6.2.2/ghc/compiler/parser/Lexer.hs
+    for g in A B; do
+      (cd ghc-6.2.2/ghc/compiler && $W/alex$g -t $W/tpl -g parser/Lexer.x -o $W/ghc622/Lexer.$g.hs)
+    done
     runHook postBuild
   '';
   doCheck = true;
@@ -121,6 +145,19 @@ stdenv.mkDerivation {
       done
       sh ${./cmp-generated.sh} $W/ghc66/Lexer.B.hs ghc-6.6/compiler/parser/Lexer.hs | sed "s|$W/||"
       sh ${./cmp-generated.sh} $W/ghc66/CmmLex.B.hs ghc-6.6/compiler/cmm/CmmLex.hs | sed "s|$W/||"
+      cmp $W/ghc622/Lexer.A.hs $W/ghc622/Lexer.B.hs
+      echo "ghc622/Lexer: alexA and alexB agree ($(wc -l < $W/ghc622/Lexer.A.hs) lines)"
+      shipped622=ghc-6.2.2/ghc/compiler/parser/Lexer.hs
+      echo "ghc622/Lexer.B.hs against the Lexer.hs 6.2.2 ships (alex 2.0's):"
+      perl ${./alex210ddc/cmp-tables.pl} $shipped622 $W/ghc622/Lexer.B.hs | sed 's/^/  /'
+      code() {   # the Haskell before alex's template, but for the tables
+        perl -0pe 's/#if __GLASGOW_HASKELL__ >= 603\n#include "ghcconfig.h"\n#else\n#include "config.h"\n#endif\n//' "$1" \
+          | sed '/^-- ALEX TEMPLATE/,$d' \
+          | grep -Ev '^\{-# LINE |^alex_(base|table|check|deflt|accept) = |^[[:space:]]*$'
+      }
+      code $shipped622 > code-shipped; code $W/ghc622/Lexer.B.hs > code-B
+      cmp code-shipped code-B
+      echo "  the code up to alex's template: the same ($(wc -l < code-B) lines)"
       echo "diverse double compilation: a hand-written scanner gives alex's own Scan.hs"
     } | tee report.txt
     runHook postCheck
@@ -128,7 +165,7 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
     mkdir -p $out
-    cp -r work/genA work/genB work/ghc66 report.txt $out/
+    cp -r work/genA work/genB work/ghc66 work/ghc622 report.txt $out/
     install -Dm755 work/alexB $out/bin/alex
     mkdir -p $out/share/alex-2.1.0; cp work/tpl/* $out/share/alex-2.1.0/
     runHook postInstall
