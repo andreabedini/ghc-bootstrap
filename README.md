@@ -124,7 +124,7 @@ a README:
 | Link | Built by | Build system | What it needed on a 2026 host (gcc 15, glibc 2.42, binutils 2.46) |
 |---|---|---|---|
 | [Hugs 98](hugs/README.md) | gcc | configure, make | pattern guards; permissive C flags in `CC` |
-| [MicroHs 0.16.8.0](mhs/README.md) | Hugs, then itself | | generation 3 equals generation 2; the shipped C is deleted |
+| [MicroHs 0.17.0.0](mhs/README.md) | Hugs, then itself | | generation 3 equals generation 2; the shipped C is deleted |
 | [cpphs 1.20.9](cpphs/README.md) | mhs | three rounds, from gcc's cpp to a fixed point | |
 | [happy 1.19.5](happy/README.md) | mhs | | its own parsers, by fixed point and by diverse double compilation from happy 1.15 |
 | [GMP 6.1.2](gmp612/README.md) | gcc | configure, make | for every GHC before 8.0 ([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)) |
@@ -177,11 +177,12 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
   - **MicroHs's shipped C, checked.** The Nix build deletes MicroHs's
     `generated/*.c` before anything runs. Its check phase then requires the
     Hugs-derived `mhs`, run as MicroHs's Makefile runs it (`-z`), to reproduce
-    the shipped `generated/mhs.c` byte for byte. It does, for 0.16.8.0
-    (2026-10-12): the shipped seed is exactly what the source yields. The
-    scripts under `build/` run `MicroHs/bin/mhs`, compiled from that shipped C.
-    As a compiler it is equivalent to the Hugs-derived one, but it is not the
-    same binary ([D1](DECISIONS.md#d1--the-seed-is-c-compiler--hugs-source-not-microhss-shipped-comb)).
+    the shipped `generated/mhs.c` byte for byte. It does for 0.16.8.0
+    (2026-10-12). For 0.17.0.0 the same commands, run by hand on 2026-11-19
+    under a Hugs with our 2026-10-16 patches, give the same result; the Nix
+    check has not run on it yet. The scripts under `build/` run
+    `MicroHs/bin/mhs`, compiled from 0.16.8.0's shipped C. As a compiler it is
+    equivalent to the Hugs-derived one, but it is not the same binary ([D1](DECISIONS.md#d1--the-seed-is-c-compiler--hugs-source-not-microhss-shipped-comb)).
   - **cpphs, checked.** The Nix build builds cpphs from source with mhs, with
     gcc's traditional cpp standing in for the first round. The source-built
     cpphs and MicroHs's shipped one give identical output on every `.hs`,
@@ -261,7 +262,7 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
 | [`common/`](common/README.md) | what several links share: the ghc-on-mhs shims, the parser regeneration, the Hadrian build, the test programs |
 | [`build/`](build/README.md) | the 6.2.2 chain as I first built it by hand, before Nix: scripts, findings, results |
 | [`notes/`](notes/README.md) | how the chain was found, phase by phase, including the retired GHC 4.08.2 chain |
-| [`DECISIONS.md`](DECISIONS.md) | the decision log, [D1](DECISIONS.md#d1--the-seed-is-c-compiler--hugs-source-not-microhss-shipped-comb)-[D57](DECISIONS.md#d57--alexs-own-lexer-by-diverse-double-compilation-from-a-hand-written-scanner): every choice and every wrong turn |
+| [`DECISIONS.md`](DECISIONS.md) | the decision log, [D1](DECISIONS.md#d1--the-seed-is-c-compiler--hugs-source-not-microhss-shipped-comb)-[D58](DECISIONS.md#d58--the-chain-moves-to-microhs-01700): every choice and every wrong turn |
 | [`DIAGRAMS.md`](DIAGRAMS.md), `diagrams/` | the chain as six diagrams |
 | [`SOURCES.md`](SOURCES.md) | where every input comes from, with hashes |
 | `mise.toml` | sets `GHC_BOOTSTRAP_ROOT` for the scripts in `build/` and `notes/` |

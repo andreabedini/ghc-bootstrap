@@ -1,8 +1,8 @@
 polyparse 1.12, the Hackage release, with the edits that
   hackage-trustees/malcolm-wallace-universe 3ec065411afb (the cpphs submodule
-  MicroHs 0.16.8.0 pins) makes to its .hs sources: MonadFail instances, since
-  fail left Monad in base 4.13, and the same layout without tabs or trailing
-  blanks. Apply with -p1 in the directory holding polyparse-1.12/.
+  MicroHs 0.16.8.0 pins, unchanged in 0.17.0.0) makes to its .hs sources:
+  MonadFail instances, since fail left Monad in base 4.13, and the same
+  layout without tabs or trailing blanks. Apply with -p1 in the directory holding polyparse-1.12/.
 
 diff -ruN a/polyparse-1.12/src/Text/Parse/ByteString.hs b/polyparse-1.12/src/Text/Parse/ByteString.hs
 --- a/polyparse-1.12/src/Text/Parse/ByteString.hs

@@ -23,13 +23,14 @@ derivations fetch their own copies (below).
 
 ## `MicroHs/`
 
-An extraction of `MicroHs-0.16.8.0.tar.gz`, the latest release
+An extraction of `MicroHs-0.16.8.0.tar.gz`
 (`https://github.com/augustss/MicroHs/archive/refs/tags/v0.16.8.0.tar.gz`,
 sha256 `7b014251b6dfc332b16a49457797c8f1b32d88633dff5b550132cee8558492f7`,
-kept in the repo root), with `mhs/patches/0001-microhs-hugs-shim.patch`
-applied to its `hugs/` shim tree (six files; `System/Directory.hs` since
-2026-10-12, for the `listDirectory` 0.16.8.0's `Main.hs` uses). `mhs/bootstrap-seed.sh`
-expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
+kept in the repo root), the release current when the `build/` scripts ran;
+the Nix chain moved to 0.17.0.0 on 2026-11-19 (D58). It has
+`mhs/patches/0001-microhs-hugs-shim.patch` applied to its `hugs/` shim tree
+(six files; `System/Directory.hs` since 2026-10-12, for the `listDirectory`
+0.16.8.0's `Main.hs` uses). `mhs/bootstrap-seed.sh` expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
 `MicroHs/bin/cpphs`, which every later phase uses. `generated/hmhs.c` and
 `mhs.conf` inside it are build outputs. The chain was built on commit
 `1474221819a29d6c948fb9a04bd70ed1ded4ca71` (`v0.16.5.0-80-g14742218`);
@@ -67,7 +68,7 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | `libraries/mtl` of `ghc-7.4.2-src.tar.bz2` (mtl 1.1.1.1, which 7.4.2 builds but does not install) | `ghc74/mtl.nix` | the tarball's, above |
 | `happy-1.19.12.tar.gz` (Hackage); `src/Parser.ly`, `src/AttrGrammarParser.ly`, `templates/GenericTemplate.hs`, `GLR_Base.hs`, `GLR_Lib.hs` at the `1.19.12` tag of github.com/haskell/happy (the tarball ships only the generated parsers and the preprocessed templates); `gen-happy-sdist/Main.hs` at the same tag (sha256 `2d1b93d621c7a7414de2a447bb9cb92d17e6100e1f03f09e4d7fa17816c1dca8`) read for how the templates are made, not fetched by the build | `ghc88/happy11912.nix` | in the file |
 | `gmp-6.1.2.tar.xz` (`ftp.gnu.org/gnu/gmp/`) | `gmp612/default.nix` | `sha256-h7Vl6JqaaE/k6+7duDmdziWZ+ckEmFTKjA373qDiGRI=` |
-| `hugs98-plus-Sep2006.tar.gz`, `MicroHs-0.16.8.0`, `cpphs-1.20.9.tar.gz` and `polyparse-1.12.tar.gz` (Hackage) | `hugs/default.nix`, `mhs/default.nix`, `cpphs/default.nix` | in the files |
+| `hugs98-plus-Sep2006.tar.gz`, MicroHs 0.17.0.0 (the `v0.17.0.0` tag of github.com/augustss/MicroHs), `cpphs-1.20.9.tar.gz` and `polyparse-1.12.tar.gz` (Hackage) | `hugs/default.nix`, `mhs/default.nix`, `cpphs/default.nix` | in the files |
 
 GMP 6.1.2 is the GMP every compiler before 8.0 links against: GMP 6.2's lazy
 `mpz_init` breaks their Integer ([DECISIONS.md](DECISIONS.md) [D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)). The host's GMP serves

@@ -8,15 +8,17 @@
 # the shipped seed is exactly what the Hugs-derived compiler emits (D1).
 # The output is the source tree with bin/ in it, so mhs runs "in place" (it
 # finds lib/ and src/runtime/ next to bin/).
+# MicroHs's own hugs/ shim tree covers Hugs's 2006 libraries since 0.16.9.0,
+# so the source is built unpatched (D58).
 { stdenv, fetchFromGitHub, hugs }:
 stdenv.mkDerivation {
   pname = "mhs";
-  version = "0.16.8.0";
+  version = "0.17.0.0";
   src = fetchFromGitHub {
     owner = "augustss";
     repo = "MicroHs";
-    tag = "v0.16.8.0";
-    hash = "sha256-SuZtxRL27EUnrqm5ly+3TexFoZPvuoqHvH+GHEWCkjQ=";
+    tag = "v0.17.0.0";
+    hash = "sha256-b5cmdXiNM/FczC+n/s4wytqrP7igMO5XAh0kNkcpQJ8=";
   };
   # The shipped seed goes before anything else runs; nothing below may use it.
   postUnpack = ''
@@ -24,7 +26,6 @@ stdenv.mkDerivation {
     mv "$sourceRoot"/generated/mhs.c $NIX_BUILD_TOP/shipped/
     rm -f "$sourceRoot"/generated/*.c
   '';
-  patches = [ ./patches/0001-microhs-hugs-shim.patch ];
   nativeBuildInputs = [ hugs ];
   hardeningDisable = [ "all" ];
   # Hugs decodes source text with the locale; the sources have non-ASCII.

@@ -2419,3 +2419,58 @@ else in the chain could tell the difference. The shim now matches
 containers. That changes happy's derivation and everything after it.
 
 **Overturned by:** nothing yet.
+
+## D58 — the chain moves to MicroHs 0.17.0.0
+*2026-11-19, `mhs/default.nix`; the release was announced on 2026-11-17
+(Discourse thread 15130).*
+
+**The question.** Does 0.17.0.0 carry what this project sent upstream, and
+can the chain build it as released?
+
+**The Hugs path.** 0.17.0.0's own `hugs/` tree is enough: built by hand with
+no patch, under a Hugs with our `hugs/patches` as of 2026-10-16, the
+Hugs-derived compiler reaches the fixed point (generation 2 == generation 3),
+agrees with the compiler built from the shipped C, and with `-z` reproduces
+the shipped `generated/mhs.c` byte for byte. So `mhs/patches/0001`, which
+0.16.9.0 already did without (MicroHs#547), is gone from the derivation.
+Upstream's CI now builds MicroHs with Hugs (`build-with-hugs`, `make
+testhugs`), using augustss/hugs98-plus-Sep2006. Its commit c447d1c0
+("Implement pattern guards", 2026-10-16) is our `0002` of that day line for
+line, and ede690a3 is our `0003`. It does not have the 2026-10-28 fix to
+`0002` (a value built from the stack is computed before it is pushed),
+which gcc does not need.
+
+**The list in thread 6205 #98.** Each item reduced to a small program and
+run on 0.16.8.0 and 0.17.0.0, with GHC 9.14.1 as the reference where the
+answer was in doubt:
+
+| 0.17.0.0 | Items (GHC 6.2.2 patch) |
+|---|---|
+| fixed | an empty statement after `do {` (0010); trailing commas (0011, part); `f.g` (0015); `f :: T = e`, on one line or with `= e` on the next (0022); an import item listed twice (0012); `T(..)` importing field selectors exported by name (0013); mhs's own `MachDeps.h` shadowing an `-I` directory (0003); `hFileSize` (0026, part); `unsafeInterleaveIO` in a CAF, which now re-runs (0006); `'x'#` (0007) |
+| in part | `"abc"#` is a ByteString literal, not an `Addr#` (0002, 0005) |
+| not fixed | unlit with a blank after `\begin{code}` (0001); `_scc_` (0009); doubled commas (0011; GHC 9.14.1 rejects them too); safety after the entity string and `foreign label` (0017); `fromInteger` into Int8/16/32 and `negate`/`abs` of `minBound` still trap (0026) |
+| worse | a Latin-1 byte in text input: 0.16.8.0 decoded it wrongly without a word, 0.17.0.0 raises `hGetContents: surrogate` |
+| not mhs bugs | a hand-written `Typeable` instance (0021) and an import of a name that is not exported: GHC 9.14.1 rejects both |
+
+**What stays.** The 6.2.2 patch series is unchanged. Every patch removes a
+GHC-ism or works around a semantic difference, so each is still correct
+under 0.17.0.0; dropping the ones it makes unnecessary is a separate change,
+once the chain has built on it. `mhs/bootstrap-seed.sh` and the `build/`
+scripts stay on 0.16.8.0, with the patch.
+
+**Checked before building.** The source hash is `nix hash path` of `git
+archive v0.17.0.0`; the same command on `v0.16.8.0` gives the hash the
+derivation had. 0.17.0.0's library adds two modules (`Mhs.Print`,
+`Mhs.Reflect`), neither the name of a shim; `Mhs.Array` and `Mhs.MutArr`,
+which `common/shims` imports, are unchanged. Nothing here uses `cprint`,
+`getTimeMilli` or `try` at a type application, which changed. Since text
+input that is not UTF-8 now fails, the inputs were scanned: in 6.2.2's
+tarball only `parser/Ctype.lhs`, which patch 0008 transcodes, and two
+ObjectIO modules the chain does not build; nothing in the happy, alex,
+cpphs and polyparse tarballs; and no `.y`, `.ly` or `.x` file of any GHC
+from 6.6 to 9.14.1, which the mhs-built happys and alexes read.
+
+**Not yet built.** Every derivation from `mhs` on changes. Results go here
+when they exist.
+
+**Overturned by:** nothing yet.

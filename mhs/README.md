@@ -1,8 +1,11 @@
 # MicroHs
 
-MicroHs 0.16.8.0 (`mhs`), bootstrapped from [Hugs](../hugs/README.md) without
-any of the pre-generated C it ships. It is the Haskell compiler that builds
-cpphs, happy, hsc2hs and GHC 6.2.2's compiler proper.
+MicroHs 0.17.0.0 (`mhs`), bootstrapped from [Hugs](../hugs/README.md) without
+any of the pre-generated C it ships, and without patches: since 0.16.9.0
+MicroHs's own `hugs/` shim tree covers what Hugs's 2006 libraries lack
+([D58](../DECISIONS.md#d58--the-chain-moves-to-microhs-01700)). It is the
+Haskell compiler that builds cpphs, happy, hsc2hs and GHC 6.2.2's compiler
+proper.
 
 ```sh
 nix-build -A mhs
@@ -30,7 +33,7 @@ The output is the source tree with `bin/` in it; `mhs` runs in place and finds
 | File | What it is |
 |---|---|
 | `default.nix` | the derivation |
-| `bootstrap-seed.sh` | the same chain without Nix: Hugs, generations 1 to 3, and the comparison with the shipped C |
-| `patches/0001-microhs-hugs-shim.patch` | MicroHs's Hugs override tree (`hugs/`), six files: shims for what Hugs's 2006 libraries lack (`Data.Version.makeVersion`, `Text.Read.readMaybe`, `System.Directory.listDirectory`, `setEnv`, `getExecutablePath`, two `System.IO.Serialize` stubs), `MHSPrelude` fixes (`try` at `Exception`, the `Data.Int`/`Data.Word` re-exports, `NFData ByteString`), and `getTimeMilli` reduced mod 1e9 to fit Hugs's 32-bit `Int` |
+| `bootstrap-seed.sh` | the same chain without Nix, on MicroHs 0.16.8.0, the version the `build/` scripts use: Hugs, generations 1 to 3, and the comparison with the shipped C |
+| `patches/0001-microhs-hugs-shim.patch` | used only by `bootstrap-seed.sh`, for 0.16.8.0: MicroHs's Hugs override tree (`hugs/`), six files: shims for what Hugs's 2006 libraries lack (`Data.Version.makeVersion`, `Text.Read.readMaybe`, `System.Directory.listDirectory`, `setEnv`, `getExecutablePath`, two `System.IO.Serialize` stubs), `MHSPrelude` fixes (`try` at `Exception`, the `Data.Int`/`Data.Word` re-exports, `NFData ByteString`), and `getTimeMilli` reduced mod 1e9 to fit Hugs's 32-bit `Int` |
 
 The findings are in [`notes/phase0/FINDINGS.md`](../notes/phase0/FINDINGS.md).

@@ -1,8 +1,9 @@
 cpphs 1.20.9, the Hackage release, as MicroHs builds it: the edits that
   hackage-trustees/malcolm-wallace-universe 3ec065411afb (the cpphs submodule
-  MicroHs 0.16.8.0 pins) makes to its .hs sources. defaultTimeLocale comes
-  from MicroHs's TimeCompat; composition dots get spaces ("(==s) . fst",
-  which MicroHs would otherwise read as a record field); trailing blanks go.
+  MicroHs 0.16.8.0 pins, unchanged in 0.17.0.0) makes to its .hs sources.
+  defaultTimeLocale comes from MicroHs's TimeCompat; composition dots get
+  spaces ("(==s) . fst", which MicroHs would otherwise read as a record
+  field); trailing blanks go.
   Apply with -p1 in the directory holding cpphs-1.20.9/.
 
 diff -ruN a/cpphs-1.20.9/cpphs.hs b/cpphs-1.20.9/cpphs.hs

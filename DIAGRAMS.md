@@ -37,7 +37,7 @@ use the shipped `mhs.c`, and [D1](DECISIONS.md#d1--the-seed-is-c-compiler--hugs-
 ```mermaid
 flowchart TB
     htar["hugs98-plus-Sep2006.tar.gz"] -->|"patches 0002, 0003<br/>gcc -std=gnu89 -fpermissive"| hugs["runhugs"]
-    msrc["MicroHs source<br/>shipped generated/*.c deleted<br/>patch 0001 hugs shim"] --> hugs
+    msrc["MicroHs source<br/>shipped generated/*.c deleted"] --> hugs
     hugs -->|"interprets MicroHs.Main,<br/>which compiles itself"| gen1["generated/hmhs.c<br/>generation 1"]
     gen1 -->|"gcc + src/runtime"| hmhs["bin/hmhs"]
     hmhs -->|"compiles MicroHs.Main"| gen2["generated/mhs.c<br/>generation 2"]
