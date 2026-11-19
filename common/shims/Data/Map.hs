@@ -121,8 +121,9 @@ foldrWithKey f z (Bin _ k v l r) = foldrWithKey f (f k v (foldrWithKey f z r)) l
 filterWithKey :: Ord k => (k -> v -> Bool) -> Map k v -> Map k v
 filterWithKey p m = fromList [kv | kv <- toList m, p (fst kv) (snd kv)]
 
+-- the last of duplicate keys wins, as in containers
 fromList :: Ord k => [(k, v)] -> Map k v
-fromList = P.foldl (\m kv -> insertWith (\_ old -> old) (fst kv) (snd kv) m) empty
+fromList = P.foldl (\m kv -> insert (fst kv) (snd kv) m) empty
 
 keys :: Map k v -> [k]
 keys = P.map fst . toList

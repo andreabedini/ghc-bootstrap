@@ -1,9 +1,8 @@
 -- Data.Map for the alex chain (ghc66/alexchain.nix): common/shims/Data/Map.hs,
 -- the weight-balanced tree, with what alex 3 needs on top of it. On the -i
 -- path before common/shims, so alex sees this one; nothing else does.
+-- Keep the shared part in step with common/shims/Data/Map.hs. Added here:
 --
---   fromList      keeps the last of duplicate keys, as containers does (the
---                 common shim keeps the first)
 --   fromListWith, unionWith, mapWithKey, partition, and a Functor instance
 module Data.Map(Map, empty, singleton, insert, insertWith, delete, adjust,
                 lookup, member, findWithDefault, union, unions, difference,

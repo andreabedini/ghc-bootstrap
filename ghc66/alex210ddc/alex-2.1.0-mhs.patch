@@ -4,8 +4,7 @@ change is under `#if defined(__MHS__)` or keeps the meaning of the code:
   Main.hs        Control.Exception's bracketOnError, in place of the local one
                  built on block/unblock, which MicroHs does not have
   Map.hs         a branch over the chain's Data.Map shim (common/shims), which
-                 lacks unionWith, mapWithKey and fromListWith, and whose fromList
-                 keeps the first of duplicate keys where containers' keeps the last
+                 lacks unionWith, mapWithKey and fromListWith
   NFA.hs,        Functor and Applicative instances for the NFAM and P monads
   ParseMonad.hs  (superclasses of Monad in MicroHs's base)
   Output.hs      unsafeRead as readArray (the shim's Data.Array.Base has none;
@@ -48,20 +47,15 @@ diff -ru a/src/Main.hs b/src/Main.hs
 diff -ru a/src/Map.hs b/src/Map.hs
 --- a/src/Map.hs
 +++ b/src/Map.hs
-@@ -13,7 +13,24 @@
- 
+@@ -13,7 +13,19 @@
+
  import Prelude hiding ( lookup )
- 
+
 -#if __GLASGOW_HASKELL__ >= 603
 +#if defined(__MHS__)
-+import Data.Map hiding ( fromList )
++import Data.Map
 +
-+-- The chain's Data.Map shim (common/shims) lacks the last three, and its
-+-- fromList keeps the first of duplicate keys; containers' keeps the last
-+-- (mk_int_dfa's mp' can have duplicates when two start codes share a state).
-+fromList :: Ord k => [(k,a)] -> Map k a
-+fromList = foldl (\m (k,a) -> insert k a m) empty
-+
++-- The chain's Data.Map shim (common/shims) lacks these three.
 +unionWith :: Ord k => (a -> a -> a) -> Map k a -> Map k a -> Map k a
 +unionWith c l r = foldr (\(k,a) m -> insertWith c k a m) r (toAscList l)
 +
