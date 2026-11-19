@@ -1,6 +1,7 @@
 # The check on alexchain.nix's alex 3.2.7.4 that matters to the chain: on
 # every alex grammar of GHC 7.8.4 and 9.14.1 (their *.x.source), its `alex -g`
-# output must be ghc74.alex327's, byte for byte. ghc74.alex327 is the alex
+# output must be ghc74.alex327's, byte for byte, and so must its `alex -g`
+# of alex's own Scan.x (each one's generated/Scan.hs). ghc74.alex327 is the alex
 # that 7.8.4 to 9.14.1 are built with (GHC 7.4.2-compiled, from its
 # tarball's Scan.hs); this one is mhs-compiled and traced back to the
 # hand-written 2.1.0 scanner. A separate derivation, so that alexChain does
@@ -59,6 +60,8 @@ stdenv.mkDerivation {
         cmp ref/$o ours/$o
         echo "$o: identical to ghc74.alex327's ($(wc -l < ref/$o) lines)"
       done
+      cmp ${ghc74.alex327}/share/generated/Scan.hs ${alexChain}/generated/Scan.hs
+      echo "alex's own Scan.hs (-g, grammar/Scan.x): identical to ghc74.alex327's"
     } | tee report.txt
     runHook postCheck
   '';
