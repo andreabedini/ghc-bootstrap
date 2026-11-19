@@ -16,15 +16,22 @@
 # .boot files, the sources they came from. src/Parser.hs is regenerated
 # from Parser.y.boot by the chain's happy 1.19.5 (happy/happy.nix, the
 # mhs-built one, plain backend) and the tarball's is not used. src/Scan.hs,
-# alex's own lexer, can only come from an alex (alex 2.1.0 accepts Scan.x
-# but its template no longer fits alex 3's code), so the tarball's is the
-# seed, discharged by a fixed point:
+# alex's own lexer, can only come from an alex. This uses the tarball's,
+# checked by a fixed point here:
 #
 #   gen 1  built with the tarball's Scan.hs; its `alex -g Scan.x` must equal
 #          that Scan.hs modulo blank lines and LINE pragmas
 #          (ghc66/cmp-generated.sh)
 #   gen 2  built with gen 1's Scan.hs; its `alex -g Scan.x` must be gen 1's,
 #          byte for byte
+#
+# and, independently, by ghc66.alexChain: an alex 3.2.7.4 whose Scan.hs comes
+# from alex 2.1.0, itself built from a hand-written scanner, regenerates the
+# tarball's Scan.hs byte for byte, and ghc66.alexChainLexers checks that it
+# and this alex give the same output on every alex grammar of GHC 7.8.4 to
+# 9.14.1 (D57).
+# Those checks are separate derivations, so this one and every GHC after it
+# do not change.
 #
 # The .y and .x stay out of src/ so Cabal does not try to run happy and alex
 # itself. Output: bin/alex (gen 2) and share/.../alex-3.2.7.4/ (the
