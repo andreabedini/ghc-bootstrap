@@ -38,8 +38,7 @@ instance Eq FastString where
 instance Ord FastString where
   compare (FastString _ s1) (FastString _ s2) = compare s1 s2
 
-instance Show FastString where
-  show (FastString _ s) = s
+-- No Show instance: Outputable defines it, as it does for the real FastString.
 
 -- The intern table. One IORef holding (next unique, String -> unique); the
 -- table is only ever grown, and unsafePerformIO with NOINLINE is the standard
