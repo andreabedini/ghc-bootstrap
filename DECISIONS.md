@@ -2470,7 +2470,38 @@ ObjectIO modules the chain does not build; nothing in the happy, alex,
 cpphs and polyparse tarballs; and no `.y`, `.ly` or `.x` file of any GHC
 from 6.6 to 9.14.1, which the mhs-built happys and alexes read.
 
-**Not yet built.** Every derivation from `mhs` on changes. Results go here
-when they exist.
+**Built on 2026-11-24, as far as `ghc622.fixpoint`.** Stage 1 first stopped
+at `Outputable.lhs` with `Duplicate instance Text.Show.Show
+FastString.FastString`. 0.17.0.0 rejects a second instance of the same class
+and type, where 0.16.8.0 compiled both. `Outputable` defines the instance
+because the real `FastString` has none, and both `FastString` shims defined
+one too; the shims' instances are removed. With that the fixed point holds
+as it did: stage 5 equals stage 4 in all 220 `.hc`, stage 4 differs from
+stage 3 in `CoreUtils` only, stage 3 from stage 2 in 215. The chain above
+6.2.2 is not built on 0.17.0.0 yet.
+
+**Stage 4 is not the 0.16.8.0 chain's stage 4.** 364 of its 440 `.hc` and
+`.hi` differ from the three earlier stage-4 outputs still in the store, which
+agree with one another. The source tree is the same file for file. The
+difference comes in through `base`, which stage 1 compiles and stages 3 to 5
+read (`ghc622/nix/native.nix`: the topdir stays stage 2's): 83 of its 147
+`.hi` and 86 of its `.hc` changed. The stage 1 that 0.17.0.0 builds makes
+worker/wrapper splits that the earlier one did not. Counting `$w` closures in
+`libHSbase.a`:
+
+| `base` compiled by | `$w` closures | of the native 733, missing |
+|---|---|---|
+| stage 1 on 0.16.8.0 | 574 | 165 |
+| stage 1 on 0.17.0.0 | 737 | 2 |
+| a native 6.2.2 (the make build of the 0.16.8.0 chain) | 733 | |
+
+The two missing are `Control.Monad.Error.$w$dmnoMsg` and
+`Foreign.C.Error.$wccall2`. Both stage-1 builds have the same six that the
+native one lacks, `Foreign.C.Error.$wccall` among them. No worker that the
+old `base` shared with the native one is lost. So stage 1 on 0.17.0.0
+optimises `base` much more nearly as a native 6.2.2 does. Removing the shims'
+instance is not the cause: 0.16.8.0 with the instance removed gives the old
+`base` byte for byte (147 `.hi`, 147 `.hc`). Which change in 0.17.0.0 is
+responsible is not identified.
 
 **Overturned by:** nothing yet.
