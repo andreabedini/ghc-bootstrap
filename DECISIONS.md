@@ -2477,8 +2477,16 @@ and type, where 0.16.8.0 compiled both. `Outputable` defines the instance
 because the real `FastString` has none, and both `FastString` shims defined
 one too; the shims' instances are removed. With that the fixed point holds
 as it did: stage 5 equals stage 4 in all 220 `.hc`, stage 4 differs from
-stage 3 in `CoreUtils` only, stage 3 from stage 2 in 215. The chain above
-6.2.2 is not built on 0.17.0.0 yet.
+stage 3 in `CoreUtils` only, stage 3 from stage 2 in 215.
+
+**Built on 2026-11-25, as far as 9.14.1.** `nix-build -A ghc914` at the
+commit that records the fixed point above gives
+`/nix/store/4kkjzd8dlbzz6mmw3g4gycdr1lbzhkzw-ghc-9.14.1`, from
+`06bbpan9…-ghc-9.14.1.drv`, which is what `nix-instantiate -A ghc914` gives.
+That derivation's requisites include `mhs-0.17.0.0.drv`. They include no
+binary GHC. The compiler reports booter 9.12.4 and stage 2, and builds and
+runs a program that uses `containers` at `-O`. No change was needed above
+6.2.2.
 
 **Stage 4 is not the 0.16.8.0 chain's stage 4.** 364 of its 440 `.hc` and
 `.hi` differ from the three earlier stage-4 outputs still in the store, which
