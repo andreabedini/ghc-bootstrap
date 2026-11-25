@@ -3,9 +3,9 @@
 import graph, for libraries/base ($(M1)/base-rebuild-order.txt),
 libraries/haskell98 and the compiler proper ($(S2)/order.txt), both generated
 by the Makefile from ghc622/tools,
-the last twice: stage 2 (compiled by the mhs-built stage 1 into stage2/) and
+the last once per stage: stage 2 (compiled by the mhs-built stage 1 into stage2/) and
 stages 3 and 4 (each compiled by the previous stage's native compiler into
-stage<n>/ and obj-stage<n>/, linked as ghc-stage<n>) and stage 5 (compiled by
+stage<n>/ and obj-stage<n>/, linked as ghc-stage<n>), and stage 5 (compiled by
 ghc-stage4 into stage5/, interfaces and Abstract C only).
 
 Edges come from the same scanners the order files came from: ghc622/tools/base-order.py's

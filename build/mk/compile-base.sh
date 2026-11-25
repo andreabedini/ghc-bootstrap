@@ -14,7 +14,7 @@ ulimit -s unlimited 2>/dev/null || ulimit -s 65536
 m=$1; path=$(printf '%s' "$m" | tr . /)
 # GHC 6.2.2 names temp files ghc<pid>.<ext> and steps to pid+1 when the name
 # is taken, so parallel compiles sharing one TMPDIR can read each other's
-# preprocessed source (2026-09-16: GHC/Unicode.hi came out as GHC.STRef's).
+# preprocessed source (GHC/Unicode.hi has come out as GHC.STRef's).
 # Each compile gets a directory of its own.
 export TMPDIR="$W/tmp/$m.$$"; mkdir -p "$TMPDIR"; trap 'rm -rf "$TMPDIR"' EXIT
 OPT="${OPT:--O}"; OUT="${OUT:-$W/base-results.tsv}"

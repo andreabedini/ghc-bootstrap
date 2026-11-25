@@ -13,10 +13,10 @@
 # GHCi-less 8.8.4 does not compile ("Not in scope: type constructor or
 # class `Ptr'", any boot compiler); and a NOSMP threaded RTS rejects -N and
 # -qg as unknown options, while 9.8's Hadrian is linked with
-# `-with-rtsopts=-I0 -qg`, so an SMP-less 9.4 cannot build 9.8. The 6.x-8.4
-# rungs keep NO: they only ever compile the next rung.
+# `-with-rtsopts=-I0 -qg`, so an SMP-less 9.4 cannot build 9.8. 6.x to 8.4
+# keep NO: they only ever compile the next GHC.
 #
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
+# Non-PIE (D41) through the cc wrapper. Output: an installed GHC
 # 8.8.4, bin/ghc.
 { stdenv
 , fetchurl

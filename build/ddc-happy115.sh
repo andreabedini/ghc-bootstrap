@@ -1,5 +1,5 @@
 #!/bin/sh
-# Diverse double compilation for happy's parsers (D7's open gap, issue #2).
+# Diverse double compilation for happy's parsers (DECISIONS.md D56).
 # happy/happy-seed/ is a fixed point of a seed that a GHC-built happy wrote.
 # This starts again from an unrelated seed, the Parser.hs that happy 1.14
 # wrote and that happy's repository commits at the Happy_1_15 tag:

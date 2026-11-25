@@ -2,7 +2,7 @@
 # Compile every .hc the stage-2 loop produced (stage2/<dir>/M.hc) to
 # obj/<dir>_M.o with gcc, with build/ghc622-mhs/build-hc.sh's recipe
 # (-x c -std=gnu89 -O -fwrapv -DNO_REGS -DUSE_MINIINTERPRETER, Stg.h
-# pre-included; -fwrapv is mandatory, FINDINGS-link.md), plus -I<compiler>/parser
+# pre-included; -fwrapv is mandatory, D48), plus -I<compiler>/parser
 # for the '-#include "hschooks.h"' every module carries and base's include
 # dir for HsBase.h.  Also compiles the compiler's two C files (Makefile
 # C_SRCS: parser/hschooks.c, cbits/rawSystem.c) the way UseGhcForCc would:

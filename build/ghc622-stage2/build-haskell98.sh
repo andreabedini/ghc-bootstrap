@@ -1,5 +1,5 @@
 #!/bin/sh
-# Compile 6.2.2's libraries/haskell98 (32 re-export modules) with the stage-1
+# Compile 6.2.2's libraries/haskell98 (30 re-export modules) with the stage-1
 # (mhs-built) compiler and archive libHShaskell98.a.  The compiler proper
 # imports Array/Char/Directory/IO/List/Maybe/Monad/Ratio/System/Time/CForeign,
 # which are haskell98 modules, so the package must exist before stage 2 starts.
@@ -17,8 +17,8 @@ ulimit -s unlimited 2>/dev/null
 OUT="$S/results-haskell98.tsv"; : > "$OUT"
 cd "$S/libraries/haskell98" || exit 1
 ok=0; fail=0
-# Array imports Ix, and the alphabetical order would compile it first (the
-# first run had to redo Array by hand); everything else is order-independent.
+# Array imports Ix, and the alphabetical order would compile Array first;
+# everything else is order-independent.
 for src in Ix.hs $(ls *.hs | grep -v '^Ix\.hs$'); do
   m=${src%.hs}
   start=$(date +%s)

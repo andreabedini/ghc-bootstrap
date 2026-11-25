@@ -15,7 +15,8 @@
 # happy 1.16 and alex 2.1.0 are the versions that made the parsers and lexers
 # the 6.6 tarball ships; ghc.nix deletes those and lets 6.6's own Makefile
 # rules regenerate them, then checks the result against the shipped files.
-# cpp-template.sh, cmp-generated.sh and shims622/ are theirs.
+# shims622/ is theirs; cpp-template.sh and cmp-generated.sh are shared with
+# the later happy and alex builds.
 { lib
 , newScope
 , gdbModule ? null   # diagnostic, see ghc.nix

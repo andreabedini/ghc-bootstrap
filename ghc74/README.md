@@ -28,8 +28,8 @@ nix-build -A ghc74.alex327    # alex 3.2.7.4, compiled by 7.4.2
 - **Why these generator versions.** happy 1.19.5 is the newest happy 7.4.2's
   libraries can build: 1.19.6 and later want an mtl with
   `Control.Monad.Except`. It is also the happy that made 8.0.2's shipped
-  parsers. No alex 3.1.x can stand in for 3.2.7.4, because their executable
-  imports QuickCheck, which 7.4.2 does not have.
+  parsers. alex 3.1.x imports QuickCheck, which 7.4.2 does not have; 3.2.4
+  dropped it, and 3.2.7.4's `-g` output compiles under 7.4.2.
 - **The tarball ships build products.** `utils/ghc-pwd/dist-boot` holds a
   `ghc-pwd` binary and its `.o` and `.hi`. configure rebuilds them anyway, and
   the derivation deletes them before anything runs.

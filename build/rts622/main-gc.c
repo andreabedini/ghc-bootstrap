@@ -1,5 +1,5 @@
 /* Exercise the RTS with no Haskell code: init, allocate some heap,
- * run two major collections, shut down. GC.c is the most-patched file. */
+ * run two major collections, shut down. */
 #include <stdio.h>
 #include "Rts.h"
 #include "Storage.h"

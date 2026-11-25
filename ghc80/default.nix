@@ -5,7 +5,8 @@
 # The tarball's parsers and lexers are regenerated from their
 # grammars (common/regen-parsers.sh) with 7.4.2's happy 1.19.5 and alex 3.2.7.4
 # (8.0 asks for >= 1.19.4 and >= 3.1.0); 1.19.5 made the shipped ones, so the
-# comparison is strict. The tarball ships its own libffi. Docs are Sphinx now (BUILD_SPHINX_*, BUILD_MAN). The C flags
+# comparison is strict. The tarball ships its own libffi. Docs are Sphinx
+# from here and are off (BUILD_SPHINX_*, BUILD_MAN). The C flags
 # change here: -std=gnu11 -w instead of the -std=gnu89 -fpermissive -fwrapv
 # the 2004-2012 sources and their generated C needed (integer-gmp's cbits
 # are C99), and the host's GMP: 8.0's integer-gmp works on limbs and does
@@ -15,7 +16,7 @@
 # MADV_DONTNEED at run time; 8.0.2 already tries MADV_FREE first and the
 # fallback only matters on kernels before 4.5, so it is not applied here.
 #
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
+# Non-PIE (D41) through the cc wrapper. Output: an installed GHC
 # 8.0.2, bin/ghc.
 { stdenv
 , fetchurl

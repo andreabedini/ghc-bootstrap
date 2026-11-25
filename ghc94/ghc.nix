@@ -5,35 +5,26 @@
 # make build system]"), which a 9.0.2 is; nixpkgs 23.11 and Guix both build
 # 9.4 this way. Registerised with the native code generator (via C with
 # `registerised = false`), GHCi, static only. 9.4.8 asks for a 9.0 or
-# later as the bootstrapping compiler; 9.2 is skipped. The tarball's parsers and lexers are regenerated from their
-# grammars (common/regen-parsers.sh) with happy 1.20.1.1 and alex 3.2.7.4
-# (9.4 asks for 1.20 and >= 3.2.6); so is Cabal's lexer (templates/Lexer.x).
-# The tarball ships
-# GHC/Parser.hs, GHC/Parser/Lexer.hs, GHC/Cmm/Parser.hs and GHC/Cmm/Lexer.hs,
-# so neither happy nor alex is run, but the compiler, genprimopcode and hpc
-# declare `build-tool-depends: alex >= 3.2.6, happy >= 1.20.0` and ghc-cabal
-# refuses to configure them without the programs: happy 1.20.1.1 and alex
-# 3.2.7.4, the former compiled by the chain's 9.0.2 (happy120.nix), the
-# latter by its 7.4.2 (ghc74/alex327.nix).
+# later as the bootstrapping compiler; 9.2 is skipped. The tarball's
+# parsers and lexers are regenerated from their grammars
+# (common/regen-parsers.sh) with happy 1.20.1.1 and alex 3.2.7.4 (9.4 asks
+# for 1.20 and >= 3.2.6); so is Cabal's lexer (templates/Lexer.x). The
+# compiler, genprimopcode and hpc also declare `build-tool-depends: alex >=
+# 3.2.6, happy >= 1.20.0`, which ghc-cabal checks at configure: happy
+# 1.20.1.1 compiled by the chain's 9.0.2 (happy120.nix), alex 3.2.7.4 by its
+# 7.4.2 (ghc74/alex327.nix).
 #
-# GhcWithInterpreter = YES and GhcWithSMP = YES from 8.8 on, the standard
-# configuration (nixpkgs, Guix), after two upstream facts: 8.8.4's
-# compiler/main/DynFlags.hs imports Foreign (Ptr) only `#if defined(GHCI)`
-# but its stage-2 SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a
-# GHCi-less 8.8.4 does not compile ("Not in scope: type constructor or
-# class `Ptr'", any boot compiler); and a NOSMP threaded RTS rejects -N and
-# -qg as unknown options, while 9.8's Hadrian is linked with
-# `-with-rtsopts=-I0 -qg`, so an SMP-less 9.4 cannot build 9.8. The 6.x-8.4
-# rungs keep NO: they only ever compile the next rung.
+# GhcWithInterpreter = YES and GhcWithSMP = YES, as from 8.8 (ghc88/ghc.nix
+# says why).
 #
 # --with-gmp-includes/--with-gmp-libraries as nixpkgs passes them: from 9.0
 # ghc-bignum records a GMP library directory only when told one. Without it
-# the 9.4.8 could not link a program outside Nix (-lgmp not found): 9.4's
-# settings name the Nix gcc wrapper by its store path, and that linker
-# searches no /lib64. The rungs up to 9.0 record "gcc" and resolve it on
-# PATH, so outside Nix they linked the host's libgmp by accident.
+# the installed compiler cannot link outside Nix (-lgmp not found) once its
+# settings name the Nix gcc wrapper by store path, as 9.4's do: that linker
+# searches no /lib64. (Settings that say "gcc", up to 9.0, resolve it on
+# PATH and find the host's libgmp.)
 #
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
+# Non-PIE (D41) through the cc wrapper. Output: an installed GHC
 # 9.4.8, bin/ghc.
 { stdenv
 , fetchurl

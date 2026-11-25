@@ -15,7 +15,7 @@ gives the order to run them in.
 
 | File | What it is |
 |---|---|
-| `Makefile` | the 6.2.2 chain from stage 1 to stage 5 as one dependency graph; its header lists the targets (`stage1`, `base`, `haskell98`, `stage2`, `stage3`, `stage4`, `stage5`, `compare3`-`compare5`, `status`) |
+| `Makefile` | the 6.2.2 chain from stage 1 to stage 5 as one dependency graph; its header lists the targets (`stage1`, `deps`, `base`, `haskell98`, `stage2`, `test`, `stage3`, `test3`, `stage4`, `stage5`, `compare3`-`compare5`, `status`) |
 | `build-happy-mhs.sh`, `link-happy.sh` | happy 1.19.5 compiled by mhs with the ghc-on-mhs shims |
 | `fixpoint-happy.sh` | happy's own parsers taken to a fixed point ([D7](../DECISIONS.md#d7--happys-seed-is-a-ghc-built-happys-output-discharged-twice), [D14](../DECISIONS.md#d14--happy-is-verified-by-regeneration-not-by-equality-with-a-ghc-built-happy)); generation 2 is `happy/happy-seed/` |
 | `ddc-happy115.sh` | the diverse double compilation of happy's seed from happy 1.15 ([D56](../DECISIONS.md#d56--happys-seed-by-diverse-double-compilation-from-happy-115)) |

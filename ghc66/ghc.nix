@@ -1,4 +1,4 @@
-# GHC 6.6 built by the chain's GHC 6.2.2 (build/ghc66-by-622, NOTES.md):
+# GHC 6.6 built by the chain's GHC 6.2.2:
 # unregisterised via C, no GHCi, no native code generator, no profiling, with
 # the four tree edits of ghc-6.6-by-622.patch.
 #
@@ -14,7 +14,7 @@
 # make install, and test/T2.hs through the installed compiler. Output: an
 # installed GHC 6.6, bin/ghc.
 #
-# Non-PIE (nix-non-pie): every gcc call, including the ones both GHCs make
+# Non-PIE (D41): every gcc call, including the ones both GHCs make
 # for .hc files and links, goes through the cc wrapper, so -fno-pie/-no-pie
 # are given there rather than in each Makefile.
 { stdenv
@@ -100,8 +100,7 @@ stdenv.mkDerivation {
   '';
   enableParallelBuilding = false;
 
-  # test/T2.hs by the installed compiler, with no extra flags (NOTES.md,
-  # "Verification"); the expected output is T2's by construction.
+  # test/T2.hs by the installed compiler, with no extra flags; the expected output is T2's by construction.
   doInstallCheck = true;
   installCheckPhase = ''
     mkdir t2; cp ${./test/T2.hs} t2/T2.hs

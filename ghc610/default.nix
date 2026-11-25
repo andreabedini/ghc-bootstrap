@@ -10,7 +10,7 @@
 # the ways and the interpreter off, and the C flags a 2026 gcc needs for 2009
 # C (-std=gnu89 -fpermissive -w) plus -fwrapv for the generated C, passed to
 # every compile the build makes (SRC_HC_OPTS -optc, SRC_CC_OPTS, hsc2hs).
-# Non-PIE (nix-non-pie) through the cc wrapper, as for 6.6.
+# Non-PIE (D41) through the cc wrapper, as for 6.6.
 # Output: an installed GHC 6.10.4, bin/ghc.
 { stdenv
 , fetchurl

@@ -1,5 +1,5 @@
 # GHC 7.4.2 built by the chain's GHC 6.12.3, as one derivation: the installed
-# compiler (ghc.nix), with the two generators the rungs after it need, and
+# compiler (ghc.nix), with the two generators the GHCs after it need, and
 # the mtl one of them needs, reachable as attributes.
 #
 #   nix-build -A ghc74            GHC 7.4.2, configure and make with 6.12.3 (ghc.nix)
@@ -15,7 +15,7 @@
 # build (1.19.6 and later want an mtl with Control.Monad.Except; the mtl
 # 1.1.1.1 of 7.4.2's tree, which its build keeps in-tree, is mtl.nix), and
 # it is the happy that made 8.0.2's shipped parsers; it serves 7.8.4 to
-# 8.8.4. alex 3.2.7.4 builds with 7.4.2 and serves every rung from 7.8.4 to
+# 8.8.4. alex 3.2.7.4 builds with 7.4.2 and serves every GHC from 7.8.4 to
 # 9.14.1 (alex327.nix says why no 3.1.x can).
 { lib
 , newScope

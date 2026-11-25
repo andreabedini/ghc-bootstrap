@@ -1,6 +1,6 @@
 #!/bin/sh
-# Build GHC 6.6 with the chain's GHC 6.2.2 (build/ghc66-by-622/NOTES.md).
-#   mise exec -- sh build/ghc66-by-622/build-66.sh        (queue under pueue-agent)
+# Build GHC 6.6 with the chain's GHC 6.2.2.
+#   mise exec -- sh build/ghc66-by-622/build-66.sh
 # Steps, each logged in logs/: configure, make (stage 1, rts, libraries, stage 2
 # as the top-level Makefile orders them), then a hello-world through the
 # in-place compilers. Re-runnable: configure is skipped once mk/config.mk exists.

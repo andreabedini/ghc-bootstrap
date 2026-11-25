@@ -19,10 +19,10 @@
 # a working GHC to drive it, and the chain has none yet. Stage 1 is GHC's
 # source run on the MicroHs runtime, about twenty times slower than a native
 # compile, and it dies on some modules at -O (retried with -fno-strictness,
-# then -O0: build/mk/compile-stage2.sh), so the 220 modules of stage 2 are
+# then -O0: stage2.nix's hcChunk), so the 220 modules of stage 2 are
 # compiled one by one, in chunks a derivation can finish. The RTS and base are
 # compiled by hand for the same reason: the Makefiles that build them call
-# the compiler being built. From stage 3 on the compiler is native; stages 4
+# the compiler being built. From stage 2 on the compiler is native; stages 4
 # and 5 show the fixed point, and inst.nix hands stage 3 to 6.2.2's configure
 # and make, which build everything else the way they always did.
 #

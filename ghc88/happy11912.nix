@@ -18,8 +18,7 @@
 #          on, ansi off, and the file named `templates/<src>`. The chain's
 #          cpphs 1.20.9 (cpphs/default.nix) run the same way from the
 #          package root, `cpphs --linepragma -D<flag>... templates/<src>`,
-#          reproduces all thirteen byte for byte (tried by hand 2026-10-12),
-#          and the build fails if any differs.
+#          reproduces all thirteen byte for byte, and the build fails if any differs.
 #
 #   gen 1  the parsers from the grammars by the chain's happy 1.19.5
 #          (happy/happy.nix, plain backend); the happy built from them
@@ -32,8 +31,7 @@
 #          --template pointing at HappyTemplate-arrays-coerce made that way
 #          (by the GHC building this, as 1.19.10's was by its), and that
 #          must equal what the tarball shipped modulo blank lines, LINE
-#          pragmas and the version line (ghc66/cmp-generated.sh; tried by
-#          hand on Parser.hs 2026-10-13). The shipped parsers also carry two
+#          pragmas and the version line (ghc66/cmp-generated.sh). The shipped parsers also carry two
 #          raw cpp markers (`# 1 ".../stdc-predef.h" 1 3 4`), from the same
 #          Setup.lhs's line-marker bug; the comparison drops raw markers as
 #          it drops LINE pragmas.

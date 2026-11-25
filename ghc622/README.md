@@ -1,6 +1,6 @@
 # GHC 6.2.2
 
-This is where the chain enters GHC (since [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622)). [mhs](../mhs/README.md)
+This is where the chain enters GHC. [mhs](../mhs/README.md)
 compiles GHC 6.2.2's compiler proper. That compiler builds 6.2.2's runtime and
 libraries, then compiles its own source, until stage 5's Abstract C is
 byte-identical to stage 4's. Finally 6.2.2's own `configure && make` builds the
@@ -8,8 +8,8 @@ installed compiler, with stage 3 as the boot compiler, and that is what builds
 [GHC 6.6](../ghc66/README.md).
 
 6.2.2 is the first GHC with an x86-64 port: unregisterised, via C, with no
-GHCi and no native code generator. Why the chain enters here is
-[D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622).
+GHCi and no native code generator. [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622)
+says why the chain enters here.
 
 ## Building
 
@@ -79,7 +79,7 @@ The decisions behind them are [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-
 | `base/` | the build inputs for `libraries/base`: the modules that wait for `hsc2hs`, and the `topdir` that stage 1 compiles base with |
 | `gen/config-hs.mk` | overrides for the compiler Makefile's `Config.hs` rule |
 | `hsc2hs/` | `Main.hs.patch` (the `Parser` instances mhs needs) and a `System` shim |
-| `tools/` | the scripts the build runs: module order, `Config.hs`, `hsc2hs` sources, `gen-htypes.c` (the `HTYPE_*` block gcc 16 stops configure producing), `convert-lexer.py` (alex's `Addr#` tables as boxed arrays), the regeneration of parsers and primop tables |
+| `tools/` | the scripts the build runs: module order, `Config.hs`, `hsc2hs` sources, `gen-htypes.c` (the `HTYPE_*` block gcc 14 and later stop configure producing), `convert-lexer.py` (alex's `Addr#` tables as boxed arrays), the regeneration of parsers and primop tables |
 | `test/Hello.hs` | the acceptance test |
 
 The shims are on the `-i` path in this order: `hsboot`, `shims`,
@@ -87,38 +87,30 @@ The shims are on the `-i` path in this order: `hsboot`, `shims`,
 
 ## The patch series
 
-`patches/` holds 25 patches (256 hunks in 102 files) against the pristine
-tarball. Applied to a clean extraction, they reproduce the working tree. None
-of them is about x86-64, because 6.2.2 knows x86-64 exists. Almost all of it
+`patches/` holds 25 patches (196 hunks in 102 files) against the pristine
+tarball. Applied to a clean extraction, they reproduce the working tree. Almost all of it
 is the Haskell of 2004 meeting the Haskell mhs implements.
 
 | Group | Patches | What |
 |---|---|---|
-| Haskell that stopped being legal | 0002, 0005, 0007-0017, 0019-0022 | `SLIT`/`FSLIT` over boxed `String` (the macro that kept mhs off 6.x, [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622); 13 hunks); `Ctype.lhs` transcoded from Latin-1 (mhs's lexer wants UTF-8); `_scc_`; `do { ;`; double and trailing commas; duplicate and abstract import items; Functor/Applicative/MonadFail instances; `f.g` -> `f . g`; `(<>)` hidden; pre-addendum `foreign import`; unboxed literals; `f :: T = e` split; array indexing and pointer casts through `GhcCompat` |
+| Haskell that stopped being legal | 0002, 0005, 0007-0017, 0019-0022 | `SLIT`/`FSLIT` over boxed `String` (the macro that kept mhs off 6.x, [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622)); `Ctype.lhs` transcoded from Latin-1 (mhs's lexer wants UTF-8); `_scc_`; `do { ;`; double and trailing commas; duplicate and abstract import items; Functor/Applicative/MonadFail instances; `f.g` -> `f . g`; `(<>)` hidden; pre-addendum `foreign import`; unboxed literals; `f :: T = e` split; array indexing and pointer casts through `GhcCompat` |
 | Portable serialisation | 0004, 0018 | `Binary.hs` without `ByteArray#`; float bit-casts |
 | MicroHs runtime semantics | 0006, 0025, 0026 | the `mk_supply#` CAF (mhs memoises `unsafeInterleaveIO`); strict `!FastInt` in `SrcLoc` (a lazy `Int` under the shims); arithmetic that must wrap, `hFileSize`, `exitWith` (the gaps found in [D47](../DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis)); `GetImports` reading source as bytes |
 | Build plumbing | 0003, 0023 | the `MachDeps.h` include path; a `#error GHC >= 5.00` guard |
-| Bootstrapping proper | 0001 | `unlit` and a trailing space |
-
-Only one patch is actually about bootstrapping.
+| mhs's stricter `unlit` | 0001 | trailing spaces on `\begin{code}`/`\end{code}` lines ([D16](../DECISIONS.md#d16--ghc-is-patched-for-mhss-stricter-unlit-not-mhs)) |
 
 The numbers skip 0024. Nothing needs to touch `typecheck/TcSplice.lhs`:
 without GHCi nothing imports it, so mhs never reads it, and GHC's own Makefile
 and the stage-2 module list (`tools/make-order.py`) leave it out too.
 
-**Nothing in the series is about x86-64.** The RTS patches in `rts/patches`
-fix C that stopped being legal (58 cast-as-lvalue sites, one `static`/`extern`
-mismatch), not 64-bit bugs. configure accepts the triple unaided. The 64-bit problems that did surface were in the
-toolchain, not the source: `-fwrapv` and `-std=gnu89` on every `.hc` compile
-([D48](../DECISIONS.md#d48--hc-is-compiled-with--fwrapv)), and the `HTYPE_*` block that gcc 16 stops configure from producing
-([D31](../DECISIONS.md#d31--the-tarballs-configure-script-runs-probes-that-2026-compilers-break-are-repaired)).
-
-`main/GetImports.hs` reads source through a text handle, which under the
-MicroHs runtime decodes UTF-8 and dies on the Latin-1 `Ctype.lhs`; the last
-hunk of `0026-runtime-wraps-and-driver-exit.patch` reads it as bytes under
-`__MHS__` ([D47](../DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis)).
-
-`series.conf` has each patch's header and the classes of its hunks.
+**Nothing in the compiler series is about x86-64**: 6.2.2 knows the platform,
+and configure accepts the triple unaided. Of the three RTS patches
+(`rts/patches`), two fix C that stopped being legal (58 cast-as-lvalue sites,
+one `static`/`extern` mismatch); the third, the megablock map window, fixes a
+64-bit defect of 6.2.2's own ([D50](../DECISIONS.md#d50--the-rtss-megablock-map-gets-a-fixed-base-and-a-window)). The rest of what a
+2026 toolchain needs is flags and generated headers: `-std=gnu89` and
+`-fwrapv` on every `.hc` compile ([D41](../DECISIONS.md#d41--the-2004-era-c-is-compiled-with--stdgnu89--o), [D48](../DECISIONS.md#d48--hc-is-compiled-with--fwrapv)), and the `HTYPE_*`
+block that gcc 14 and later stop configure producing ([D31](../DECISIONS.md#d31--the-tarballs-configure-script-runs-probes-that-2026-compilers-break-are-repaired)).
 
 ## Without Nix
 
@@ -166,7 +158,8 @@ make -f build/Makefile status               # what is stale, one line per phase
 ```
 
 Use `-j4`, because each GHC compile may use up to 8 GB of address space.
-`make -j4 test` takes about an hour on 16 cores.
+Stage 1 to stage 2's test (`make -f build/Makefile -j4 test`) takes about an
+hour on 16 cores.
 
 ## What does not work
 
@@ -189,8 +182,8 @@ These are the things I know are not right:
    kernel headers define `EFTYPE` it writes `CONST_EFTYPE 134` where the
    reference tree has `-1`.
 3. **Nine compiler modules do not typecheck under mhs**, none of them on
-   `Main`'s path ([D46](../DECISIONS.md#d46--ghc-622s-generated-inputs-the-lexer-converted-the-rest-regenerated)):
-   - `PrimPacked`, which the FastString shim shadows;
+   `Main`'s path:
+   - `PrimPacked`, which the FastString shim shadows ([D20](../DECISIONS.md#d20--the-raw-memory-modules-are-reimplemented-not-emulated));
    - five GHCi bytecode modules plus `InteractiveUI` (`GHC.Ptr`; GHCi is off);
    - the dead `IlxGen` and `JavaGen` back ends.
 4. **6.2.2's own limits on x86-64:**

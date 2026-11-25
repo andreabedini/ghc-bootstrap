@@ -21,12 +21,12 @@ CONFIG_INC=${TREE622:-$B/repro-622/src/ghc-6.2.2}/ghc/includes   # configure's c
 export PATH="$R/MicroHs/bin:$PATH"
 export TMPDIR="$G/tmp"; mkdir -p "$TMPDIR"
 export HAPPY_DATADIR="$B/happy-mhs/datadir"   # portable HappyTemplate (happy 1.19.5)
-HAPPY=$B/happy-mhs/happy-mhs2                 # the fixpoint-verified happy (notes/phase2/FINDINGS.md)
+HAPPY=$B/happy-mhs/happy-mhs2                 # the fixpoint-verified happy (build/fixpoint-happy.sh)
 
 # ---- genprimopcode: 6.2.2's own utils/genprimopcode/Main.hs, compiled by mhs -------
 # Main.hs imports the H98 modules Monad/Char/List/Maybe/System (ghc622/shims-h98)
 # and, with __GLASGOW_HASKELL__ undefined under cpphs, the old `Parsec` module
-# (ghc622/shims/Parsec.hs: the slice-of-Parsec shim written for 6.0's run2).
+# (ghc622/shims/Parsec.hs, the slice of Parsec genprimopcode uses).
 if [ "${SKIP_GENPOC:-0}" != 1 ] && [ "${VALIDATE60:-0}" != 1 ]; then
   mkdir -p "$G/genprimopcode"
   cp "$GENPOC_SRC" "$G/genprimopcode/Main.hs"
@@ -36,14 +36,12 @@ if [ "${SKIP_GENPOC:-0}" != 1 ] && [ "${VALIDATE60:-0}" != 1 ]; then
 fi
 GENPOC=$G/genprimopcode/genprimopcode
 
-# ---- primops: cpphs (as the 6.0 run did), then the ten genprimopcode outputs ---------
+# ---- primops: cpphs, then the ten genprimopcode outputs -------------------------------
 # ghc/compiler/Makefile: `% : %.pp` runs $(CPP) -P -I$(GHC_INCLUDE_DIR); MachDeps.h
 # pulls in config.h, which configure writes: $CONFIG_INC/config.h, 6.2.2's x86_64
-# configure output (SIZEOF_VOID_P 8 -> WORD_SIZE_IN_BITS 64). A hand-transcribed
-# copy used to sit in gen622/includes; it differed only in whitespace and
-# CONST_EFTYPE, neither of which reaches primops.txt. The reproduced tree's
-# config.h also carries the HTYPE block (D47), which adds trailing blank lines
-# to primops.txt; genprimopcode ignores them.
+# configure output (SIZEOF_VOID_P 8 -> WORD_SIZE_IN_BITS 64). The reproduced
+# tree's config.h also carries the HTYPE block (D31), which adds trailing blank
+# lines to primops.txt; genprimopcode ignores them.
 gen_primops() {   # $1 = compiler src dir, $2 = includes dir, $3 = output dir, $4 = genprimopcode
   mkdir -p "$3/prelude"
   cpphs --noline --strip -I"$CONFIG_INC" -I"$2" "$1/prelude/primops.txt.pp" > "$3/prelude/primops.txt"

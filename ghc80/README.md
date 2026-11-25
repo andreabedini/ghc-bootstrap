@@ -21,7 +21,8 @@ nix-build -A ghc80
   back from `MADV_FREE` to `MADV_DONTNEED` at run time. 8.0.2 already
   tries `MADV_FREE` first, and the fallback only matters on kernels before
   4.5.
-- Docs are Sphinx from this release on (`BUILD_SPHINX_*`, `BUILD_MAN`).
+- Docs are off: from this release they are Sphinx, and `BUILD_SPHINX_HTML`,
+  `BUILD_SPHINX_PDF` and `BUILD_MAN` are `NO`.
   **Non-PIE** through the cc wrapper. **Test:** `common/test/T3.hs`.
 
 `default.nix` is the only file.

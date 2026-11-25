@@ -5,11 +5,10 @@
 #   nix-build -A ghc94           GHC 9.4.8, configure and make with 9.0.2 (ghc.nix)
 #   nix-build -A ghc94.happy120  happy 1.20.1.1, compiled by 9.0.2; seedless, fixed point (happy120.nix)
 #
-# 9.4's and 9.8's Cabal files declare build-tool-depends on alex >= 3.2.6 and
-# happy >= 1.20.0 although the tarballs ship every generated parser and
-# lexer; ghc-cabal and Hadrian refuse to configure without the programs.
+# 9.4 to 9.14 regenerate their parsers and lexers with happy >= 1.20.0 and
+# alex >= 3.2.6, which their Cabal files also declare as build-tool-depends.
 # The alex is ghc74.alex327 (3.2.7.4, compiled by 7.4.2, which serves every
-# rung from 7.8.4 on); happy 1.20, like 1.19.6, wants an mtl 7.4.2 has not,
+# GHC from 7.8.4 on); happy 1.20, like 1.19.6, wants an mtl 7.4.2 has not,
 # hence this scope.
 { lib
 , newScope

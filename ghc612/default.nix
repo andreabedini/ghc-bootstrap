@@ -4,7 +4,7 @@
 # the 6.10.4 that boots it is unregisterised via C: GhcUnregisterised
 # describes the compiler being built, stage 1 is whatever the boot compiler
 # can produce, and everything stage 1 compiles is native code (D52). The
-# first registerised rung; `registerised = false` gives the via-C variant,
+# first registerised GHC of the chain; `registerised = false` gives the via-C variant,
 # as 6.6 and 6.10 were built. 6.12.3 asks for a 6.8 or later as the
 # bootstrapping compiler. The tarball's parsers and lexers are regenerated from their
 # grammars (common/regen-parsers.sh) with 6.6's happy 1.16 and alex 2.1.0
@@ -13,7 +13,7 @@
 # build.mk as for 6.10 (ghc610), in the new system's names; -optc flags
 # in SRC_HC_OPTS reach every compile, the boot compiler's included. GMP 6.1.2
 # (gmp612/default.nix): integer-gmp 0.x dies on GMP >= 6.2's lazy mpz_init (D52).
-# Non-PIE (nix-non-pie) through the cc wrapper.
+# Non-PIE (D41) through the cc wrapper.
 # Output: an installed GHC 6.12.3, bin/ghc.
 { stdenv
 , fetchurl
@@ -26,7 +26,6 @@
   # true: GhcUnregisterised=NO with the x86-64 native code generator. Stage 1
   # is still compiled by the unregisterised 6.10.4 (via C, no -fasm); the
   # libraries and stage 2 it compiles are registerised NCG code with tables
-  # next to code. The experiment that would make every later rung faster.
 }:
 
 stdenv.mkDerivation {

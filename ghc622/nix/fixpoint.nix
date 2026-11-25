@@ -6,8 +6,8 @@
 #   stage 4 vs 3  reported: two native compilers from the same source; they
 #                 differ in CoreUtils (one SRT pair swapped) and may in Pretty,
 #                 whose Float literal has an uninitialised upper word
-#                 (PprAbsC.floatToWord): 218/220 identical on Fedora, 219/220
-#                 here, where that word came out 0 in stage 3 too (LOG.md)
+#                 (PprAbsC.floatToWord): 218 or 219 of 220 identical,
+#                 depending on that word's value in stage 3
 #   stage 5 vs 4  must be identical in all 220: the build fails otherwise
 #
 # and the compiler binaries of stages 3 and 4 against each other (reported).

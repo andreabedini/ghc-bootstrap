@@ -16,9 +16,11 @@
 #              mhs-built one runs on shims whose FastString uniques differ, so local names
 #              and emission order differ; only the smallest modules come out identical)
 #   compare4   stage4/*.hc against stage3/*.hc: stage 3 against stage 2, both native, both
-#              from the same source -- the fixed point; every file should be identical
-#   compare5   stage5/*.hc against stage4/*.hc: stage 4 against stage 3, and the two
-#              compiler binaries ghc-stage3 and ghc-stage4 against each other
+#              from the same source; they differ in CoreUtils (an SRT pair) and may in
+#              Pretty (D51)
+#   compare5   stage5/*.hc against stage4/*.hc: stage 4 against stage 3 -- the fixed
+#              point, all 220 identical; also the compiler binaries ghc-stage3 and
+#              ghc-stage4 against each other
 #   deps       build/mk/deps.mk            regenerate the per-module rules from the sources
 #   status     what is stale, in one line per phase
 #
@@ -30,10 +32,9 @@
 # flags and result tsvs live in the build/mk/compile-*.sh scripts.
 #
 # -j: each GHC compile may use up to 8 GB of address space (ulimit -v; the
-# modules that die of "heap exhausted" at -O get there), so on this machine
-# (16 cores, 30 GB) -j4 is the safe setting for the Haskell steps; the gcc
-# and ar steps parallelise freely. pueue-agent is the place to run this from
-# (it outlives the session); make is the record of what is done.
+# modules that die of "heap exhausted" at -O get there), so with 30 GB -j4 is
+# the safe setting for the Haskell steps; the gcc and ar steps parallelise
+# freely. make is the record of what is done.
 SHELL := /bin/sh
 R := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 export GHC_BOOTSTRAP_ROOT := $(R)
@@ -51,7 +52,7 @@ INC2  := $(S2)/src/ghc-6.2.2/ghc/includes
 ODIR2 := $(S2)/stage2
 ODIR3 := $(S2)/stage3
 # compile-stage2.sh for stage 3: the native compiler, pristine sources (no fixups:
-# they only stood in for what the MicroHs runtime could not read), an unseeded
+# they stand in for what the MicroHs runtime cannot read), an unseeded
 # retry ladder (flags.tsv records stage 1's needs, not the native compiler's),
 # its own results and logs; a native compile of a module runs about 20x faster.
 STAGE3_ENV := GHC=$(S2)/ghc OUTDIR=$(ODIR3) OUT=$(S2)/results-stage3.tsv LOGS=$(S2)/logs/stage3 \
@@ -73,7 +74,7 @@ CC    ?= gcc
 # Everything mhs reads: the patched tree, the shims, the hs-boot and generated
 # modules, the includes. build.sh comb takes ~9 min whatever changed: mhs's
 # cache validation looks for <Module>.hs, so every .lhs module and its
-# importers are always recompiled (build/ghc622-stage2/LOG.md, 2026-09-16).
+# importers are always recompiled.
 STAGE1_SRCS := $(shell find $(TREE) $(INC1) $(R)/ghc622/shims \
     $(R)/common/shims $(R)/ghc622/shims-ghc $(R)/ghc622/shims-h98 \
     $(R)/ghc622/hsboot $(R)/ghc622/gen -type f \

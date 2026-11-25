@@ -1,12 +1,12 @@
 # GHC 7.4.2 built by the chain's GHC 6.12.3 (ghc612): configure and make,
 # registerised with the native code generator (via C with `registerised =
 # false`), no GHCi, one library way. 7.4.2 asks for a 6.12 or later as the
-# bootstrapping compiler, so 7.0 and 7.2 are skipped. The tarball's parsers and lexers are regenerated from their
-# grammars (common/regen-parsers.sh) with 6.6's happy 1.16 and alex 2.1.0
+# bootstrapping compiler, so 7.0 and 7.2 are skipped. The tarball's parsers
+# and lexers are regenerated from their grammars (common/regen-parsers.sh) with 6.6's happy 1.16 and alex 2.1.0
 # (7.4 asks for >= 1.16 and >= 2.1.0).
 #
-# build.mk as for 6.12 (ghc612); GMP 6.1.2 as every rung before 8.0
-# (D52). Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed
+# build.mk as for 6.12 (ghc612); GMP 6.1.2 as every GHC before 8.0
+# (D52). Non-PIE (D41) through the cc wrapper. Output: an installed
 # GHC 7.4.2, bin/ghc.
 { stdenv
 , lib

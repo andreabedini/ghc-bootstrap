@@ -18,6 +18,9 @@ nix-build -A hugs
 | `patches/0002-hugs-pattern-guards.patch` | pattern guards, which Hugs never implemented and MicroHs's source uses in at least 64 places |
 | `patches/0003-hugs-bigger-control-stack.patch` | a bigger control stack (`NUM_STACK`), so Hugs can interpret the MicroHs compiler |
 
+The numbering continues from `mhs/patches/0001-microhs-hugs-shim.patch`, which
+applies to MicroHs's `hugs/` tree rather than to Hugs.
+
 ## Notes
 
 - **The permissive C flags go in `CC`, not `CFLAGS`.** gcc 14 and later reject

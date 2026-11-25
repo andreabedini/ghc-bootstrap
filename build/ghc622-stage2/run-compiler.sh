@@ -114,7 +114,7 @@ while IFS="$(printf '\t')" read -r m path; do
   opt=$(first_opt "$path"); ladder="$opt"
   # PREV=<old results.tsv>: start at the rung a previous run ended on for this
   # module (column 4 = the flags that produced it), so a rebuild does not
-  # repeat the doomed -O attempts (25 modules, ~4 min each, on 2026-09-15).
+  # repeat the doomed -O attempts (25 modules, ~4 min each).
   if [ -n "${PREV:-}" ] && [ -f "$PREV" ]; then
     prev=$(awk -F'\t' -v m="$m" '$1=="OK" && $2==m {f=$4} END {print f}' "$PREV")
     case "$prev" in

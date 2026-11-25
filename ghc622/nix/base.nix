@@ -27,8 +27,8 @@ let
   '';
 
   # GHC 6.2.2's hsc2hs compiled by mhs: the tarball's sources with
-  # hsc2hs/Main.hs.patch (Parser instances split for the post-AMP Prelude,
-  # build/hsc2hs-mhs/FINDINGS.md) and the Config.hs its Makefile writes
+  # hsc2hs/Main.hs.patch (Parser instances split for the post-AMP Prelude)
+  # and the Config.hs its Makefile writes
   # (tools/hsc2hs-src.sh). Main.hs includes ../../includes/config.h, hence
   # the tarball layout.
   hsc2hs = runCommandCC "ghc-6.2.2-hsc2hs"

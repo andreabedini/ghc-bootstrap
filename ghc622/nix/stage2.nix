@@ -1,16 +1,15 @@
 # Stage 2: GHC 6.2.2's compiler proper compiled by stage 1 into a native
-# compiler (build/Makefile's haskell98, stage2 and test targets;
-# build/ghc622-stage2/LOG.md "Setup" for the source and topdir).
+# compiler (build/Makefile's haskell98, stage2 and test targets).
 #
 # The source is the pristine tarball, not the patched ghc622 tree: stage 2
-# compiles GHC the way a GHC would. Added, as LOG.md lists: the parsers and
+# compiles GHC the way a GHC would. Added: the parsers and
 # primop tables the ghc622 tree regenerated (the tables in the compiler root,
 # where the Makefile writes them), main/Config.hs, and the tree's
 # ghc/includes (config.h, DerivedConstants.h, NativeDefs.h). Lexer.hs stays
 # the shipped alex -g output: a native GHC reads its Addr# tables.
 #
 # Three derivations, so a late failure does not redo the long one:
-# haskell98 (30 modules), hc (the 220 modules to .hi/.hc, ~4 hours), and the
+# haskell98 (30 modules), hc (the 220 modules to .hi/.hc, the long one), and the
 # result (.hc -> .o, link, and the Hello.hs acceptance test).
 # Output: bin/ghc and topdir/ (use as `ghc -B$out/topdir`).
 { lib
@@ -28,7 +27,8 @@ let
   hidict = ../tools/hidict.py;
   ghc1 = "${stage1}/bin/ghc";
 
-  # Config.hs is tree.config's with the booter's version (LOG.md).
+  # Config.hs is tree.config's with cBooterVersion set to 6.2.2: stage 2 is
+  # booted by 6.2.2, not by the 4.08.2 gen/config-hs.mk declares for stage 1.
   src = runCommand "ghc-6.2.2-stage2-src" { } ''
     mkdir $out
     tar xjf ${tree.src} -C $out --strip-components=1 \
@@ -106,9 +106,9 @@ let
   # tools/make-fixups.sh: Ctype.lhs, which the stage-1 compiler cannot read),
   # and hidict.py on every .hi.
   #
-  # In three chunks of about 45 minutes (by the 2026-09-15 run's times), each
-  # starting from the previous one's output: the whole compile is over two
-  # hours, and a derivation cannot resume. Parser (18 min) ends chunk 2.
+  # In three chunks of about 45 minutes, each starting from the previous
+  # one's output: the whole compile is over two hours, and a derivation
+  # cannot resume. Parser (18 min) ends chunk 2.
   #
   # The defaults are stage 2's; stages 3-5 (ghc622/nix/native.nix) pass a
   # native compiler as build/Makefile's STAGE3_ENV does: no fixups, no

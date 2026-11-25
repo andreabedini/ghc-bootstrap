@@ -13,7 +13,7 @@
 /result
 /result-*
 
-# ---- the Hugs extraction and install prefix before 2026-10-08 (now build/hugs) ----
+# ---- a former location of the Hugs extraction (now build/hugs); local leftovers ----
 /phase0/
 
 # ---- build/: only what we wrote, listed, plus the result tables its scripts ----

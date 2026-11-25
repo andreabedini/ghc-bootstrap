@@ -6,7 +6,7 @@
 # ghc/includes is build/ghc-6.2.2-run1/ghc/includes, the config.h with the HTYPE_* block).
 # HSC2HS_CFLAGS (ours, not the Makefile's; default --cflag=-std=gnu89): gcc >= 14 rejects the
 # K&R definitions in libraries/base/include/HsBase.h (__hscore_s_isblk(m) ...) as C99 errors;
-# build-hc.sh compiles the .hc files in the same gnu89 mode.  See FINDINGS.md.
+# build-hc.sh compiles the .hc files in the same gnu89 mode.
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"
 HSC2HS_BINDIR=$R/build/hsc2hs-mhs
 HSC2HS_DIR=$R/build/hsc2hs-mhs

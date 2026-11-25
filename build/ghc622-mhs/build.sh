@@ -7,11 +7,10 @@
 #        -C cache (copied to build/ghc622-mhs/.mhscache; a cold cache costs ~1h).
 #        Same cpp defines, -i and -I flags as ghc622/tools/probe-ordered.sh.
 #  comb: mhs -o ghc.comb  (same compile, a quarter of the output text; the
-#        .c route needs ~13 min in one process and the sandbox kills a
-#        foreground command at 10, so this is the route that is used)
+#        .c route takes ~13 min in one process, this one ~9, so this is the
+#        route that is used)
 #  c   : comb2c.py ghc.comb -> ghc-data.c  (byte-identical to mhs -o ghc.c)
 #  cc  : gcc ghc-data.c ffi.c + MicroHs runtime (main.c, eval.c) + stubs.c -> ghc
-#        (as notes/probes/compile-ghc.sh / D41 did for 4.08.2's hsc).
 #
 # Run under sh (word-splitting of $INC), with ulimit -s unlimited.
 set -u
@@ -31,7 +30,7 @@ sh "$R/ghc622/tools/config-hs.sh" "${TREE622:-$R/build/repro-622/src/ghc-6.2.2}"
 ulimit -s unlimited 2>/dev/null || ulimit -s 65536
 
 # The five defines the perl driver passes to cpp for every Haskell source
-# (see ghc622/tools/probe-ordered.sh header for why __GLASGOW_HASKELL__=408 is kept).
+# (__GLASGOW_HASKELL__=408: DECISIONS.md D17).
 HSCPP="-D__HASKELL__=98 -D__HASKELL1__=5 -D__GLASGOW_HASKELL__=408 -D__HASKELL98__ -D__CONCURRENT_HASKELL__"
 INC="-i$HSBOOT -i$EXTRA_SHIMS -i$R/common/shims -i$R/ghc622/shims-ghc -i$R/ghc622/shims-h98 -i$GEN"
 for d in "$TREE"/*/; do
@@ -45,8 +44,7 @@ cd "$W" || exit 1
 if [ "$step" = comb ] || [ "$step" = all ]; then
   # Combinator file instead of C: same compile, a quarter of the output text.
   # The MicroHs runtime can load it at startup (+RTS -r<file> -RTS), see the
-  # `eval` step; this is the fallback when the C emission does not fit the
-  # sandbox's 10-minute foreground limit.
+  # `eval` step. It takes ~9 min where the C emission takes ~13.
   echo "== mhs -o ghc.comb  ($(date))"
   "$M/bin/mhs" ${MHSRTS:-+RTS -K32M -RTS} -C -XCPP $HSCPP -DOMIT_NATIVE_CODEGEN $INC Main -o"$W/ghc.comb" || exit 1
   echo "== ghc.comb: $(wc -c < "$W/ghc.comb") bytes  ($(date))"
@@ -57,8 +55,7 @@ if [ "$step" = hs ]; then
   "$M/bin/mhs" ${MHSRTS:-+RTS -K64M -RTS} -C -XCPP $HSCPP -DOMIT_NATIVE_CODEGEN $INC Main -o"$W/ghc.c" || exit 1
   echo "== ghc.c: $(wc -c < "$W/ghc.c") bytes  ($(date))"
   # Note: this ghc.c embeds mhs's own ffi table and is NOT what the cc step
-  # links (ghc-data.c + ffi.c, the comb route). `all` used to run hs + cc and
-  # so relinked a stale ghc-data.c (found 2026-09-16, build/ghc622-stage2/LOG.md).
+  # links (ghc-data.c + ffi.c, the comb route), so `all` does not include hs.
 fi
 
 if [ "$step" = c ] || [ "$step" = all ]; then
@@ -76,8 +73,8 @@ if [ "$step" = cc ] || [ "$step" = all ]; then
   # which gcc >= 14 rejects; stubs.c provides the first three (rawSystem is
   # libraries/base/cbits/rawSystem.c).
   # rtconf/config.h: MicroHs's unix config with WANT_OVERFLOW 0. MicroHs
-  # traps Int +/-/* overflow (unix/config.h:85 -> eval.c:300-307
-  # __builtin_*_overflow -> raise_rts(exn_overflow)); GHC's Haskell is written
+  # traps Int +/-/* overflow (WANT_OVERFLOW in unix/config.h -> eval.c's
+  # __builtin_*_overflow checks -> raise_rts(exn_overflow)); GHC's Haskell is written
   # against wrap-around Int, and CoreUtils.hashExpr multiplies hashes until it
   # wraps on purpose ("Just in case we hit -maxInt"), so with overflow trapping
   # `-O` died in CSE with "arithmetic overflow". Generated from MicroHs's file

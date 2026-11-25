@@ -15,7 +15,7 @@ nix-build -A ghc94.happy120  # happy 1.20.1.1, compiled by 9.0.2
 |---|---|
 | `default.nix` | the scope: the compiler and happy 1.20.1.1 |
 | `ghc.nix` | GHC 9.4.8 |
-| `happy120.nix` | happy 1.20.1.1, the version 9.4 and 9.8 ask for. Its parsers are regenerated from the release tag's grammars by the chain's happy 1.19.5, then taken to a fixed point |
+| `happy120.nix` | happy 1.20.1.1, which builds 9.4.8 to 9.14.1. Its parsers are regenerated from the release tag's grammars by the chain's happy 1.19.5, then taken to a fixed point |
 
 ## Notes
 

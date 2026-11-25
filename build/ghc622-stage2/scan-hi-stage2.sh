@@ -1,7 +1,7 @@
 #!/bin/sh
 # build/ghc622-mhs/diag/scan-hi.sh parameterised: for every .hi under a dir,
 # --show-iface it with a compiler and list top-level signature names that
-# appear more than once (FastString unique collisions, diag/FINDINGS.md).
+# appear more than once (FastString unique collisions).
 #   GHC=<compiler> sh scan-hi-stage2.sh <dir-with-.hi> <dump-dir>
 set -u
 R="${GHC_BOOTSTRAP_ROOT:?not set: run under mise from the repo (mise exec -- ..., see mise.toml)}"

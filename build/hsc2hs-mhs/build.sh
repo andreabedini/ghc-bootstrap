@@ -3,12 +3,11 @@
 #
 #   sh build/hsc2hs-mhs/build.sh          -> build/hsc2hs-mhs/hsc2hs-bin  (~1 min)
 #
-# Layout mirrors the tarball so Main.hs's `#include "../../includes/config.h"` resolves
-# unchanged: ghc/utils/hsc2hs/{Main.hs,Config.hs,template-hsc.h,hsc2hs.sh} and
-# ghc/includes -> build/ghc-6.2.2-run1/ghc/includes (our x86_64 config.h; hsc2hs only
-# tests mingw32_HOST_OS in it).  Main.hs is a copy of the tarball's with the Parser
-# instances split into Functor/Applicative/Monad/MonadFail/Alternative (edits marked
-# `-- mhs`, see FINDINGS.md).  Config.hs is what the Makefile's $(CONFIG_HS) rule writes.
+# Layout mirrors the tarball: ghc/utils/hsc2hs/{Main.hs,Config.hs,template-hsc.h,hsc2hs.sh}.
+# Main.hs's `#include "../../includes/config.h"` only tests mingw32_HOST_OS; nothing
+# here provides ghc/includes, and cpphs lets the missing include pass.  Main.hs is a
+# copy of the tarball's with the Parser instances split into
+# Functor/Applicative/Monad/MonadFail/Alternative (edits marked `-- mhs`).  Config.hs is what the Makefile's $(CONFIG_HS) rule writes.
 #
 # -D__GLASGOW_HASKELL__=622 takes the `>= 504` import branch (System.Console.GetOpt,
 # which MicroHs has) instead of the hslibs-era `GetOpt`.  shims/System.hs supplies H98

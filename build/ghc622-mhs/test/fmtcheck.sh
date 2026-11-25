@@ -1,6 +1,5 @@
 #!/bin/sh
-# Regression check for the .hi wire format (build/ghc622-stage2/LOG.md,
-# 2026-09-16): compile a module that needs only GHC.Base with the stage-1
+# Regression check for the .hi wire format (patch 0004): compile a module that needs only GHC.Base with the stage-1
 # compiler and decode its dictionary as the pristine reader would.
 # Exit status: 0 iff every dictionary length is sane.
 set -u

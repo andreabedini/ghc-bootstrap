@@ -6,7 +6,7 @@
 # for the "#include HsBase.h" the driver puts at the top of each .hc.
 # Objects go to build/ghc622-mhs/hcobj (override with HCOBJ=dir).
 #
-# -fwrapv is mandatory (found at link time, FINDINGS-link.md): the generated
+# -fwrapv is mandatory (DECISIONS.md D48): the generated
 # code and base itself rely on two's-complement wrap of Int# arithmetic
 # (GHC/Show.lhs itos: n'# = negateInt# n#; if n'# <# 0# -- minInt?), and
 # gcc >= 4 folds such tests away under the C signed-overflow rule, so

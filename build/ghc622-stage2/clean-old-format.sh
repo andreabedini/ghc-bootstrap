@@ -1,7 +1,6 @@
 #!/bin/sh
-# Remove every interface file the pre-2026-09-16 stage-1 compiler wrote, and
-# the .hc/.o derived alongside them, before rebuilding with the format-preserving
-# patch 0004 (build/ghc622-stage2/LOG.md, "Patch 0004 made format-preserving").
+# Remove interface files written in a dictionary format other than patch
+# 0004's, and the .hc/.o derived alongside them, before rebuilding.
 # Necessary, not just tidy: GHC 6.2.2's recompilation checker opens an existing
 # .hi before deciding to recompile, and the new reader misparses the old
 # dictionary (the same 2^56-byte request stage 2 died of). .hi-boot files are

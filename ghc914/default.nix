@@ -7,7 +7,7 @@
 # (9.12 still built ghc-heap in stage 0 and did without ghc-internal; 9.14
 # dropped ghcHeap from Hadrian's stage0Packages). ghc-internal exists from
 # 9.10 on, so the real floor is 9.10, which is also what its bootstrap plans
-# (9.10 and 9.12 boots only) say; 9.12.4 is the rung before it. The plan is
+# (9.10 and 9.12 boots only) say; 9.12.4 is the GHC before it. The plan is
 # the tarball's own plan-bootstrap-9_12_2.json, copied here verbatim; the
 # derivation rewrites its boot-library versions to the 9.12.4's.
 #

@@ -1,12 +1,10 @@
 # GHC 6.2.2's runtime system, unregisterised x86-64, compiled without a GHC:
 # build/rts622/build-rts.sh. Every .c of ghc/rts, hooks/ and parallel/ except
 # EXCLUDED_SRCS, the hand-written .hc files and the generated AutoApply.hc,
-# with the flags ghc/rts/Makefile, mk/bootstrap.mk and the driver would pass
-# (build/rts622/FINDINGS.md section 2). -std=gnu89: Stable.h's `extern
-# inline' (DECISIONS.md D41). -fno-pie: nixpkgs' gcc defaults to PIE and the
-# chain was built and verified non-PIE (Fedora's gcc has no
-# --enable-default-pie); PIE moves the info tables from .rodata to
-# .data.rel.ro and puts static data under ASLR. Output: lib/libHSrts.a.
+# with the flags ghc/rts/Makefile, mk/bootstrap.mk and the driver would pass.
+# -std=gnu89: Stable.h's `extern inline' (DECISIONS.md D41). -fno-pie:
+# nixpkgs' gcc defaults to PIE, which moves the info tables from .rodata to
+# .data.rel.ro and puts static data under ASLR (D41). Output: lib/libHSrts.a.
 { stdenv
 , runCommandCC
 , mhs

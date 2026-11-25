@@ -6,7 +6,7 @@
 # grammars (common/regen-parsers.sh) with 7.4.2's happy 1.19.5 and alex 3.2.7.4
 # (8.4 asks for >= 1.19.4 and >= 3.1.0); so is Cabal's lexer (boot/Lexer.x).
 #
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
+# Non-PIE (D41) through the cc wrapper. Output: an installed GHC
 # 8.4.4, bin/ghc.
 { stdenv
 , fetchurl

@@ -4,7 +4,8 @@
 # happy's repository commits at the Happy_1_15 tag:
 #
 #   happy 1.15  compiled by mhs from that Parser.hs (ddc115/: the source part
-#               of the patch posted on issue #2, and Paths_happy)
+#               of the patch Alexandre Tunstall posted on this repository's issue #2,
+#               and Paths_happy)
 #   genA        happy 1.15 generates happy 1.19.5's two parsers
 #   happyA      happy 1.19.5 compiled by mhs from genA
 #   genB        happyA regenerates them

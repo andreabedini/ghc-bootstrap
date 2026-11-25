@@ -21,8 +21,8 @@ let
     sha256 = "a0fe7eb8d447f25fbc616cdbce2bb4e03961a884c2c37969d1e23588b588a852";
   };
 
-  # parser/Lexer.hs as shipped (alex -g output) with its Addr# tables decoded
-  # into boxed arrays (build/lexer622/FINDINGS.md). Output: the file itself.
+  # parser/Lexer.hs as shipped (alex -g output), its Addr# tables decoded
+  # into boxed arrays, since MicroHs has no Addr# (D46). Output: the file itself.
   ghc622-lexer = runCommand "ghc-6.2.2-Lexer.hs" { nativeBuildInputs = [ python3 ]; } ''
     tar xjf ${ghc622-src} --strip-components=4 ghc-6.2.2/ghc/compiler/parser/Lexer.hs
     python3 ${../tools/convert-lexer.py} Lexer.hs $out
@@ -132,8 +132,8 @@ let
     grep -q '^cGhcUnregisterised    = "YES"$' $out/Config.hs
   '';
 
-  # The HTYPE_* defines configure's K&R probes no longer produce under
-  # gcc >= 14 (DECISIONS.md D47). Output: the block to append to config.h.
+  # The HTYPE_* defines that configure's K&R probes leave undefined under
+  # gcc >= 14 (DECISIONS.md D31). Output: the block to append to config.h.
   ghc622-htypes = runCommandCC "ghc-6.2.2-htypes.h" { } ''
     gcc -O -w -o gen-htypes ${../tools/gen-htypes.c}
     ./gen-htypes > $out

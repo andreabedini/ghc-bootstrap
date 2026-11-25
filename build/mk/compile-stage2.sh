@@ -8,8 +8,8 @@
 # build, plus the per-module <file>_HC_OPTS (extra_flags), -O by default
 # (Parser -Onot). Retry ladder on a runtime death/panic/timeout, not on a plain
 # compile error: -O -> -O -fno-strictness -> -O0; $S/flags.tsv (module<TAB>opt)
-# names the rung to start at (seeded from the 2026-09-15 run, where 25 modules
-# needed -fno-strictness after a ~4 min doomed -O attempt each). fixups/<path>
+# names the rung to start at (seeded from a full stage-2 run: 25 modules need
+# -fno-strictness, each after a doomed ~4 min -O attempt). fixups/<path>
 # replaces a source the *stage-1* compiler cannot read (USE_FIXUPS=0 to
 # disable, e.g. for a native GHC). Outputs are removed before each attempt;
 # the .hi must decode (check-hi.sh). Appends a row to results.tsv.
@@ -28,7 +28,7 @@ LOGS="${LOGS:-$S/logs/$(basename "$ODIR")}"; mkdir -p "$LOGS"
 m=$1; path=$2; dir=$(dirname "$path")
 # GHC 6.2.2 names temp files ghc<pid>.<ext> and steps to pid+1 when the name
 # is taken, so parallel compiles sharing one TMPDIR can read each other's
-# preprocessed source (2026-09-16: GHC/Unicode.hi came out as GHC.STRef's).
+# preprocessed source (GHC/Unicode.hi has come out as GHC.STRef's).
 # Each compile gets a directory of its own.
 export TMPDIR="$S/tmp/$m.$$"; mkdir -p "$TMPDIR"; trap 'rm -rf "$TMPDIR"' EXIT
 ALL_DIRS="utils basicTypes types hsSyn prelude rename typecheck deSugar coreSyn specialise simplCore stranal stgSyn simplStg codeGen absCSyn main profiling parser cprAnalysis compMan ndpFlatten"

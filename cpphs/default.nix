@@ -10,7 +10,7 @@
 #
 # Round 2 is installed. It replaces MicroHs's shipped generated/cpphs.c, and
 # behaves the same: both preprocess every .hs/.lhs/.pp file of GHC 6.2.2 with
-# the chain's three flag sets to identical output (1,458 runs, 2026-09-30),
+# the chain's three flag sets to identical output (1,458 runs, a check made once, not by this build),
 # except for the source path in cpphs's own #error message.
 { stdenv, fetchurl, mhs }:
 stdenv.mkDerivation {

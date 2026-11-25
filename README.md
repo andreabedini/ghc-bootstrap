@@ -30,7 +30,7 @@ only built it on x86-64 Linux.
 
 ## Why this route
 
-Every GHC needs an older GHC; today's master asks for 9.10. If you follow the
+Every GHC needs an older GHC; 9.14 needs a 9.10. If you follow the
 chain back you end up at GHC 0.29 (1996), built with HBC, which is written in
 LML. Some old GHC tarballs ship generated C, but generated code is not source:
 starting from it just moves the binary seed somewhere less visible.
@@ -43,7 +43,7 @@ Four other approaches have been proposed
 
 1. **Walk the historical chain.** Dead at the root: HBC needs LML, and 1990s
    code does not build with 2020s toolchains. Guix has the upper part, from a
-   4.08.2 built from the tarball's generated C, with a gap around 6.12 and 7.x.
+   4.08.2 built from the tarball's generated C, with a gap between 7.0 and 7.10.
 2. **Hugs -> nhc98 -> early GHC** (Wurmus, 2017). nhc98 is 32-bit only, and
    nobody has shown it can build any GHC.
 3. **Run GHC's own source under Hugs** (Breitner, 802). Hugs cannot do
@@ -100,9 +100,9 @@ flowchart LR
 ```
 
 Each link has its own directory, with the derivation, every file it reads, and
-a README:
+a README. The host toolchain is nixpkgs' gcc 15, glibc 2.42 and binutils 2.46.
 
-| Link | Built by | Build system | What it needed on a 2026 host (gcc 15, glibc 2.42, binutils 2.46) |
+| Link | Built by | Build system | Notes |
 |---|---|---|---|
 | [Hugs 98](hugs/README.md) | gcc | configure, make | pattern guards; permissive C flags in `CC` |
 | [MicroHs 0.17.0.0](mhs/README.md) | Hugs, then itself | | generation 3 equals generation 2; the shipped C is deleted |
@@ -114,15 +114,17 @@ a README:
 | [GHC 6.10.4](ghc610/README.md), [6.12.3](ghc612/README.md) | 6.6, 6.10.4 | make | plain `ar` for libffi; `__GNUC__ > 4` blocks in `Rts.h`; registerised with NCG from 6.12 |
 | [GHC 7.4.2](ghc74/README.md), [7.8.4](ghc78/README.md) | 6.12.3, 7.4.2 | make | `-std=gnu89 -fpermissive -fwrapv`; `DYNAMIC_* = NO`; happy 1.19.5 and alex 3.2.7.4 built by 7.4.2 |
 | [GHC 8.0.2](ghc80/README.md), [8.4.4](ghc84/README.md) | 7.8.4, 8.0.2 | make -j | `-std=gnu11`; `CC=gcc` (8.4); the host's GMP from here |
-| [GHC 8.8.4](ghc88/README.md), [9.0.2](ghc90/README.md) | 8.4.4, 8.8.4 | make -j | `GHC=`; GHCi and SMP; StgCRunAsm patch; `--with-gmp-*` (9.0) |
+| [GHC 8.8.4](ghc88/README.md), [9.0.2](ghc90/README.md) | 8.4.4, 8.8.4 | make -j | `GHC=`; GHCi and SMP; StgCRunAsm patch and `--with-gmp-*` (9.0) |
 | [GHC 9.4.8](ghc94/README.md) | 9.0.2 | make -j (9.4 keeps make for a boot < 9.1) | happy 1.20.1.1 built by 9.0.2 for `build-tool-depends`; python3 |
 | [GHC 9.8.4](ghc98/README.md) | 9.4.8 | Hadrian, bootstrapped by `bootstrap.py` from a plan with Nix-fetched sources | hp2ps C23 patch (upstream, in 9.10) |
 | [GHC 9.12.4](ghc912/README.md) | 9.8.4 | Hadrian | nothing beyond the plan |
 | [GHC 9.14.1](ghc914/README.md) | 9.12.4 (its configure says 9.6, stage 0 needs 9.10) | Hadrian | the ghc-9.14 branch's `Binary HalfWord` guard |
 
 Each GHC is the newest release that accepts the previous one as its boot
-compiler. Each one passes `common/test/T3.hs` and whatever checks its
-derivation names ([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)-[D54](DECISIONS.md#d54--one-hadrian-derivation-for-984-9124-and-9141)). From 8.8 on the compilers have the standard
+compiler. Each one passes an install check: 6.2.2 compiles and runs
+`ghc622/test/Hello.hs`, 6.6 `ghc66/test/T2.hs`, every later GHC
+`common/test/T3.hs`, and 6.2.2 to 8.0.2 also `common/test/GmpZero.hs`
+([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)-[D54](DECISIONS.md#d54--one-hadrian-derivation-for-984-9124-and-9141)). From 8.8 on the compilers have the standard
 configuration: registerised, native code generator, GHCi, SMP, static
 libraries. A `-threaded` program they compile links outside Nix and runs with
 `-N`.
@@ -140,7 +142,7 @@ as provenance: the dependency graph shows how every binary was obtained. And
 its [best practices](https://bootstrappable.org/best-practices.html) ask a
 self-hosted compiler to stay buildable by a different implementation of its
 language. No other Haskell implementation can build today's GHC, so Hugs and
-MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what the chain still takes on trust:
+MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what the chain does and does not take on trust:
 
 - **No Haskell implementation from outside the chain.** Generated code stands
   in for source only where this list says, and I discharged or checked each
@@ -151,16 +153,19 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
     happy leaves the trusted base ([D7](DECISIONS.md#d7--happys-seed-is-a-ghc-built-happys-output-discharged-twice), [D14](DECISIONS.md#d14--happy-is-verified-by-regeneration-not-by-equality-with-a-ghc-built-happy)). A fixed point
     alone would be weaker than [diverse double compilation](https://dwheeler.com/trusting-trust/),
     so I also start from an unrelated seed: the parser happy 1.14 wrote, which
-    happy's repository commits at the `Happy_1_15` tag. happy 1.15 built from
-    it, by way of a happy 1.19.5, gives the same seed byte for byte
+    happy's repository commits at the `Happy_1_15` tag. happy 1.15, built from
+    it, generates 1.19.5's parsers, and the happy 1.19.5 built from those
+    regenerates the seed byte for byte
     (`nix-build -A happy.ddc115`, [D56](DECISIONS.md#d56--happys-seed-by-diverse-double-compilation-from-happy-115);
     the idea and the patch for 1.15 are Alexandre Tunstall's, [#2](https://github.com/andreabedini/ghc-bootstrap/issues/2)).
   - **MicroHs's shipped C, checked.** The Nix build deletes MicroHs's
     `generated/*.c` before anything runs. Its check phase then requires the
     Hugs-derived `mhs`, run as MicroHs's Makefile runs it (`-z`), to reproduce
     the shipped `generated/mhs.c` byte for byte, and it does. The scripts under `build/` run
-    `MicroHs/bin/mhs`, compiled from 0.16.8.0's shipped C. As a compiler it is
-    equivalent to the Hugs-derived one, but it is not the same binary ([D1](DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c)).
+    `MicroHs/bin/mhs`, compiled from 0.16.8.0's shipped C.
+    `mhs/bootstrap-seed.sh` checks that it and the Hugs-derived 0.16.8.0
+    compiler write the same C. It is not the same binary as the Nix chain's
+    `mhs`.
   - **cpphs, checked.** The Nix build builds cpphs from source with mhs, with
     gcc's traditional cpp standing in for the first round. The source-built
     cpphs and MicroHs's shipped one give identical output on every `.hs`,
@@ -168,26 +173,20 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
     runs). The `build/` scripts run the shipped one. From 6.2.2's stage 2 on,
     GHC's own `-cpp` uses gcc.
   - **alex's own lexer, discharged.** alex 2.1.0 and 3.2.7.4 start from
-    the `Scan.hs` their tarballs ship, which only an alex can produce. The alex
-    built from it has to regenerate it from `Scan.x`, and a second generation
-    has to reproduce the first byte for byte. That is only a fixed point, and
-    an mhs-built alex regenerating the `Lexer.hs` GHC 6.2.2 ships would not
-    settle it either: as Janus Troelsen pointed out
+    the `Scan.hs` their tarballs ship, which only an alex can produce, and each
+    regenerates it to a fixed point. As Janus Troelsen pointed out
     ([#102](https://discourse.haskell.org/t/what-s-needed-to-bootstrap-ghc-with-hugs/6205/102)),
-    that alex still runs alex's own generated `Scan.hs`, probably made by the
-    same alex that made `Lexer.hs`. So, as with happy, there is a
-    second starting point that no alex made: a scanner for alex 2.1.0 written
-    by hand from `Scan.x`'s rules. The alex 2.1.0 built from it regenerates the
-    tarball's `Scan.hs`, and an alex built from that output regenerates it byte
-    for byte (`nix-build -A ghc66.alex210ddc`). alex 2.1.0 accepts 3.2.7.4's
-    `Scan.x` as it is, so the same alex makes 3.2.7.4's `Scan.hs`, and the alex
-    3.2.7.4 built from it gives the tarball's `src/Scan.hs` byte for byte
-    (`ghc66.alexChain`). Each of the two alexes the GHCs are built with agrees
-    byte for byte with its counterpart from the hand-written scanner on every
-    alex grammar of GHC 6.6 to 9.14.1 (`ghc66.alexChainLexers`,
+    that is not enough: an mhs-built alex still runs alex's own generated
+    `Scan.hs`. So, as with happy, there is a second starting point that no
+    alex made: a scanner for alex 2.1.0 written by hand from `Scan.x`'s rules.
+    The alexes built from it regenerate the tarball `Scan.hs` of 2.1.0 (modulo
+    blank lines and LINE pragmas) and of 3.2.7.4 (byte for byte), and on every
+    alex grammar of GHC 6.6 to 9.14.1 they agree byte for byte with the alexes
+    the chain uses (`ghc66.alex210ddc`, `ghc66.alexChain`,
+    `ghc66.alexChainLexers`,
     [D57](DECISIONS.md#d57--alexs-own-lexer-by-diverse-double-compilation-from-a-hand-written-scanner)).
-    The alex 3.5.2.0 in Hadrian's bootstrap plan is built from its shipped
-    `Scan.hs` without any of these checks.
+    The alex 3.5.2.0 in 9.12.4's Hadrian bootstrap plan is built from its
+    shipped `Scan.hs` without any of these checks.
   - **happy 1.16, 1.19.5, 1.19.12 and 1.20.1.1**, built by the GHCs that need
     them, have their parsers regenerated from the grammars by the chain's
     happy, compared with the shipped ones, and taken to a fixed point.
@@ -220,8 +219,9 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
   upstream's history and running an autoconf of the right era. Even that would
   not catch an xz-style payload on its own, since that one rode in the
   tarball's `m4/`. I don't regenerate them.
-- **Build tools** that run the scripts in this repository: `sh`, `make`, `tar`,
-  `perl` (one RTS fix-up script) and `python3`. Python puts bytes into the
+- **Build tools**: `sh`, `make`, `tar`, `perl` and `python3`, which run this
+  repository's scripts and GHC's own build systems (perl for the make builds,
+  python3 from 9.4). Python puts bytes into the
   compiler in two places:
   - `comb2c.py` writes mhs's combinator output for the stage-1 compiler as the
     C array `mhs -o ghc.c` would have written;

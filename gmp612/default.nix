@@ -4,7 +4,7 @@
 # GHC runtime allocated in the Haskell heap. GHCs before 8.0 (6.2.2's J#,
 # integer-gmp 0.x) take _mp_d - sizeof(StgArrWords) as the closure, and the
 # garbage collector then evacuates a pointer into libgmp's data segment
-# (common/test/GmpZero.hs reproduces it; DECISIONS.md D52). Every rung before
+# (common/test/GmpZero.hs reproduces it; DECISIONS.md D52). Every GHC before
 # 8.0 links against this GMP; 8.0's integer-gmp works on limbs itself.
 #
 # Built as nixpkgs builds gmp, minus the fat-binary and C++ options the chain

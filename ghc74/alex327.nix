@@ -1,5 +1,5 @@
 # alex 3.2.7.4, compiled by the chain's GHC 7.4.2 with its own Setup.hs
-# (Cabal 1.14), from its Hackage tarball. One alex serves every rung from
+# (Cabal 1.14), from its Hackage tarball. One alex serves every GHC from
 # 7.8.4 on: 7.8.4 asks for an alex >= 3.1, 8.0.2 to 8.4.4 for >= 3.1.0,
 # 8.8.4 and 9.0.2 for >= 3.1.7, 9.4.8 to 9.14.1 for >= 3.2.6 (< 4). The
 # chain's alex 2.1.0 is too old for all of them, and no 3.1.x release can

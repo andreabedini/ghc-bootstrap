@@ -13,11 +13,11 @@
 #   order-6.2.2.txt   the module order, regenerated with ghc622/tools/build-order.py
 #   log/              one log per step; log/verify.diff if a reference exists
 #
-# Steps (each records its provenance in notes/phase4/FINDINGS.md):
+# Steps:
 #   1  tar xjf ghc-6.2.2-src.tar.bz2, sha256 checked
 #   2  patch -p1 with ghc622/patches/*.patch (exact: no fuzz, no offset allowed)
 #   3  ./configure --enable-hc-boot --enable-hc-boot-unregisterised, with a
-#      PATH that holds no ghc (build/rts622/FINDINGS.md section 1)
+#      PATH that holds no ghc (configure would record a host GHC as the booter)
 #   4  make -C ghc/includes config.h      (GHC's own $(H_CONFIG) rule)
 #   5  ghc/includes/DerivedConstants.h from mkDerivedConstants.c, compiled with
 #      the unregisterised flags -DNO_REGS -DUSE_MINIINTERPRETER (STD_ITBL_SIZE 3)
@@ -25,14 +25,15 @@
 #      reaches it through nativeGen/NCG.h even without a native code generator)
 #   6  ghc622/tools/regen-generated.sh: primops.txt, 10 primop-*.hs-incl, 3 parsers
 #      (post-processed by ghc622/tools/fix-generated-parsers.sh)
+#  6b  the HTYPE_* block appended to ghc/includes/config.h (gen-htypes.c)
 #   7  ghc622/tools/convert-lexer.py on the shipped alex output parser/Lexer.hs
 #   8  ln -s ../../utils/ghc-pkg ghc/compiler/utils/ghc-pkg
 #      (main/Packages.lhs #includes ../utils/ghc-pkg/Package.hs)
 #   9  assemble <dest>/ghc, regenerate the order file; 9b main/Config.hs
 #  10  verify: diff -r against build/ghc-6.2.2-run1/ghc when it exists
 #
-# Not produced here, because they are inputs rather than tree contents (see
-# FINDINGS.md "Inputs that are not in the tree"): ghc622/shims and
+# Not produced here, because they are inputs rather than tree contents:
+# ghc622/shims and
 # ghc622/hsboot. Step 9b writes main/Config.hs to <dest>/gen for the probe.
 #
 # Needs: gcc, GNU make, patch, python3, tar/bzip2, and the chain's own tools
@@ -110,24 +111,25 @@ step "ghc/includes/NativeDefs.h"
 # the same flags, unconditionally (not only with a native code generator).
 # The compiler needs it even without the NCG: typecheck/TcForeign.lhs
 # includes nativeGen/NCG.h for the *_TARGET_ARCH macros, and NCG.h includes
-# ../includes/NativeDefs.h (found by the stage-2 build on 2026-09-15; the mhs
-# probe's cpphs had let the missing include pass).
+# ../includes/NativeDefs.h. cpphs lets a missing include pass, so only gcc's
+# cpp notices its absence.
 gcc -O2 -w -include stdio.h -DNO_REGS -DUSE_MINIINTERPRETER -Ighc/includes \
     -Wl,--unresolved-symbols=ignore-all ghc/includes/mkNativeHdr.c \
     -o "$D/tmp/mkNativeHdr" > "$D/log/native-defs.log" 2>&1
 "$D/tmp/mkNativeHdr" > ghc/includes/NativeDefs.h
 grep -q 'OFFSET_R1' ghc/includes/NativeDefs.h || { echo "NativeDefs.h looks wrong"; exit 1; }
 
+# 6 ---------------------------------------------------------------------------
 step "regenerate parsers and primop tables (happy-mhs2, cpphs, genprimopcode)"
 sh "$R/ghc622/tools/regen-generated.sh" "$S" "$D/tools" > "$D/log/regen.log" 2>&1 \
   || { tail -20 "$D/log/regen.log"; echo "regeneration failed"; exit 1; }
 
-# 7 ---------------------------------------------------------------------------
+# 6b --------------------------------------------------------------------------
 step "ghc/includes/config.h: HTYPE_* (gen-htypes.c)"
 # configure's FPTOOLS_CHECK_HTYPE probes have a K&R main() that gcc >= 14
 # rejects, so config.h leaves every HTYPE_* #undef and Foreign.Storable (and
 # the 96 base modules behind it) will not compile. ghc622/tools/gen-htypes.c reruns
-# the probes' logic and its output is appended (DECISIONS.md D47). This step
+# the probes' logic and its output is appended (DECISIONS.md D31). This step
 # runs AFTER the primops regeneration on purpose: cpphs echoes every directive
 # of an included header as a blank line, and primops.txt in the working tree
 # was generated before the HTYPE block existed (the 71 trailing blank lines
@@ -141,10 +143,10 @@ sed '$d' ghc/includes/config.h > "$D/tmp/config.h.body"
 { cat "$D/tmp/config.h.body"; "$D/tmp/gen-htypes"; printf '\n#endif /* __FPTOOLS_CONFIG_H__ */\n'; } > ghc/includes/config.h
 grep -q '^#define HTYPE_INT ' ghc/includes/config.h || { echo "config.h lacks HTYPE_INT"; exit 1; }
 
-# 6 ---------------------------------------------------------------------------
+# 7 ---------------------------------------------------------------------------
 step "convert the alex lexer"
 # The tarball ships alex's -g output (parser/Lexer.hs); its Addr# tables are
-# decoded into boxed arrays (build/lexer622/FINDINGS.md). The converter
+# decoded into boxed arrays, since MicroHs has no Addr# (D46). The converter
 # asserts every line it touches against the pristine text.
 python3 "$R/ghc622/tools/convert-lexer.py" ghc/compiler/parser/Lexer.hs "$D/tmp/Lexer.hs" > "$D/log/lexer.log" 2>&1
 mv "$D/tmp/Lexer.hs" ghc/compiler/parser/Lexer.hs

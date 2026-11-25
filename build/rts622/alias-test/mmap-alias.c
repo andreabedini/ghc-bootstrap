@@ -1,7 +1,8 @@
 /* LD_PRELOAD shim: make the RTS's heap alias the executable's static closures.
  *
  * GHC 6.2.2's 64-bit HEAP_ALLOCED (ghc/rts/MBlock.h) indexes a 4096-entry
- * map by the low 32 bits of an address. On Linux HEAP_BASE is 0, so the
+ * map by the low 32 bits of an address. Without RTS patch 0003 (D50)
+ * HEAP_BASE is 0 on Linux, so the
  * first megablock comes from mmap(NULL, ...) and its low 32 bits are
  * whatever ASLR chose; when they fall on the executable's data segment
  * (0x1797dd8-0x1d0e668 in build/ghc622-stage2/ghc, map entries 23-29) the GC

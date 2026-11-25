@@ -1,6 +1,6 @@
 # happy 1.19.5, compiled by the chain's GHC 7.4.2 with its own Setup.lhs
 # (Cabal 1.14), from its Hackage tarball, and with none of the parsers that
-# tarball ships. It serves the rungs 7.8.4 to 8.8.4, which ask for a happy
+# tarball ships. It serves 7.8.4 to 8.8.4, which ask for a happy
 # >= 1.19 or >= 1.19.4; it is the newest happy 7.4.2 can build (1.19.6 on
 # want mtl's Control.Monad.Except), and the happy that made the parsers
 # 8.0.2 ships, so 8.0.2's regeneration is compared strictly. It wants an

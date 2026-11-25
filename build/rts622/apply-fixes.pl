@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # Rewrite gcc's cast-as-lvalue extension at exactly the lines gcc reported,
 # using the meaning-preserving spelling  (T)lv OP v  ==>  *(T*)&(lv) OP v
-# (see DECISIONS.md D40). Sites come from obj/*.log; nothing else is touched.
+# (the cast-as-lvalue sites of ghc622/rts/patches, D45). Sites come from obj/*.log; nothing else is touched.
 use strict; use warnings;
 my $R = $ENV{GHC_BOOTSTRAP_ROOT} // die "GHC_BOOTSTRAP_ROOT not set: run under mise from the repo (see mise.toml)\n";
 my $rts = "$R/build/rts622/ghc-6.2.2/ghc/rts";

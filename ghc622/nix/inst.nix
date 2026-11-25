@@ -6,15 +6,16 @@
 # Unregisterised via C, no GHCi, no native code generator, no profiling.
 #
 # What a 2026 host still needs from the chain:
-#  - the RTS patches of ghc622/rts/patches (modern gcc; DECISIONS.md D41, D50)
+#  - the RTS patches of ghc622/rts/patches (modern gcc; DECISIONS.md D45, D50)
 #  - the HTYPE_* block ghc622/tools/gen-htypes.c computes, appended to mk/config.h:
-#    configure's K&R probes leave them undefined under gcc >= 14 (D47)
+#    configure's K&R probes leave them undefined under gcc >= 14 (D31)
 #  - C flags for 2004 C and for the generated C (-std=gnu89 -fpermissive -w
 #    -fwrapv), through build.mk as for 6.6, and -D_GNU_SOURCE for hsc2hs and
-#    the C bits: today's glibc declares struct ucred (network's Socket.hsc)
-#    only under it; and libraries/unix's own execvpe removed, glibc has one;
-#    the same C flags in the rts package's extra_cc_opts, so the installed
+#    the C bits: glibc declares struct ucred (network's Socket.hsc) only
+#    under it; the same C flags in the rts package's extra_cc_opts, so the installed
 #    compiler passes them to gcc for every program it compiles
+#  - libraries/unix's and hslibs/posix's execvpe declarations removed: glibc
+#    has its own, with other types
 #  - GMP 6.1.2 (gmp612/default.nix), not the host's GMP 6.3: from 6.2 on, GMP
 #    leaves a zero-valued mpz result at a static dummy limb, which 6.2.2's
 #    J# turns into a pointer into libgmp that the GC then follows
@@ -25,7 +26,7 @@
 #    off (the chain's parsers were made with the portable one). Shipped
 #    generated files (Lexer.hs: there is no alex) are touched so make keeps
 #    them.
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed 6.2.2,
+# Non-PIE (D41) through the cc wrapper. Output: an installed 6.2.2,
 # bin/ghc, bin/ghc-pkg, lib/ghc-6.2.2.
 { stdenv
 , perl
@@ -118,9 +119,9 @@ stdenv.mkDerivation {
     ./gen-htypes >> mk/config.h
     grep -q '^#define HTYPE_INT ' mk/config.h
   '';
-  # fptools' make loops carry on past a failing subdirectory (hslibs/posix's
-  # cbits did fail once and the build still exited 0), so every make's output
-  # is kept and searched for `*** [target] Error` afterwards.
+  # fptools' make loops carry on past a failing subdirectory and exit 0, so
+  # every make's output is kept and searched for `*** [target] Error`
+  # afterwards.
   buildPhase = ''
     ulimit -s unlimited
     export PATH=$NIX_BUILD_TOP/bin:$PATH

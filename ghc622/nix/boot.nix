@@ -7,7 +7,7 @@
 # and data, which 6.2.2's own utils and 6.6's name. 6.2.2's build system
 # takes it from here (inst.nix); nothing else uses it.
 #
-# Non-PIE (nix-non-pie): the wrapped ghc calls gcc itself for .hc files and
+# Non-PIE (D41): the wrapped ghc calls gcc itself for .hc files and
 # links, so -fno-pie/-no-pie go through the cc wrapper.
 { stdenv
 , gmp612

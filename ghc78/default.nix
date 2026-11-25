@@ -2,13 +2,13 @@
 # registerised with the native code generator (via C with `registerised =
 # false`), no GHCi, static only (7.8 is
 # the first release that builds dynamic libraries and a dynamically linked
-# ghc by default; DYNAMIC_* = NO keeps the build like the earlier rungs').
+# ghc by default; DYNAMIC_* = NO keeps the build like the earlier GHCs'.
 # 7.8.4 asks for a 7.4 or later as the bootstrapping compiler; 7.6 is
 # skipped. The tarball's parsers and lexers are regenerated from their
 # grammars (common/regen-parsers.sh) with 7.4.2's happy 1.19.5 and alex 3.2.7.4
 # (7.8 asks for >= 1.19 and >= 3.1.0). The tarball ships its own libffi 3.0.11.
 #
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
+# Non-PIE (D41) through the cc wrapper. Output: an installed GHC
 # 7.8.4, bin/ghc.
 { stdenv
 , fetchurl

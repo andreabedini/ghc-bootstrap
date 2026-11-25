@@ -1,6 +1,7 @@
 # Sources that are not in this repository
 
-Everything under version control here was written for this project. The
+Everything under version control here was written for this project, except
+the few upstream and generated files that the README's Licence section lists. The
 inputs it works on are downloaded, and `.gitignore` keeps them out; this file
 says what they are, so a fresh checkout can be completed. Checksums are
 `sha256sum` of the files as used.
@@ -29,8 +30,8 @@ sha256 `7b014251b6dfc332b16a49457797c8f1b32d88633dff5b550132cee8558492f7`,
 kept in the repo root), the version the `build/` scripts use; the Nix chain
 uses 0.17.0.0 (D58). It has `mhs/patches/0001-microhs-hugs-shim.patch` applied
 to its `hugs/` shim tree (six files, among them `System/Directory.hs` for the
-`listDirectory` that 0.16.8.0's `Main.hs` uses). `mhs/bootstrap-seed.sh` expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
-`MicroHs/bin/cpphs`, which every later phase uses. `generated/hmhs.c` and
+`listDirectory` that 0.16.8.0's `Main.hs` uses). `mhs/bootstrap-seed.sh` expects it at the repository root (`MicroHs/`) and
+builds `MicroHs/bin/mhs` and `MicroHs/bin/cpphs`, which the `build/` scripts use. `generated/hmhs.c` and
 `mhs.conf` inside it are build outputs.
 
 ## Fetched by the Nix derivations
@@ -56,9 +57,8 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 | `src/Parser.ly`, `src/AttrGrammarParser.ly` at the `1.20.1.1` tag of github.com/haskell/happy (the Hackage tarball ships only the generated parsers) | `ghc94/happy120.nix` | in the file |
 | `ghc-9.12.4-src.tar.xz` | `ghc912` | `sha256-AtHuUICs8A4TW5OyOPCQFbBv8nJUzeWWac9XxCwr7kM=` |
 | `ghc-9.14.1-src.tar.xz` | `ghc914` | `sha256-KoN3nJr4ZVSjKJ8nh6ONaqg9ANE2qp+SA2HdaTwQHnc=` |
-| Hadrian's bootstrap dependencies for a 9.8 boot compiler (26 Hackage tarballs and `.cabal` files: shake 0.19.8, Cabal 3.14.1.1, alex 3.5.2.0, ...) | `ghc912/plan-bootstrap-9_8_4.json`, copied from `ghc-9.12.4/hadrian/bootstrap/`, used by 9.12.4 and 9.14.1 | the plan's `src_sha256` and `cabal_sha256` fields |
+| Hadrian's bootstrap dependencies for a 9.8 boot compiler (26 Hackage tarballs and `.cabal` files: shake 0.19.8, Cabal 3.14.1.1, alex 3.5.2.0, ...) | `ghc912/plan-bootstrap-9_8_4.json`, copied from `ghc-9.12.4/hadrian/bootstrap/`, used by 9.12.4 | the plan's `src_sha256` and `cabal_sha256` fields |
 | Hadrian's bootstrap dependencies for a 9.12 boot compiler | `ghc914/plan-bootstrap-9_12_2.json`, copied from `ghc-9.14.1/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
-| `hp2ps-C-gnu17.patch` (Fedora's copy of GHC !13863, the C23 fix for `utils/hp2ps/Utilities.c`) | `ghc98/hp2ps-C-gnu17.patch` | in the repository |
 | Hadrian's 18 bootstrap dependencies (Hackage tarballs and revised `.cabal` files: shake 0.19.8, QuickCheck 2.14.3, ...) | `ghc98/plan-bootstrap-9_4_4.json`, copied from `ghc-9.8.4/hadrian/bootstrap/` | the plan's `src_sha256` and `cabal_sha256` fields |
 | `happy-1.16.tar.gz`, `alex-2.1.0.tar.gz` (Hackage) | `ghc66/happy116.nix`, `ghc66/alex210.nix` | in the files |
 | `happy-1.19.5.tar.gz` (as above), `alex-3.2.7.4.tar.gz` (Hackage) | `ghc74/happy1195.nix`, `ghc74/alex327.nix` | in the files |
@@ -69,8 +69,7 @@ there (SRI `sha256-...` or hex). The GHC tarballs are `downloads.haskell.org/~gh
 
 GMP 6.1.2 is the GMP every compiler before 8.0 links against: GMP 6.2's lazy
 `mpz_init` breaks their Integer ([DECISIONS.md](DECISIONS.md) [D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)). The host's GMP serves
-8.0 and later. The release tarballs used to pick the chain's GHCs are those whose
-`configure.ac` accepts the previous one as the bootstrapping compiler.
+8.0 and later.
 
 ## Extractions and outputs
 

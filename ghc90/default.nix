@@ -7,24 +7,17 @@
 # alex 3.2.7.4 (9.0 asks for >= 1.19.10 < 1.20 and >= 3.1.7); 1.19.12 made the
 # shipped ones, so the comparison is strict. So is Cabal's lexer (boot/Lexer.x).
 #
-# GhcWithInterpreter = YES and GhcWithSMP = YES from 8.8 on, the standard
-# configuration (nixpkgs, Guix), after two upstream facts: 8.8.4's
-# compiler/main/DynFlags.hs imports Foreign (Ptr) only `#if defined(GHCI)`
-# but its stage-2 SHARED_GLOBAL_VAR needs Ptr whatever GHCI is, so a
-# GHCi-less 8.8.4 does not compile ("Not in scope: type constructor or
-# class `Ptr'", any boot compiler); and a NOSMP threaded RTS rejects -N and
-# -qg as unknown options, while 9.8's Hadrian is linked with
-# `-with-rtsopts=-I0 -qg`, so an SMP-less 9.4 cannot build 9.8. The 6.x-8.4
-# rungs keep NO: they only ever compile the next rung.
+# GhcWithInterpreter = YES and GhcWithSMP = YES, as from 8.8 (ghc88/ghc.nix
+# says why).
 #
 # --with-gmp-includes/--with-gmp-libraries as nixpkgs passes them: from 9.0
 # ghc-bignum records a GMP library directory only when told one. Without it
-# the 9.4.8 could not link a program outside Nix (-lgmp not found): 9.4's
-# settings name the Nix gcc wrapper by its store path, and that linker
-# searches no /lib64. The rungs up to 9.0 record "gcc" and resolve it on
-# PATH, so outside Nix they linked the host's libgmp by accident.
+# the installed compiler cannot link outside Nix (-lgmp not found) once its
+# settings name the Nix gcc wrapper by store path, as 9.4's do: that linker
+# searches no /lib64. (Settings that say "gcc", up to 9.0, resolve it on
+# PATH and find the host's libgmp.)
 #
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC
+# Non-PIE (D41) through the cc wrapper. Output: an installed GHC
 # 9.0.2, bin/ghc.
 { stdenv
 , fetchurl

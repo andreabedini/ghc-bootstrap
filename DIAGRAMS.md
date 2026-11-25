@@ -31,8 +31,10 @@ flowchart LR
 ## 2. Phase 0: the seed, Hugs to a self-hosting mhs
 
 From `mhs/default.nix` and `mhs/bootstrap-seed.sh`. The Nix build deletes
-MicroHs's shipped `generated/*.c` before anything runs; the `build/` scripts
-use the shipped `mhs.c`, and [D1](DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c) is the check that the two compilers agree.
+MicroHs's shipped `generated/*.c` before anything runs and checks that the
+Hugs-derived compiler reproduces the shipped `mhs.c` ([D1](DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c)). The `build/`
+scripts use 0.16.8.0's shipped `mhs.c`, and `mhs/bootstrap-seed.sh` checks
+that the compiler built from it and the Hugs-derived one write the same C.
 
 ```mermaid
 flowchart TB
@@ -44,7 +46,7 @@ flowchart TB
     gen2 -->|"gcc + src/runtime"| mhs["bin/mhs<br/>installed"]
     mhs -->|"compiles MicroHs.Main"| gen3["gen3.c<br/>generation 3"]
     gen3 -. "cmp: must be identical" .- gen2
-    seed["MicroHs's shipped generated/mhs.c<br/>used by build/, not by Nix"] -. "diverse double compilation:<br/>same C out of MicroHs (D1)" .- gen2
+    seed["MicroHs's shipped generated/mhs.c<br/>deleted by Nix, used by build/ (0.16.8.0)"] -. "same C out of MicroHs<br/>(D1; bootstrap-seed.sh for build/)" .- gen2
 ```
 
 ## 3. The mhs-built tools, each closed by a fixed point
@@ -52,7 +54,7 @@ flowchart TB
 From `cpphs/default.nix`, `happy/happy.nix`, `happy/ddc115.nix`,
 `ghc66/alex210ddc.nix` and `ghc66/alexchain.nix`. happy's seed is also
 checked by diverse double compilation from happy 1.15's (D56). alex's
-`Scan.hs` is, from a scanner written by hand (D57); the alexes the GHCs are
+`Scan.hs` is checked the same way, from a scanner written by hand (D57); the alexes the GHCs are
 built with come later, from their tarballs' `Scan.hs`, and agree with these
 on every GHC lexer (`ghc66/alexchain-lexers.nix`).
 
@@ -88,7 +90,7 @@ flowchart LR
 Edges are the inputs of each `ghc622/*.nix`; stdenv, python3, perl and
 gmp are omitted, and an edge into a box stands for one into each derivation
 in it. `ghc622/default.nix` says why there are this many steps. This
-one is D2 with the TALA layout, not Mermaid: the source is
+one is drawn in the D2 diagram language with the TALA layout, not Mermaid: the source is
 `diagrams/ghc622-derivations.d2`, and the render command is in its header.
 
 ![GHC 6.2.2 derivation graph](diagrams/ghc622-derivations.svg)
@@ -120,9 +122,9 @@ ghc-internal, so 9.12.4 is on the ladder.
 
 ```mermaid
 flowchart LR
-    g622["6.2.2<br/>done"] --> g66["6.6<br/>done<br/>needs ≥ 5.04"] --> g610["6.10.4<br/>done<br/>≥ 6.4"] --> g612["6.12.3<br/>done<br/>≥ 6.8"] --> g742["7.4.2<br/>done<br/>≥ 6.12"] --> g784["7.8.4<br/>done<br/>≥ 7.4"] --> g802["8.0.2<br/>done<br/>≥ 7.8"] --> g844["8.4.4<br/>done<br/>≥ 8.0"] --> g884["8.8.4<br/>done<br/>≥ 8.4"] --> g902["9.0.2<br/>done<br/>≥ 8.8"] --> g948["9.4.8<br/>done<br/>≥ 9.0, make kept for a boot < 9.1"] --> g984["9.8.4<br/>done<br/>≥ 9.4, Hadrian"] --> g9124["9.12.4<br/>done<br/>≥ 9.6"] --> g9141["9.14.1<br/>done<br/>configure says ≥ 9.6, stage 0 needs ≥ 9.10"]
+    g622["6.2.2"] --> g66["6.6<br/>≥ 5.04"] --> g610["6.10.4<br/>≥ 6.4"] --> g612["6.12.3<br/>≥ 6.8"] --> g742["7.4.2<br/>≥ 6.12"] --> g784["7.8.4<br/>≥ 7.4"] --> g802["8.0.2<br/>≥ 7.8"] --> g844["8.4.4<br/>≥ 8.0"] --> g884["8.8.4<br/>≥ 8.4"] --> g902["9.0.2<br/>≥ 8.8"] --> g948["9.4.8<br/>≥ 9.0, make kept for a boot < 9.1"] --> g984["9.8.4<br/>≥ 9.4, Hadrian"] --> g9124["9.12.4<br/>≥ 9.6"] --> g9141["9.14.1<br/>configure: ≥ 9.6<br/>stage 0: ≥ 9.10"]
     subgraph g66parts["built by 6.2.2 for 6.6"]
-        h116["happy 1.16<br/>seedless fixed point"] --> a210["alex 2.1.0<br/>Scan.hs by fixed point,<br/>checked by D57's"]
+        h116["happy 1.16<br/>seedless fixed point"] --> a210["alex 2.1.0<br/>Scan.hs by fixed point,<br/>checked from D57's<br/>hand-written scanner"]
     end
     g66parts --> g66
 ```

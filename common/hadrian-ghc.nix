@@ -1,6 +1,6 @@
 # A GHC built with Hadrian, GHC's own build system since the make build
-# system went away in 9.6, by the chain's previous rung. Used by ghc98,
-# ghc912 and ghc914; the first of them says why each step is there.
+# system went away in 9.6, by the chain's previous GHC. Used by ghc98,
+# ghc912 and ghc914.
 #
 # Hadrian is a Haskell program with Hackage dependencies (shake and its
 # friends). GHC ships hadrian/bootstrap/bootstrap.py to build it with a bare
@@ -22,7 +22,7 @@
 # GMP directory (see ghc94/ghc.nix): ghc-bignum up to 9.12, ghc-internal
 # from 9.14, where the GMP backend lives (`gmpPackage`).
 #
-# Non-PIE (nix-non-pie) through the cc wrapper. Output: an installed GHC,
+# Non-PIE (D41) through the cc wrapper. Output: an installed GHC,
 # bin/ghc.
 { lib
 , stdenv
@@ -37,7 +37,7 @@
 }:
 { version
 , sha256               # of ghc-<version>-src.tar.xz
-, bootGhc              # the chain's previous rung
+, bootGhc              # the chain's previous GHC
 , happy, alex          # build-tool-depends of compiler, genprimopcode, hpc
 , plan                 # path of the plan-bootstrap-*.json
 , patches ? [ ]

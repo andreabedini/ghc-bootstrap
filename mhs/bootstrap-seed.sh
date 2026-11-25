@@ -2,7 +2,7 @@
 # Reproduce the whole seed chain: C compiler + Hugs source -> MicroHs,
 # then verify it against MicroHs's own shipped pre-generated C.
 #
-# Verified 2026-09-02, Fedora 44, GCC 16.2.1, x86_64.
+# Tested with Fedora 44, GCC 16.2.1, x86_64.
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)

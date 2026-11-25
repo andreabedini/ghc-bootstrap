@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build Hugs 98 plus (Sep 2006) on a modern toolchain.
-# Verified 2026-09-02 on Fedora 44, GCC 16.2.1, x86_64.
+# Tested with Fedora 44, GCC 16.2.1, x86_64.
 #
 # Three fixes are needed versus a plain ./configure && make:
 #

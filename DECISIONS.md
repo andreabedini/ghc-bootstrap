@@ -6,8 +6,7 @@ decision stops holding it is removed, and the commit that removes it says why;
 how each entry was reached is in `git log -p -- DECISIONS.md`. Numbers are
 stable identifiers and are never reused, so there are gaps: a number cited
 elsewhere that is missing here belongs to a decision that no longer stands
-(`git log -S 'D40 —' -- DECISIONS.md` finds it). The route through GHC
-4.08.2 that came before 6.2.2 is in the git history.
+(`git log -S 'D40 —' -- DECISIONS.md` finds it).
 
 ---
 
@@ -46,8 +45,9 @@ containers does, because alex 2.1.0's `mk_int_dfa` depends on it.
 GHC's parsers are happy grammars. Using the generated parsers a GHC tarball
 ships would put a large generated artefact inside GHC itself, so the chain
 builds happy with mhs and regenerates them: 6.2.2's with that happy (D46),
-every later version's with a happy the chain built (D55). Paying the cost at
-happy's scale is the cheap end of the trade.
+every later version's with a happy the chain built (D55). The one generated
+input this leaves, happy's seed for its own two parsers (D7), is far smaller
+than GHC's parsers.
 
 ---
 
@@ -59,18 +59,21 @@ Every happy tarball on Hackage from 1.15 to 1.19.12:
 |---|---|---|---|
 | 1.15 | no | no | — |
 | 1.16 | yes | yes | **no** — unguarded `HappyA# "…"#`, `Addr#`, `narrow16Int#` |
-| 1.17 – 1.19.5 | yes | no | — |
+| 1.17 – 1.19.4 | yes | no | — |
+| 1.19.5 | yes | under `dist/`, by 1.19.4 with `-agc` | **no** — `HappyA#`, `Addr#` |
 | 1.19.12 | no | yes | **no** — `-XMagicHash`, 53 × `unsafeCoerce#`/`HappyA#` |
 
-mhs rejects both generated parsers on the same construct, an unboxed `Addr#`
+mhs rejects the generated parsers on the same construct, an unboxed `Addr#`
 string literal (`HappyA# "\x00…"#`), which is lexical and cannot be shimmed.
 
 ---
 
 ## D6 — The bootstrapped happy is 1.19.5
 
-Its tarball is genuine source: both `.ly` grammars, no generated `.hs`, and
-the portable `templates/GenericTemplate.hs`. 1.19.12 would need the grammars
+Its tarball has both `.ly` grammars and the portable
+`templates/GenericTemplate.hs`. The parsers it ships under `dist/` are happy
+1.19.4's `-agc` output, which mhs cannot lex, and nothing in the chain
+builds from them. 1.19.12 would need the grammars
 fetched from the repository; 1.16 and earlier ship a generated parser that
 cannot be used (D5).
 
@@ -80,8 +83,8 @@ cannot be used (D5).
 
 `happy/happy-seed/` holds happy 1.19.5's `Parser.hs` and
 `AttrGrammarParser.hs`. Generation 1 of them was written by a happy built
-with GHC 9.14, used once as a generator: the only point where a pre-existing
-Haskell toolchain's output enters the chain, and a deliberate one. The seed
+with GHC 9.14, used once as a generator, deliberately; D55 lists the other
+generated inputs and how each is handled. The seed
 is generation 2, and it is discharged two ways:
 
 1. **Fixed point** (D14). The happy that mhs builds from the seed regenerates
@@ -130,7 +133,7 @@ that adapts the package to modern `base`. The shim stands in for a specific
 historical library, and a patch would make the package's source disagree with
 its tarball for a reason that has nothing to do with the package.
 
-The first case was happy's `happyError = fail …` in
+For example, happy's `happyError = fail …` in
 `ReaderT (String,Int) (Either String)`. Pre-`MonadFail` mtl gave `Either e`
 `fail = Left . strMsg`; MicroHs follows modern `base`. So
 `common/shims/Control/Monad/Reader.hs` has the two instances mtl used to
@@ -217,10 +220,13 @@ driver takes its pre-5.01 catch-all handler, which patch 0026 replaces under
 compiler once, for every program it compiles, rather than rewriting
 MicroHs's own pattern guards into `case` expressions, which would need
 redoing each time MicroHs gains one. Upstream's Hugs
-(augustss/hugs98-plus-Sep2006, which MicroHs's CI now builds with) carries
-the same change as c447d1c0 and our `0003` as ede690a3. Our `0002` also
-computes a value built from the stack before pushing it, which upstream's
-does not do; gcc does not need it.
+(augustss/hugs98-plus-Sep2006, which MicroHs's CI builds with) carries the
+same change as c447d1c0 and `0003` as ede690a3. This repository's `0002`
+also computes each value derived from the Hugs stack before pushing it:
+`push(c)` is `stack(++sp)=(c)`, and C leaves unspecified whether `sp` is
+incremented before `c` reads the stack. gcc reads first, so upstream's copy
+works when built with gcc; a compiler that increments first breaks every
+guard with a pattern, a `let` or more than one condition.
 
 ---
 
@@ -243,7 +249,7 @@ GHC's `FastString`, `StringBuffer` and `PrimPacked` poke bytes through
 `Addr#` and `ByteArray#`. Reimplementing what they export is less work and
 more trustworthy than emulating the primops on MicroHs:
 
-- `ghc622/shims-ghc/FastString.hs` is a `String` plus an interned `Int`.
+- `ghc622/shims/FastString.hs` is a `String` plus an interned `Int`.
   Interning is load-bearing: `Unique.getUnique` is `uniqueOfFS`, so equal
   strings must get the same `Int` or name resolution breaks. It must also be
   re-entrant: a name derived while its parent is being interned (`$w…`,
@@ -310,7 +316,7 @@ both are fixed so that they are correct under either semantics:
 
 - `fixIO` is defined once in `GhcCompat` with an `IORef` and
   `unsafeInterleaveIO`. The obvious `fixIO k = fix (\ ~m -> m >>= k)` loops,
-  and `TcMonad` uses `fixIO` for every recursive binding group.
+  and `TcRnTypes.fixM` uses `fixIO` for every recursive binding group.
 - `UniqSupply.mk_supply#` was a CAF of type `IO UniqSupply`. GHC's
   `unsafeInterleaveIO` re-runs it at each node of the supply tree; MicroHs
   memoised it, so every node got the same unique. Patch 0006 gives it a
@@ -343,8 +349,9 @@ no `.c` file provides one, so every call must be inlined: `-O` is required,
 not a preference. Under C99 the meaning of `extern inline` is inverted and
 the link fails with multiple definitions instead. GHC compiled its RTS with
 `-O`, so this is what it always relied on. Everything the chain compiles is
-also `-fno-pie` (the chain was verified non-PIE), and `.hc` is compiled with
-`-fwrapv` (D48).
+also non-PIE (`-fno-pie`, `-no-pie`): nixpkgs' gcc defaults to PIE, which
+moves info tables from `.rodata` to `.data.rel.ro` and puts static data
+under ASLR. `.hc` is compiled with `-fwrapv` (D48).
 
 ---
 
@@ -358,7 +365,7 @@ Debian, Ubuntu, Gentoo and OpenBSD shipped it. Registerised code, the native
 code generator and GHCi arrived in 6.4.
 
 What made 6.x reachable is one macro: `HsVersions.h` defines `SLIT`/`FSLIT`
-unconditionally as unboxed `Addr#` literals (about 2,900 call sites), which
+unconditionally as unboxed `Addr#` literals (about 2,350 call sites), which
 mhs cannot lex. Patch 0002 redefines them over a boxed `String`, with a
 `LitString` in the `FastString` shim.
 
@@ -385,7 +392,7 @@ x86-64 adjustors: a foreign-export wrapper calls `barf`.
 - The `SrcLoc` fields are strict (patch 0025). Under the shims `FastInt` is
   a lazy `Int`, so lexing built one thunk per character and overflowed the
   mhs stack on very long lines.
-- GHCi, the ILX and Java back ends are not built (GHCi is off).
+- GHCi and the ILX and Java back ends are not built.
 
 ---
 
@@ -398,7 +405,7 @@ arithmetic that GHC wraps. Each case is handled where it arises:
 |---|---|---|
 | `+ - *` on `Int` raise with `WANT_OVERFLOW 1` | CSE's `hash_expr` wraps on purpose | the runtime is built with `WANT_OVERFLOW 0` (`ghc622/nix/stage1.nix`) |
 | `fromInteger` into `Int8/16/32` is checked | `Binary Integer`'s sign byte, `Literal`'s `narrow*Lit` | wrapped by hand (patch 0026) |
-| `negate`/`abs` of `minBound` raise | `hashExpr` | test for `minBound` first (0026) |
+| `negate`/`abs` of `minBound` raise, whatever `WANT_OVERFLOW` says | `hashExpr` | test for `minBound` first (0026) |
 | no `hFileSize` | `readBinMem` | read the file whole by its path (0026) |
 | the pre-5.01 catch-all handler (D17) swallows `ExitException` | every clean exit | the `>= 501` branch under `__MHS__` (0026) |
 | a text handle decodes UTF-8 | `GetImports` on the Latin-1 `Ctype.lhs` | `readBinaryFile` (0026) |
@@ -409,8 +416,9 @@ MicroHs stack and heap, because GHC's own strictness analysis kept
 builds retry a failing module with `-O -fno-strictness`, then `-O0`
 (`ghc622/nix/stage2.nix`, `base.nix`).
 
-MicroHs 0.17.0.0 still traps the narrowing and `minBound` cases (D58);
-patch 0026 stays whole until the series is pruned.
+MicroHs 0.17.0.0 still traps the narrowing case; its `negate` follows
+`WANT_OVERFLOW` as `+ - *` do (D58). Patch 0026 stays whole until the series
+is pruned.
 
 ---
 
@@ -440,7 +448,7 @@ happy through a wrapper that applies it (D52).
 6.2.2's 64-bit `HEAP_ALLOCED` (marked "XXX: This is a HACK" in the source)
 keys a 4096-entry map on the low 32 bits of an address. With `HEAP_BASE 0`
 the heap starts wherever `mmap(NULL)` puts it, so under ASLR its low 32 bits
-alias the executable's static closures in about 0.6% of processes, and the
+alias the executable's static closures in about one process in 400, and the
 collector then evacuates static closures as heap objects.
 `ghc622/rts/patches/0003-mblock-map-window.patch` sets `HEAP_BASE
 0x500000000` on x86-64 and keys a 65536-entry map on `p - HEAP_BASE` (a
@@ -481,9 +489,10 @@ bit-reproducibility requirement would fix it with a `.&. 0xffffffff`, or
 **6.2.2 by its own `configure && make`.** `nix-build -A ghc622` is 6.2.2
 built by its own build system with the chain's stage 3 as `--with-ghc`
 (`ghc622/nix/inst.nix`, the boot compiler being `ghc622/nix/boot.nix`).
-Stages 1 to 5 exist because that build system needs a working GHC to drive
-it; from stage 3 the compiler is native, and from `inst.nix` the build system
-is the compiler's own. The 220 compiler modules this 6.2.2 compiles are
+Stages 1 to 3 exist because that build system needs a working GHC to drive
+it: stage 3 is the first compiler built from the pristine source by a native
+one, and it is the boot compiler. Stages 4 and 5 are the fixed-point check
+(D51). From `inst.nix` on, the build system is the compiler's own. The 220 compiler modules this 6.2.2 compiles are
 byte-identical to stage 4's, `.hc` and `.hi`. A 2026 host needs: the three
 RTS patches (D45), the `gen-htypes` block in `mk/config.h` (D31),
 `-D_GNU_SOURCE` for hsc2hs and the C bits, the private `execvpe`
@@ -514,7 +523,8 @@ memory the GHC runtime allocated. Every GHC before 8.0 takes `_mp_d -
 sizeof(StgArrWords)` as the `ByteArray#` closure, so the collector evacuates
 a pointer into libgmp's data segment and dies when the word there is not an
 info pointer. `common/test/GmpZero.hs` keeps 2.4 million such zeros live
-across collections and is part of every install check before 8.0.
+across collections and is part of every install check from 6.2.2 to 8.0.2
+(8.0.2's against the host's GMP).
 `gmp612/default.nix` builds GMP 6.1.2, the last release before the change,
 and every build before 8.0 takes it (stage 2's link, stages 3 to 5, boot,
 inst, happy 1.16, alex 2.1.0, 6.6 to 7.8.4). 8.0's integer-gmp works on limbs
@@ -544,7 +554,7 @@ of the fixes is about the boot compiler.
   threaded RTS rejects `-N` and `-qg`, and Hadrian links itself with
   `-with-rtsopts=-I0 -qg`. 6.2.2 to 8.4.4 keep both off: they only compile
   the next version. Rejected: a one-line patch moving the import, which would
-  make our 8.8 a configuration nobody else has.
+  make the chain's 8.8 a configuration nobody else has.
 - **9.0.2, 9.4.8**: the make build links `rts/StgCRunAsm.S` on every
   architecture, and on x86-64 it is an object with no `.note.GNU-stack`.
   `ghc90/StgCRunAsm-only-when-needed.patch` is Guix's copy of upstream
@@ -564,7 +574,7 @@ of the fixes is about the boot compiler.
   function of no arguments: `ghc98/hp2ps-C-gnu17.patch`, upstream's fix from
   9.10.
 
-**Hadrian from 9.8.4, by `bootstrap.py`.** Hadrian has 18 Hackage
+**Hadrian from 9.8.4, by `bootstrap.py`.** 9.8.4's Hadrian has 18 Hackage
 dependencies, ordinarily built by cabal-install. GHC ships
 `hadrian/bootstrap/bootstrap.py` for packagers: given a bare GHC and a
 bootstrap plan (each dependency's version, revision and sha256), it builds
@@ -623,8 +633,8 @@ the patch dropped; a 9.16 will want the 9.14's plan treatment.
 - Seeds, each discharged: happy's (D7), the `Scan.hs` of alex 2.1.0 and
   3.2.7.4 (fixed points, and diverse double compilation, D57).
 - Used as shipped: 6.2.2's `Lexer.hs` (D46, its DFA checked by D57); the
-  `Scan.hs` of the alex 3.5.2.0 in Hadrian's bootstrap plan for 9.12.4 and
-  9.14.1, which has no check.
+  `Scan.hs` of the alex 3.5.2.0 in 9.12.4's Hadrian bootstrap plan, which has
+  no check.
 - `configure` scripts: autoconf output, **used as shipped**, as Guix and
   nixpkgs do (Debian regenerates). Where bootstrapping practice is strict is
   parser-generator output (live-bootstrap rebuilds bison's parser from its
@@ -641,7 +651,7 @@ regenerated module with the shipped one (through `ghc66/cmp-generated.sh`,
 which ignores LINE pragmas and raw cpp line markers): a difference fails the
 build when the happy on PATH is the version named in the shipped file's
 header (8.0.2 by 1.19.5, 9.0.2 by 1.19.12, 9.8.4 to 9.14.1 by 1.20.1.1), and
-is reported otherwise and for alex output. The build no longer depends on
+is reported otherwise and for alex output. The build does not depend on
 the shipped file; agreement is evidence on top.
 
 **The generators** each version's configure accepts, and the ones the chain
@@ -772,10 +782,10 @@ every alex here (D1).
 `mhs/default.nix` builds MicroHs 0.17.0.0 (the `v0.17.0.0` tag; the hash is
 `nix hash path` of `git archive v0.17.0.0`) from its own `hugs/` tree with no
 patch: the Hugs-derived compiler reaches the fixed point and reproduces the
-shipped `generated/mhs.c` (D1). On it, the 6.2.2 fixed point holds as
-before (D51), and `nix-build -A ghc914` builds the whole chain to GHC
+shipped `generated/mhs.c` (D1). On it, the 6.2.2 fixed point holds
+(D51), and `nix-build -A ghc914` builds the whole chain to GHC
 9.14.1 with no change above 6.2.2. `mhs/bootstrap-seed.sh` and the `build/`
-scripts stay on 0.16.8.0, with `mhs/patches/0001`.
+scripts run on 0.16.8.0, with `mhs/patches/0001`.
 
 0.17.0.0 rejects a second instance of the same class and type, so the
 `FastString` shims define no `Show` instance (D20). Its stage 1 compiles
@@ -790,20 +800,20 @@ come from stage 1.
 
 | 0.17.0.0 | Items (GHC 6.2.2 patch) |
 |---|---|
-| fixed | an empty statement after `do {` (0010); trailing commas (0011, part); `f.g` (0015); `f :: T = e`, on one line or with `= e` on the next (0022); an import item listed twice (0012); `T(..)` importing field selectors exported by name (0013); mhs's own `MachDeps.h` shadowing an `-I` directory (0003); `hFileSize` (0026, part); `unsafeInterleaveIO` in a CAF, which now re-runs (0006); `'x'#` (0007) |
+| fixed | an empty statement after `do {` (0010); trailing commas (0011, part); `f.g` (0015); `f :: T = e`, on one line or with `= e` on the next (0022); an import item listed twice (0012); `T(..)` importing field selectors exported by name (0013); mhs's own `MachDeps.h` shadowing an `-I` directory (0003); `hFileSize` (0026, part); `negate`/`abs` of `minBound`, which follow `WANT_OVERFLOW` (0026, part); `unsafeInterleaveIO` in a CAF, which re-runs (0006); `'x'#` (0007) |
 | in part | `"abc"#` is a ByteString literal, not an `Addr#` (0002, 0005) |
-| not fixed | unlit with trailing whitespace (0001); `_scc_` (0009); doubled commas (0011; GHC 9.14.1 rejects them too); safety after the entity string and `foreign label` (0017); `fromInteger` into Int8/16/32 and `negate`/`abs` of `minBound` still trap (0026) |
+| not fixed | unlit with trailing whitespace (0001); `_scc_` (0009); doubled commas (0011; GHC 9.14.1 rejects them too); safety after the entity string and `foreign label` (0017); `fromInteger` into Int8/16/32 still traps (0026, part) |
 | worse | a Latin-1 byte in text input raises `hGetContents: surrogate` (0.16.8.0 decoded it wrongly without a word) |
 | not mhs bugs | a hand-written `Typeable` instance (0021) and an import of a name that is not exported: GHC 9.14.1 rejects both |
 
-The 6.2.2 patch series is unchanged: every patch removes a GHC-ism or works
+The 6.2.2 patch series keeps every patch: each removes a GHC-ism or works
 around a semantic difference, so each is still correct under 0.17.0.0.
-Dropping the ones it makes unnecessary is a separate change. Since text
-input that is not UTF-8 now fails, the inputs were scanned: in 6.2.2's
-tarball only `parser/Ctype.lhs` (transcoded by patch 0008) and two ObjectIO
-modules the chain does not build; nothing in the happy, alex, cpphs and
-polyparse tarballs; no `.y`, `.ly` or `.x` file of any GHC from 6.6 to
-9.14.1.
+Dropping the ones 0.17.0.0 makes unnecessary is a separate change. Text
+input that is not UTF-8 fails under 0.17.0.0. Of the chain's inputs, only
+6.2.2's `parser/Ctype.lhs` (transcoded by patch 0008) and two ObjectIO
+modules the chain does not build are not UTF-8; the happy, alex, cpphs and
+polyparse tarballs, and every `.y`, `.ly` and `.x` file of GHC 6.6 to
+9.14.1, are.
 
 ---
 
