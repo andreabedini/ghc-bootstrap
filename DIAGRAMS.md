@@ -2,7 +2,7 @@
 
 Six views of the bootstrap chain, as Mermaid diagrams (GitHub renders them;
 elsewhere, paste into any Mermaid viewer). Each is drawn from a file in this
-repository, named above it, and re-read on 2026-10-01. [README.md](README.md) has the
+repository, named above it. [README.md](README.md) has the
 prose; [DECISIONS.md](DECISIONS.md) has the reasons.
 
 ## 1. The whole chain, one link per compiler
@@ -114,9 +114,8 @@ flowchart LR
 ## 6. The road past 6.2.2
 
 Every GHC below is built (`ghcNN/`, [DECISIONS.md](DECISIONS.md) [D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)-[D54](DECISIONS.md#d54--one-hadrian-derivation-for-984-9124-and-9141)). The floor
-under each release is the minimum boot compiler its `configure.ac` accepts
-(read 2026-10-01); it is configure's check only, and 9.14.1 showed it can
-be stale: its configure says 9.6, its stage-0 build needs 9.10's
+under each release is the minimum boot compiler its `configure.ac` accepts.
+It is configure's check only, and for 9.14.1 it is stale: its configure says 9.6, its stage-0 build needs 9.10's
 ghc-internal, so 9.12.4 is on the ladder.
 
 ```mermaid

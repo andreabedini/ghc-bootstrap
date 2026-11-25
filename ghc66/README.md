@@ -39,5 +39,3 @@ nix-build -A ghc66.alexChainLexers  # both against the chain's alexes (needs the
 - **GMP 6.1.2** ([gmp612](../gmp612/README.md), [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)).
 - **Non-PIE.** Every gcc call goes through the cc wrapper, which adds
   `-fno-pie`/`-no-pie`.
-- My working notes from building 6.6 by hand, before the derivation existed, are in
-  [`build/ghc66-by-622/NOTES.md`](../build/ghc66-by-622/NOTES.md).

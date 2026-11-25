@@ -1,7 +1,6 @@
 # Bootstrapping GHC from source
 
-This repository builds GHC 9.14.1, the latest release at the time of writing,
-starting from a C compiler and the source code of Hugs. Every compiler in the
+This repository builds GHC 9.14.1 starting from a C compiler and the source code of Hugs. Every compiler in the
 chain is built from source by the one before it. There is no Haskell binary
 to trust, and generated code stands in for source only in the few places I
 list in [What the chain trusts](#what-the-chain-trusts).
@@ -29,14 +28,14 @@ Every link is an attribute of `default.nix` (`hugs`, `mhs`, `cpphs`, `happy`,
 input is a tarball or commit fetched by hash and listed in [`SOURCES.md`](SOURCES.md). I have
 only built it on x86-64 Linux.
 
-## How I found the route
+## Why this route
 
 Every GHC needs an older GHC; today's master asks for 9.10. If you follow the
 chain back you end up at GHC 0.29 (1996), built with HBC, which is written in
 LML. Some old GHC tarballs ship generated C, but generated code is not source:
 starting from it just moves the binary seed somewhere less visible.
 
-When I started, four approaches were on the table
+Four other approaches have been proposed
 ([Breitner 748](https://www.joachim-breitner.de/blog/748-Thoughts_on_bootstrapping_GHC),
 [Breitner 802](https://www.joachim-breitner.de/blog/802-More_thoughts_on_a_bootstrappable_GHC),
 [Wurmus 2017](https://elephly.net/posts/2017-01-09-bootstrapping-haskell-part-1.html),
@@ -45,46 +44,28 @@ When I started, four approaches were on the table
 1. **Walk the historical chain.** Dead at the root: HBC needs LML, and 1990s
    code does not build with 2020s toolchains. Guix has the upper part, from a
    4.08.2 built from the tarball's generated C, with a gap around 6.12 and 7.x.
-2. **Hugs -> nhc98 -> early GHC** (Wurmus, 2017). Stalled: nhc98 is 32-bit
-   only, and nobody showed it could build any GHC.
+2. **Hugs -> nhc98 -> early GHC** (Wurmus, 2017). nhc98 is 32-bit only, and
+   nobody has shown it can build any GHC.
 3. **Run GHC's own source under Hugs** (Breitner, 802). Hugs cannot do
-   mutually recursive modules, so Breitner flattened GHC into a single
-   680,000-line module. What was left: GHC's compiler reaches into RTS
-   internals through `base`, primops and unboxed types, the FFI, and Hugs only
-   speaks Haskell 98.
-4. **Write a new bootstrappable compiler.** In 2017 nobody was going to. Since
-   then somebody did, for other reasons: [MicroHs](https://microhs.org/).
+   mutually recursive modules, so GHC has to be flattened into a single
+   680,000-line module, and GHC's compiler reaches into RTS internals through
+   `base`, primops and unboxed types, the FFI, while Hugs only speaks Haskell
+   98.
+4. **Write a new bootstrappable compiler.** Somebody did, for other reasons:
+   [MicroHs](https://microhs.org/).
 
 MicroHs is the missing seed. It is maintained and self-hosting, it compiles via
 combinators to C, and it reads `.hs-boot` files, so mutual recursion is not a
-problem. It even has a path that runs its own compiler under Hugs. That path
-had rotted: it died on pattern guards, which Hugs never implemented. I added
-pattern guards to Hugs rather than rewriting MicroHs's source ([D18](DECISIONS.md#d18--hugs-is-patched-for-pattern-guards-not-microhss-source)), and that
-gave a seed of a C compiler and Hugs source only. The Hugs-built MicroHs
-reproduces MicroHs's own shipped C byte for byte ([D1](DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c)).
+problem. It has a path that runs its own compiler under Hugs, which needs
+pattern guards in Hugs; I add them to Hugs rather than rewriting MicroHs's
+source ([D18](DECISIONS.md#d18--hugs-is-patched-for-pattern-guards-not-microhss-source)), so the seed is a C compiler and Hugs source only. The
+Hugs-built MicroHs reproduces MicroHs's own shipped C byte for byte ([D1](DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c)).
 
-The plan I wrote on 2026-09-02 had phases 0 to 4 (the plan as first written is
-[`BOOTSTRAP-ANALYSIS.md`](https://github.com/andreabedini/ghc-bootstrap/blob/7638183f08baa3d7a99f719c6abf7855b7f04335/BOOTSTRAP-ANALYSIS.md)
-in the git history). This is what became of them:
-
-| Phase | Plan | Outcome |
-|---|---|---|
-| 0 | verify the Hugs -> MicroHs seed | done, once Hugs had pattern guards ([`notes/phase0/FINDINGS.md`](notes/phase0/FINDINGS.md)) |
-| 1 | pick the target GHC by measuring, not by assuming | 4.08.2 scored best ([D2](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d2--target-ghc-4082-on-measurement-rather-than-on-the-guix-argument)). Later I concluded 6.x was out of reach ([D44](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d44--is-ghc-6x-within-mhss-reach-measured-not-estimated)) and I was wrong: it was one macro, `SLIT` ([D45](DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622)) |
-| 2 | a ghc-on-mhs shim layer plus a patch series over pristine tarballs | done for both 4.08.2 and 6.2.2; flattening GHC turned out to be unnecessary |
-| 3 | run the old GHC under mhs and close the loop to a native, self-hosting GHC | impossible on 4.08.2, whose 1999 runtime has 64-bit bugs ([D42](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime)); done on 6.2.2 ([D47](DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis)-[D51](DECISIONS.md#d51--the-622-fixed-point-stage-5-equals-stage-4-in-all-220-modules)) |
-| 4 | fill Guix's gap from 6.10.4 to 7.8.4 | done, and carried on to 9.14.1 ([D52](DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)-[D54](DECISIONS.md#d54--one-hadrian-derivation-for-984-9124-and-9141)) |
-
-The first chain used GHC 4.08.2. Its runtime has no x86-64 port, and I gave up
-on it at the seventh 64-bit bug; [notes/](notes/README.md) keeps that chain
-and its patches. GHC 6.2.2 is the first release with an x86-64 port
-(unregisterised, via C), and with it the same approach goes all the way
-through.
-
-I considered one fallback, jeffstyr's idea from the Discourse thread, and did
-not need it: have a modern GHC emit a dictionary-passing, Core-derived
-rendering of itself and compile that with mhs. It would buy some trust through diverse double compilation, but it is
-not a bootstrap.
+mhs then compiles GHC 6.2.2, the first release with an x86-64 port
+(unregisterised, via C). Older GHCs assume a 32-bit machine in their runtime,
+and 6.x is reachable once one macro, `SLIT`, is redefined over boxed strings
+([D45](DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622)). GHC's source compiles under mhs with a shim layer and a patch series
+over the pristine tarball; it does not need flattening.
 
 ## The chain
 
@@ -163,7 +144,7 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
 
 - **No Haskell implementation from outside the chain.** Generated code stands
   in for source only where this list says, and I discharged or checked each
-  case (the audit of 2026-10-12, [D55](DECISIONS.md#d55--generated-code-in-the-inputs-parsers-and-lexers-are-regenerated-from-their-grammars)):
+  case ([D55](DECISIONS.md#d55--generated-code-in-the-inputs-parsers-and-lexers-are-regenerated-from-their-grammars)):
   - **happy's parser, discharged.** The first portable happy parser came out
     of a happy built with my machine's GHC 9.14. `happy-mhs` then regenerated
     it, and generation 3 is byte-identical to generation 2, so the GHC-built
@@ -177,10 +158,7 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
   - **MicroHs's shipped C, checked.** The Nix build deletes MicroHs's
     `generated/*.c` before anything runs. Its check phase then requires the
     Hugs-derived `mhs`, run as MicroHs's Makefile runs it (`-z`), to reproduce
-    the shipped `generated/mhs.c` byte for byte. It does for 0.16.8.0
-    (2026-10-12). For 0.17.0.0 the same commands, run by hand on 2026-11-19
-    under a Hugs with our 2026-10-16 patches, give the same result; the Nix
-    check has not run on it yet. The scripts under `build/` run
+    the shipped `generated/mhs.c` byte for byte, and it does. The scripts under `build/` run
     `MicroHs/bin/mhs`, compiled from 0.16.8.0's shipped C. As a compiler it is
     equivalent to the Hugs-derived one, but it is not the same binary ([D1](DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c)).
   - **cpphs, checked.** The Nix build builds cpphs from source with mhs, with
@@ -192,12 +170,12 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
   - **alex's own lexer, discharged.** alex 2.1.0 and 3.2.7.4 start from
     the `Scan.hs` their tarballs ship, which only an alex can produce. The alex
     built from it has to regenerate it from `Scan.x`, and a second generation
-    has to reproduce the first byte for byte. That is only a fixed point. I
-    had suggested that an mhs-built alex regenerating the `Lexer.hs` GHC 6.2.2
-    ships would settle it, and as Janus Troelsen pointed out
+    has to reproduce the first byte for byte. That is only a fixed point, and
+    an mhs-built alex regenerating the `Lexer.hs` GHC 6.2.2 ships would not
+    settle it either: as Janus Troelsen pointed out
     ([#102](https://discourse.haskell.org/t/what-s-needed-to-bootstrap-ghc-with-hugs/6205/102)),
-    it wouldn't: that alex still runs alex's own generated `Scan.hs`, probably
-    made by the same alex that made `Lexer.hs`. So, as with happy, there is a
+    that alex still runs alex's own generated `Scan.hs`, probably made by the
+    same alex that made `Lexer.hs`. So, as with happy, there is a
     second starting point that no alex made: a scanner for alex 2.1.0 written
     by hand from `Scan.x`'s rules. The alex 2.1.0 built from it regenerates the
     tarball's `Scan.hs`, and an alex built from that output regenerates it byte
@@ -260,17 +238,16 @@ MicroHs play that role here, by way of GHC 6.2.2. This is the full list of what 
 | [`ghc622/`](ghc622/README.md) | GHC 6.2.2, the entry point: the stages, the patch series, the shims |
 | [`ghc66/`](ghc66/README.md) ... [`ghc914/`](ghc914/README.md) | one directory per GHC release, each with its derivation and every file it reads |
 | [`common/`](common/README.md) | what several links share: the ghc-on-mhs shims, the parser regeneration, the Hadrian build, the test programs |
-| [`build/`](build/README.md) | the 6.2.2 chain as I first built it by hand, before Nix: scripts, findings, results |
-| [`notes/`](notes/README.md) | how the chain was found, phase by phase, including the retired GHC 4.08.2 chain |
+| [`build/`](build/README.md) | the 6.2.2 chain by hand, without Nix: a Makefile, its scripts and the tables they read |
 | [`DECISIONS.md`](DECISIONS.md) | the decisions that stand, [D1](DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c)-[D59](DECISIONS.md#d59--repository-files-describe-the-current-state-history-is-in-commit-messages); the history is in `git log` |
 | [`DIAGRAMS.md`](DIAGRAMS.md), `diagrams/` | the chain as six diagrams |
 | [`SOURCES.md`](SOURCES.md) | where every input comes from, with hashes |
-| `mise.toml` | sets `GHC_BOOTSTRAP_ROOT` for the scripts in `build/` and `notes/` |
+| `mise.toml` | sets `GHC_BOOTSTRAP_ROOT` for the scripts in `build/` |
 | `LICENSE` | BSD 3-Clause, for what I wrote; see [Licence](#licence) for the patches |
 
 ## Licence
 
-What I wrote here (the scripts, Nix expressions, shims, findings and
+What I wrote here (the scripts, Nix expressions, shims and
 documentation) is under the BSD 3-Clause licence in `LICENSE`.
 
 The patches, and the few files copied or generated from an upstream source,
@@ -278,7 +255,7 @@ are derived from that project and stay under its licence:
 
 | Upstream | Licence | Files here |
 |---|---|---|
-| GHC | the Glasgow Haskell Compiler License (BSD-style) | `ghc622/patches/`, `ghc622/rts/patches/`, `ghc622/hsc2hs/Main.hs.patch`, `ghc622/stage2/fixups/parser/Ctype.lhs.patch`, `ghc622/tools/genprimopcode-Main.hs.patch`, `build/ghc622-mhs/diag/faststring-intern.patch`, `ghc66/`, `ghc90/`, `ghc98/` and `ghc914/` `*.patch`, `notes/phase2/patches/`, `notes/phase3/patches/`; `Language/Haskell/THSyntax.hs` in `build/shims-6.0-run2/`; the Hadrian plans `plan-bootstrap-*.json` in `ghc98/`, `ghc912/` and `ghc914/` |
+| GHC | the Glasgow Haskell Compiler License (BSD-style) | `ghc622/patches/`, `ghc622/rts/patches/`, `ghc622/hsc2hs/Main.hs.patch`, `ghc622/stage2/fixups/parser/Ctype.lhs.patch`, `ghc622/tools/genprimopcode-Main.hs.patch`, `ghc66/`, `ghc90/`, `ghc98/` and `ghc914/` `*.patch`; the Hadrian plans `plan-bootstrap-*.json` in `ghc98/`, `ghc912/` and `ghc914/` |
 | Hugs 98 | the Hugs 98 licence (BSD-style) | `hugs/patches/` |
 | MicroHs | Apache License 2.0 | `mhs/patches/` |
 | happy | the Happy licence (BSD-style) | `happy/happy-seed/` (generated by happy from happy 1.19.5's grammars), `happy/ddc115/happy-1.15-mhs.patch` (Alexandre Tunstall's, from issue #2) |

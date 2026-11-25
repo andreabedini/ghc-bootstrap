@@ -15,7 +15,7 @@ bootstrapping compiler. It asks for 6.4 or later; 6.12 asks for 6.8.
 
 - **Parsers and lexers** are regenerated from their grammars
   (`common/regen-parsers.sh`) with 6.6's happy 1.16 and alex 2.1.0.
-- **`build.mk`** is written in the derivation; for 6.6 it was part of the
+- **`build.mk`** is written in the derivation; for 6.6 it is part of the
   patch. It turns
   the ways and the interpreter off, and sets the C flags a 2026 gcc needs for
   2009 C: `-std=gnu89 -fpermissive -w`, plus `-fwrapv` for the generated C.

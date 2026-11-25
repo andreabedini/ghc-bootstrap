@@ -21,7 +21,7 @@ nix-build -A cpphs
 The result replaces MicroHs's shipped `generated/cpphs.c`, and as far as the
 chain can tell it behaves the same. Both preprocess every `.hs`, `.lhs` and
 `.pp` file of GHC 6.2.2 with the chain's three flag sets to identical output
-(1,458 runs, 2026-09-30). The one difference is the source path in cpphs's own
+(1,458 runs). The one difference is the source path in cpphs's own
 `#error` message.
 
 ## Files

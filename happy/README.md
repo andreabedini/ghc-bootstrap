@@ -8,7 +8,7 @@ The parser generator that regenerates GHC 6.2.2's parsers, compiled by
 nix-build -A happy
 ```
 
-## The seed, and how I got rid of it
+## The seed
 
 happy's own parsers (`Parser.hs`, `AttrGrammarParser.hs`) are happy output, so
 one generation has to be an input. `happy-seed/` holds generation 2 of
@@ -35,9 +35,9 @@ check phase fails unless that 1.19.5 regenerates `happy-seed/` byte for byte.
 It does. The check is its own derivation, so happy's derivation, and the
 chain after it, do not change.
 
-Comparing with the GHC-built happy directly would have been the wrong test:
-that one was a 1.19.12, and its output differs from 1.19.5's anyway (the
-`happyExpList` feature).
+Comparing with the GHC-built happy directly is the wrong test: that one was a
+1.19.12, and its output differs from 1.19.5's anyway (the `happyExpList`
+feature).
 
 ## Files
 
@@ -52,4 +52,3 @@ that one was a 1.19.12, and its output differs from 1.19.5's anyway (the
 | `shim/Paths_happy.hs` | what Cabal would generate |
 
 The template is `cpphs --noline templates/GenericTemplate.hs`.
-[`notes/phase1/happy.md`](../notes/phase1/happy.md) has the analysis of happy under mhs.

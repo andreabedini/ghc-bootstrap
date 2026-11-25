@@ -26,15 +26,12 @@ derivations fetch their own copies (below).
 An extraction of `MicroHs-0.16.8.0.tar.gz`
 (`https://github.com/augustss/MicroHs/archive/refs/tags/v0.16.8.0.tar.gz`,
 sha256 `7b014251b6dfc332b16a49457797c8f1b32d88633dff5b550132cee8558492f7`,
-kept in the repo root), the release current when the `build/` scripts ran;
-the Nix chain moved to 0.17.0.0 on 2026-11-19 (D58). It has
-`mhs/patches/0001-microhs-hugs-shim.patch` applied to its `hugs/` shim tree
-(six files; `System/Directory.hs` since 2026-10-12, for the `listDirectory`
-0.16.8.0's `Main.hs` uses). `mhs/bootstrap-seed.sh` expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
+kept in the repo root), the version the `build/` scripts use; the Nix chain
+uses 0.17.0.0 (D58). It has `mhs/patches/0001-microhs-hugs-shim.patch` applied
+to its `hugs/` shim tree (six files, among them `System/Directory.hs` for the
+`listDirectory` that 0.16.8.0's `Main.hs` uses). `mhs/bootstrap-seed.sh` expects it at `../MicroHs` and builds `MicroHs/bin/mhs` and
 `MicroHs/bin/cpphs`, which every later phase uses. `generated/hmhs.c` and
-`mhs.conf` inside it are build outputs. The chain was built on commit
-`1474221819a29d6c948fb9a04bd70ed1ded4ca71` (`v0.16.5.0-80-g14742218`);
-0.16.8.0 is that commit plus 29 more.
+`mhs.conf` inside it are build outputs.
 
 ## Fetched by the Nix derivations
 

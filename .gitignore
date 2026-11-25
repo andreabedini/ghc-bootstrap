@@ -16,17 +16,16 @@
 # ---- the Hugs extraction and install prefix before 2026-10-08 (now build/hugs) ----
 /phase0/
 
-# ---- build/: only what we wrote, listed, plus the result tables README.md ----
-# ---- and the FINDINGS files cite; everything else in it is output ----
+# ---- build/: only what we wrote, listed, plus the result tables its scripts ----
+# ---- read; everything else in it is output ----
 /build/**
 !/build/**/
-# the manual 6.2.2 chain: Makefile, scripts, notes
+# the manual 6.2.2 chain: Makefile, scripts, README
 !/build/Makefile
 !/build/**/*.sh
 !/build/**/*.py
 !/build/**/*.pl
-!/build/**/*.md
-!/build/ghc622-mhs/SWITCH-NOTE.txt
+!/build/README.md
 # hand-written inputs: orders, wrappers, topdirs (symlinks into ghc622/)
 !/build/ghc622-mhs/base-order.txt
 !/build/hsc2hs-mhs/hsc-order.txt
@@ -37,34 +36,16 @@
 !/build/ghc622-mhs/topdir/package.conf
 !/build/ghc622-stage2/topdir/ghc-usage.txt
 !/build/ghc622-stage2/topdir/package.conf
-# hand-written sources: tests, probes, repros, shims, hs-boot files, C stubs
+# hand-written sources: tests and C stubs
 !/build/ghc622-mhs/test/*.hs
 !/build/ghc622-mhs/test/rv/*.hs
 !/build/ghc622-stage2/test/Hello.hs
 !/build/ghc66-by-622/test/Hello.hs
-!/build/ghc622-mhs/diag/repro/Intern.hs
-!/build/ghc622-mhs/diag/faststring-intern.patch
 !/build/lexer622/driver/Main.hs
-!/build/probe/*.hs
-!/build/rebase622/hsboot-6.2.2/*.hs-boot
-!/build/shims-6.0/*.hs
-!/build/shims-6.0-run2/**/*.hs
 !/build/rts622/*.c
 !/build/rts622/alias-test/*.c
-# result tables cited by README.md or a FINDINGS file
+# result tables the scripts read
 !/build/order-6.2.2.txt
-!/build/order-6.2.2-pass2.txt
-!/build/order-run4.txt
-!/build/order-side1.txt
-!/build/order-side2.txt
-!/build/order-side3.txt
-!/build/probe-6.2.2-run1-final.tsv
-!/build/probe-6.2.2-run1-pass1.tsv
-!/build/probe-6.2.2-run1-pass2.tsv
-!/build/probe-side1.tsv
-!/build/probe-side2.tsv
-!/build/probe-side3.tsv
-!/build/rebase622/build-order-6.2.2.txt
 !/build/ghc622-mhs/base-results.tsv
 !/build/ghc622-mhs/base-results-hsc.tsv
 !/build/ghc622-mhs/diag/base-rebuild-results.tsv

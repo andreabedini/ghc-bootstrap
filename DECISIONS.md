@@ -6,8 +6,8 @@ decision stops holding it is removed, and the commit that removes it says why;
 how each entry was reached is in `git log -p -- DECISIONS.md`. Numbers are
 stable identifiers and are never reused, so there are gaps: a number cited
 elsewhere that is missing here belongs to a decision that no longer stands
-(`git log -S 'D40 —' -- DECISIONS.md` finds it). The GHC 4.08.2 route that
-came before 6.2.2 is archived in [`notes/`](notes/README.md).
+(`git log -S 'D40 —' -- DECISIONS.md` finds it). The route through GHC
+4.08.2 that came before 6.2.2 is in the git history.
 
 ---
 
@@ -351,8 +351,8 @@ also `-fno-pie` (the chain was verified non-PIE), and `.hc` is compiled with
 ## D45 — The mhs entry point is GHC 6.2.2
 
 6.2 is the first GHC that knows x86-64. An x86-64 build of anything older is
-an unknown-platform build, and the 4.08.2 attempt (archived in `notes/`)
-ended on the 64-bit assumptions in its 1999 runtime. 6.2.x on x86-64 worked
+an unknown-platform build, and 4.08.2's 1999 runtime, the obvious older
+candidate, breaks on one 32-bit assumption after another. 6.2.x on x86-64 worked
 in one configuration, unregisterised via C, which is the one mhs produces;
 Debian, Ubuntu, Gentoo and OpenBSD shipped it. Registerised code, the native
 code generator and GHCi arrived in 6.4.
@@ -448,8 +448,7 @@ collector then evacuates static closures as heap objects.
 6.4 did in spirit, a fixed heap base, without its two-level map; the window
 is enough under the 8 GB address-space limit every compile runs with.
 Disabling ASLR was rejected: it moves the bug to the next machine.
-Details: [`build/rts622/FINDINGS.md` section
-9](build/rts622/FINDINGS.md#9-patch-0003-heap_alloced-under-aslr-2026-09-16).
+`build/rts622/alias-test/` reproduces the aliasing.
 
 ---
 
@@ -814,5 +813,6 @@ READMEs, this file and the other documents say what is true now. How the
 project got there, what was tried and dropped, and when, belongs in commit
 messages, where `git log` keeps it with the change it explains. A decision
 that stops holding is removed from this file, not marked as overturned, and
-the removing commit says why. Archived material (`notes/`) is labelled as
-such and is not an input to the build.
+the removing commit says why. Lab notes, logs and findings files are not kept
+in the tree: a finding that still matters goes into the document it concerns,
+and the evidence for a change goes into its commit message.

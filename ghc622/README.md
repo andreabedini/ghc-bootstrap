@@ -8,8 +8,8 @@ installed compiler, with stage 3 as the boot compiler, and that is what builds
 [GHC 6.6](../ghc66/README.md).
 
 6.2.2 is the first GHC with an x86-64 port: unregisterised, via C, with no
-GHCi and no native code generator ([`build/research-6.2-x86_64.md`](../build/research-6.2-x86_64.md)). Why I
-started here and not at 4.08.2 is in the [top-level README](../README.md#how-i-found-the-route).
+GHCi and no native code generator. Why the chain enters here is
+[D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622).
 
 ## Building
 
@@ -37,9 +37,7 @@ times slower than a native compile, and it falls over on some modules at `-O`,
 which then get retried with `-fno-strictness` and then `-O0`
 (`stage2/flags.tsv`). That's why the 220 modules of stage 2 are compiled one by
 one, in chunks a derivation can finish. The RTS and base are compiled by hand
-for the same reason: their Makefiles call the compiler being built. Claude did
-most of this module-by-module grind, and the logs under `build/` are its
-running notes.
+for the same reason: their Makefiles call the compiler being built.
 
 ## Results
 
@@ -51,17 +49,16 @@ running notes.
 | those `.hc` files compiled by gcc | 147/147 `.o` (`-fwrapv` is mandatory) |
 | `ghc/rts`, unregisterised x86-64 | 78/78 objects, `libHSrts.a` |
 | base's C files, `libHSbase.a` | built, no patches |
-| `hsc2hs`, built with mhs | builds after 17 changed lines in its `Main.hs` (`hsc2hs/Main.hs.patch`, [`build/hsc2hs-mhs/FINDINGS.md`](../build/hsc2hs-mhs/FINDINGS.md)) |
+| `hsc2hs`, built with mhs | builds after 17 changed lines in its `Main.hs` (`hsc2hs/Main.hs.patch`) |
 | linking a Haskell program | zero undefined symbols |
-| **running it** | **`putStrLn "hello"` prints and exits 0.** 12 programs (GC, Integer, Double, I/O, exceptions, `forkIO`, arrays, time/dir/random/regex) build and pass; rechecked 2026-09-23 |
+| **running it** | **`putStrLn "hello"` prints and exits 0.** 12 programs (GC, Integer, Double, I/O, exceptions, `forkIO`, arrays, time/dir/random/regex) build and pass |
 | `libraries/haskell98` compiled by it | 30/30 to `.o`, `libHShaskell98.a` |
 | **stage 2**: the compiler proper compiled by the mhs-built `ghc` | 220/220 modules, linked, compiles `Hello.hs` |
 | **stage 3**: the same 220 modules compiled by stage 2, from the pristine source | 220/220, linked as `ghc-stage3`; its `Hello.hc` equals stage 2's |
 | **stage 4**: compiled by `ghc-stage3` | 218 of 220 `.hc` identical to stage 3, all 220 `.hi` identical; [D51](../DECISIONS.md#d51--the-622-fixed-point-stage-5-equals-stage-4-in-all-220-modules) explains the two differences |
 | **stage 5**: compiled by `ghc-stage4` | **220/220 `.hc` byte-identical to stage 4: the fixed point** |
 
-The record is [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622) to [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612), [`build/ghc622-mhs/FINDINGS.md`](../build/ghc622-mhs/FINDINGS.md),
-[`build/ghc622-mhs/FINDINGS-link.md`](../build/ghc622-mhs/FINDINGS-link.md) and [`build/ghc622-stage2/LOG.md`](../build/ghc622-stage2/LOG.md).
+The decisions behind them are [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622) to [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612).
 
 ## Files
 
@@ -75,7 +72,7 @@ The record is [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622) to [D52
 | `rts/genapply-shim/` | the `Text.PrettyPrint` that `genapply` needs |
 | `hsboot/` | 31 `.hs-boot` files for the compiler's module cycles, converted by hand from GHC's `.hi-boot` files |
 | `shims/` | the ghc-on-mhs shims stage 1 needs on top of `common/shims`: `FastString`, `StringBuffer`, `Parsec`, ... |
-| `shims-ghc/` | shims for GHC's own internal modules (`PrelBase`, `GlaExts`, `GhcCompat`, ...), first written for 4.08.2 |
+| `shims-ghc/` | shims for GHC's own internal modules (`PrelBase`, `GlaExts`, `GhcCompat`, ...) |
 | `shims-h98/` | the Haskell 98 modules (`List`, `IO`, `Monad`, ...) over MicroHs's library |
 | `stage1/` | what linking stage 1 needs: `comb2c.py` (mhs's combinator output as a C array), C stubs and FFI glue |
 | `stage2/` | per-module compiler flags (`flags.tsv`), the `Ctype.lhs` fix-up patch, and the `topdir` the stage-2 compiler runs with |
@@ -91,10 +88,9 @@ The shims are on the `-i` path in this order: `hsboot`, `shims`,
 ## The patch series
 
 `patches/` holds 25 patches (256 hunks in 102 files) against the pristine
-tarball. Applied to a clean extraction, they reproduce the working tree. The
-4.08.2 series had a large group of patches for x86-64; this one has none,
-because 6.2.2 already knows x86-64 exists. Almost all of it is the Haskell of
-2004 meeting the Haskell mhs implements.
+tarball. Applied to a clean extraction, they reproduce the working tree. None
+of them is about x86-64, because 6.2.2 knows x86-64 exists. Almost all of it
+is the Haskell of 2004 meeting the Haskell mhs implements.
 
 | Group | Patches | What |
 |---|---|---|
@@ -102,42 +98,32 @@ because 6.2.2 already knows x86-64 exists. Almost all of it is the Haskell of
 | Portable serialisation | 0004, 0018 | `Binary.hs` without `ByteArray#`; float bit-casts |
 | MicroHs runtime semantics | 0006, 0025, 0026 | the `mk_supply#` CAF (mhs memoises `unsafeInterleaveIO`); strict `!FastInt` in `SrcLoc` (a lazy `Int` under the shims); arithmetic that must wrap, `hFileSize`, `exitWith` (the gaps found in [D47](../DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis)); `GetImports` reading source as bytes |
 | Build plumbing | 0003, 0023 | the `MachDeps.h` include path; a `#error GHC >= 5.00` guard |
-| Bootstrapping proper | 0001 | `unlit` and a trailing space, as in 4.08.2 |
+| Bootstrapping proper | 0001 | `unlit` and a trailing space |
 
-Again, only one patch is actually about bootstrapping.
+Only one patch is actually about bootstrapping.
 
-There is no 0024. It stubbed out `typecheck/TcSplice.lhs` for a build
-without GHCi, but without GHCi nothing imports that module, so mhs never
-reads it; GHC's own Makefile and our stage-2 module list
-(`tools/make-order.py`) leave it out too. The patch
-was a leftover from the GHC 6.0 attempt, which compiled every module in the
-tree. I dropped it on 2026-10-22, after checking that stage 1's `ghc.comb`
-is byte-identical without it once the tree's store path is normalised. The
-files that existed only for TcSplice went with it: its `.hs-boot` file and
-the `GHC.Base`, `Language.Haskell.THSyntax` and `Text.PrettyPrint.HughesPJ`
-shims.
+The numbers skip 0024. Nothing needs to touch `typecheck/TcSplice.lhs`:
+without GHCi nothing imports it, so mhs never reads it, and GHC's own Makefile
+and the stage-2 module list (`tools/make-order.py`) leave it out too.
 
 **Nothing in the series is about x86-64.** The RTS patches in `rts/patches`
 fix C that stopped being legal (58 cast-as-lvalue sites, one `static`/`extern`
-mismatch), not 64-bit bugs. configure accepted the triple unaided
-([`build/rts622/FINDINGS.md`](../build/rts622/FINDINGS.md)). The 64-bit problems that did surface were in the
+mismatch), not 64-bit bugs. configure accepts the triple unaided. The 64-bit problems that did surface were in the
 toolchain, not the source: `-fwrapv` and `-std=gnu89` on every `.hc` compile
 ([D48](../DECISIONS.md#d48--hc-is-compiled-with--fwrapv)), and the `HTYPE_*` block that gcc 16 stops configure from producing
 ([D31](../DECISIONS.md#d31--the-tarballs-configure-script-runs-probes-that-2026-compilers-break-are-repaired)).
 
-**One edit came late.** `main/GetImports.hs` reads source through a text
-handle. Under the MicroHs runtime that decodes UTF-8 and dies on `Ctype.lhs`.
-The `__MHS__` branch was made during stage 2 ([D47](../DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis),
-[`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md#8-addendum-2026-09-15-the-series-is-one-hunk-behind-the-tree) section 8) and is the last hunk of
-`0026-runtime-wraps-and-driver-exit.patch`.
+`main/GetImports.hs` reads source through a text handle, which under the
+MicroHs runtime decodes UTF-8 and dies on the Latin-1 `Ctype.lhs`; the last
+hunk of `0026-runtime-wraps-and-driver-exit.patch` reads it as bytes under
+`__MHS__` ([D47](../DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis)).
 
-[`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md#4-the-patch-series) section 4 has the per-patch table and the tooling
-that derives the series from the tree.
+`series.conf` has each patch's header and the classes of its hunks.
 
 ## Without Nix
 
-This is the chain as I first built it, before Nix. The scripts under `build/` and
-`notes/` find the checkout through `GHC_BOOTSTRAP_ROOT`, which `mise.toml`
+The chain also runs without Nix. The scripts under `build/` find the
+checkout through `GHC_BOOTSTRAP_ROOT`, which `mise.toml`
 sets. Run them under mise (`mise exec -- sh build/...`). The scripts in this
 directory find the repository from their own location.
 
@@ -159,11 +145,8 @@ The script does the following:
 The result is checked against the working tree with `diff -r`. The series is
 derived from the working tree, not the other way round: `make-patch.sh`
 regenerates it and fails on any hunk it cannot classify.
-[`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md) records the provenance of every input, including
-the ones the script does not produce (the shims, the boot files, `Config.hs`).
 
-Typechecking the tree with mhs takes about an hour
-([`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md#2-what-reproduce-622sh-does) section 2):
+Typechecking the tree with mhs takes about an hour:
 
 ```sh
 TMPDIR=build/repro-622/tmp EXTRA_SHIMS=$PWD/ghc622/shims \
@@ -183,11 +166,11 @@ make -f build/Makefile status               # what is stale, one line per phase
 ```
 
 Use `-j4`, because each GHC compile may use up to 8 GB of address space.
-`make -j4 test` took 58 minutes on 2026-09-16 (16 cores).
+`make -j4 test` takes about an hour on 16 cores.
 
 ## What does not work
 
-As of 2026-09-23, these are the things I know are not right:
+These are the things I know are not right:
 
 1. **The fixed point is exact for the Abstract C, not for the binaries.**
    `ghc-stage3` and `ghc-stage4` differ in 38 bytes: the GNU build-id note and
@@ -204,13 +187,13 @@ As of 2026-09-23, these are the things I know are not right:
 2. **The reproduction without Nix depends on the host's headers.**
    `reproduce-6.2.2.sh` applies all 25 patches exactly. On a machine whose
    kernel headers define `EFTYPE` it writes `CONST_EFTYPE 134` where the
-   reference tree has `-1` ([`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md#3-verification) section 3).
+   reference tree has `-1`.
 3. **Nine compiler modules do not typecheck under mhs**, none of them on
    `Main`'s path ([D46](../DECISIONS.md#d46--ghc-622s-generated-inputs-the-lexer-converted-the-rest-regenerated)):
    - `PrimPacked`, which the FastString shim shadows;
    - five GHCi bytecode modules plus `InteractiveUI` (`GHC.Ptr`; GHCi is off);
    - the dead `IlxGen` and `JavaGen` back ends.
-4. **6.2.2's own limits on x86-64** ([`build/research-6.2-x86_64.md`](../build/research-6.2-x86_64.md)):
+4. **6.2.2's own limits on x86-64:**
    - `foreign import "wrapper"` adjustors are not supported.
    - 6.2.2's `HEAP_ALLOCED` keyed a 4096-entry map on the low 32 bits of an
      address, and under ASLR the heap aliased static data in about 0.6% of

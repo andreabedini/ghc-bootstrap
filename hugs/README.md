@@ -26,10 +26,12 @@ nix-build -A hugs
   build shared objects; you find out much later, when every FFI stub fails to
   link. The flags are also exported for `make`, because `make_bootlib`
   configures `packages/base` in a subshell.
-- **I fixed the seed compiler rather than the program it compiles.** MicroHs
-  upstream has an old branch that rewrites MicroHs's own pattern guards into
-  `case` instead. Patching Hugs once works for every program it will ever
-  compile, and it doesn't need redoing every time MicroHs grows a new pattern
-  guard ([D18](../DECISIONS.md#d18--hugs-is-patched-for-pattern-guards-not-microhss-source)). The patch matches the qualifiers once, in a binding lifted into
-  the enclosing `where`, instead of duplicating them;
-  [`notes/phase0/FINDINGS.md`](../notes/phase0/FINDINGS.md) explains why.
+- **I fix the seed compiler rather than the program it compiles.** Patching
+  Hugs once works for every program it will ever compile, and it doesn't need
+  redoing every time MicroHs grows a new pattern guard ([D18](../DECISIONS.md#d18--hugs-is-patched-for-pattern-guards-not-microhss-source)). Upstream's
+  Hugs (augustss/hugs98-plus-Sep2006) carries the same change.
+- **The qualifiers are matched once**, in a binding lifted into the enclosing
+  `where`, not duplicated into the guard and the body. A guarded right-hand
+  side's test and body are separate expressions, so a type that only the body
+  fixes (`Just line <- … >>= readMaybe`) would be ambiguous in a duplicated
+  test, and Hugs would reject well-typed Haskell 2010.

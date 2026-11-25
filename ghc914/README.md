@@ -1,6 +1,6 @@
 # GHC 9.14.1
 
-The top of the chain: the newest GHC release at the time of writing, built by
+The top of the chain: the newest GHC release, built by
 the chain's [GHC 9.12.4](../ghc912/README.md) with Hadrian
 (`common/hadrian-ghc.nix`).
 

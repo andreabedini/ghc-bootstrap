@@ -17,9 +17,8 @@ nix-build -A ghc912
 
 ## Notes
 
-- **Why 9.12.4 is in the chain.** I first tried 9.8.4 -> 9.14.1 directly. 9.14.1's
-  configure accepts a 9.6, but its stage-0
-  GHCi needs the boot compiler's ghc-internal, which exists from 9.10 on. So
+- **Why 9.12.4 is in the chain.** 9.14.1's configure accepts a 9.6, but its
+  stage-0 GHCi needs the boot compiler's ghc-internal, which exists from 9.10 on. So
   9.12.4 sits between 9.8.4 and 9.14.1.
 - **No patches.** Of the patches nixpkgs applies to 9.12.4, none is for x86-64
   Linux with glibc.

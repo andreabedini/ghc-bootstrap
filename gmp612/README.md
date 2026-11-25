@@ -9,7 +9,7 @@ nix-build -A gmp612
 
 ## Why not the host's GMP
 
-This one cost a while to find. GMP 6.2 made `mpz_init` lazy. When an mpz
+GMP 6.2 made `mpz_init` lazy. When an mpz
 function returns a zero early (`mpz_mul` by zero, `mpz_tdiv_q` with
 |a| < |b|, ...), the result's `_mp_d` keeps pointing at GMP's static
 `dummy_limb` instead of memory the GHC runtime allocated in the Haskell heap.
