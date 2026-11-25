@@ -616,7 +616,7 @@ Linux with glibc. The host fixes for the Hadrian builds are the hp2ps patch
 (9.8 only) and the HalfWord guard (9.14.1 only); everything else is the
 tarballs' own build systems, driven as their packagers drive them. When
 9.14.2 is released, its source should be checked for the branch's guard and
-the patch dropped; a 9.16 will want the 9.14's plan treatment.
+the patch dropped.
 
 ---
 
