@@ -11,7 +11,7 @@ order is identical; `Util` compiles from the reproduced tree with mhs.*
 README "Layout" (now [Repository layout](../../README.md#repository-layout)) gave one directory per stage of the chain and numbered the
 4.08.2 patches in a single sequence across phase2 (0001-0024) and phase3
 (0019-0030). The 6.2.2 tree is a different tarball, so its series needs its
-own numbering, and moving the entry point to 6.2.2 ([D45](../../DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to-ghc-622), [D46](../../DECISIONS.md#d46--the-622-probe-passes-main-typechecks-226235)) is a new stage
+own numbering, and moving the entry point to 6.2.2 ([D45](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to-ghc-622), [D46](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d46--the-622-probe-passes-main-typechecks-226235)) is a new stage
 of the project, not a variant of "building hsc". A separate phase directory
 keeps the numbering unambiguous and gives the reproduction script, the
 regeneration recipes and this file one home. The 6.2.2 inputs that already
@@ -127,7 +127,7 @@ Also checked:
   with the probe script's exact mhs flags into `build/repro-622/smoke/`
   (`.mhscache` 636 KB): rc 0, 54 s cold (`smoke-Util.log`). The full ordered
   pass (about an hour) was not rerun; the byte-level identity of the tree is
-  the evidence that it would give [D46](../../DECISIONS.md#d46--the-622-probe-passes-main-typechecks-226235)'s result.
+  the evidence that it would give [D46](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d46--the-622-probe-passes-main-typechecks-226235)'s result.
 
 A note on method: an exploratory configure run made while writing this
 (`build/repro-622/conf-test`, since removed) found the machine's GHC on PATH
@@ -328,7 +328,7 @@ and `DECISIONS.md          the decision log, D1-D46`.
 
 ## 7. Addendum, 2026-09-10 evening: patch 0026 and the HTYPE step
 
-After the compiler was linked and run ([DECISIONS.md](../../DECISIONS.md) [D47](../../DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc), [D48](../../DECISIONS.md#d48--a-compiled-haskell-program-runs-putstrln-hello-works-on-622)) the tree gained
+After the compiler was linked and run ([DECISIONS.md](../../DECISIONS.md) [D47](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc), [D48](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d48--a-compiled-haskell-program-runs-putstrln-hello-works-on-622)) the tree gained
 eight hunks in four files (`utils/Binary.hs`, `basicTypes/Literal.lhs`,
 `coreSyn/CoreUtils.lhs`, `main/DriverUtil.hs`): arithmetic that must wrap,
 `hFileSize`, and `exitWith`. `make-patch.sh` refused them as unclassified, as
@@ -353,7 +353,7 @@ inputs to the build rather than part of the pristine tree.
 
 ## 8. Addendum, 2026-09-15: the series is one hunk behind the tree
 
-During stage 2 ([DECISIONS.md](../../DECISIONS.md) [D49](../../DECISIONS.md#d49--stage-2-begun-the-mhs-built-ghc-compiles-its-own-source-interrupted), [`build/ghc622-stage2/LOG.md`](../../build/ghc622-stage2/LOG.md))
+During stage 2 ([DECISIONS.md](../../DECISIONS.md) [D49](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d49--stage-2-begun-the-mhs-built-ghc-compiles-its-own-source-interrupted), [`build/ghc622-stage2/LOG.md`](../../build/ghc622-stage2/LOG.md))
 `build/ghc-6.2.2-run1/ghc/compiler/main/GetImports.hs` gained an
 `#if defined(__MHS__)` branch (11 added lines, `-- mhs` comment): the driver
 reads a module's source through a text-mode handle to find its imports, and

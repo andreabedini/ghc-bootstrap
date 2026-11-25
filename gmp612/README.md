@@ -16,7 +16,7 @@ function returns a zero early (`mpz_mul` by zero, `mpz_tdiv_q` with
 GHCs before 8.0 (6.2.2's `J#`, integer-gmp 0.x) take
 `_mp_d - sizeof(StgArrWords)` as the closure. The garbage collector then
 evacuates a pointer into libgmp's data segment, and things crash much later
-and far away. `common/test/GmpZero.hs` reproduces it ([D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)).
+and far away. `common/test/GmpZero.hs` reproduces it ([D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)).
 
 8.0's integer-gmp works on limbs itself, so from 8.0.2 on the chain uses the
 host's GMP.

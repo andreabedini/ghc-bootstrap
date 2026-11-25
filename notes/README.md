@@ -4,16 +4,16 @@ How I found the chain, kept as evidence; [`DECISIONS.md`](../DECISIONS.md) cites
 files. The phases are the phases of my original plan (see
 [How I found the route](../README.md#how-i-found-the-route)). Phases 0 to 3 are
 about the first chain, which used GHC 4.08.2 as its compiler and which I
-retired at [D42](../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime). Nothing here is an input to the Nix build.
+retired at [D42](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime). Nothing here is an input to the Nix build.
 
 | Directory | What it holds |
 |---|---|
 | `phase0/` | the seed: Hugs built from source, MicroHs bootstrapped from it, and the comparison with MicroHs's shipped C ([`FINDINGS.md`](phase0/FINDINGS.md), `try.sh`, the pattern-guard tests in `tests/`); `feature-scan.py`, which scans Haskell sources for constructs a Hugs-era compiler cannot parse |
 | `phase1/` | picking the target GHC: `import-inventory.py` scored 4.08.2, 5.00.2, 6.0 and 6.10.4 against what mhs accepts ([`FINDINGS.md`](phase1/FINDINGS.md)); happy under mhs ([`happy.md`](phase1/happy.md)) |
 | `phase2/` | GHC 4.08.2's compiler proper (`hsc`) under mhs: patches 0001-0018 and 0022-0024, the `.hs-boot` sets converted from `.hi-boot` for 4.08.2 and for the GHC 6.0 probes (`hiboot2hsboot.py`), the cpp pipeline, the module scans ([`FINDINGS.md`](phase2/FINDINGS.md)) |
-| `phase3/` | GHC 4.08.2 compiling its Prelude, `hslibs/lang` and runtime: patches 0019-0021 and 0025-0030, the build scripts, and the run that stopped at [D42](../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime) ([`FINDINGS.md`](phase3/FINDINGS.md)) |
+| `phase3/` | GHC 4.08.2 compiling its Prelude, `hslibs/lang` and runtime: patches 0019-0021 and 0025-0030, the build scripts, and the run that stopped at [D42](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime) ([`FINDINGS.md`](phase3/FINDINGS.md)) |
 | `phase4/` | not phase 4 of the plan: the reproduction of the 6.2.2 compiler tree from the pristine tarball, and the provenance of every input that is not a patch ([`FINDINGS.md`](phase4/FINDINGS.md)) |
-| `probes/` | the scripts of the GHC 4.08.2 and 6.0 probes ([D44](../DECISIONS.md#d44--is-ghc-6x-within-mhss-reach-measured-not-estimated)): compile the compiler with mhs in dependency order, with or without the `SLIT` change |
+| `probes/` | the scripts of the GHC 4.08.2 and 6.0 probes ([D44](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d44--is-ghc-6x-within-mhss-reach-measured-not-estimated)): compile the compiler with mhs in dependency order, with or without the `SLIT` change |
 
 ## The GHC 4.08.2 chain
 
@@ -28,11 +28,11 @@ retired at [D42](../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-19
 | **run** | **`main = return ()` runs and exits 0** |
 
 A program that does I/O does not work. It reaches the buffering setup for
-`stdout` and dies on a 64-bit assumption in the 1999 runtime ([D42](../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime)).
+`stdout` and dies on a 64-bit assumption in the 1999 runtime ([D42](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime)).
 GHC 4.08.2 targets 32-bit machines and has no entry for x86-64 at all. So
 wherever "32-bit" and "correct" happened to coincide, the code is silently
 wrong, and nothing selects a working alternative.
-- Six such bugs were fixed ([D30](../DECISIONS.md#d30--two-more-headerencoding-warts-in-the-4082-tree), [D31](../DECISIONS.md#d31--run-ghcs-own-configure-instead-of-hand-writing-configh), [D36](../DECISIONS.md#d36--preladdrlhs-branches-on-a-macro-it-never-defines), [D42](../DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime)).
+- Six such bugs were fixed ([D30](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d30--two-more-headerencoding-warts-in-the-4082-tree), [D31](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d31--run-ghcs-own-configure-instead-of-hand-writing-configh), [D36](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d36--preladdrlhs-branches-on-a-macro-it-never-defines), [D42](https://github.com/andreabedini/ghc-bootstrap/blob/436cc10129a2119a9de1389bcdbdae02fb7ed7fb/DECISIONS.md#d42--where-it-stands-64-bit-assumptions-in-a-1999-runtime)).
 - The seventh, execution jumping into `PrelHandle_getBModezuzu_info` instead
   of its entry code, is where I stopped.
 

@@ -34,7 +34,7 @@ nix-build -A ghc74.alex327    # alex 3.2.7.4, compiled by 7.4.2
   `ghc-pwd` binary and its `.o` and `.hi`. configure rebuilds them anyway, and
   the derivation deletes them before anything runs.
 - **C flags:** `-std=gnu89 -fpermissive -fwrapv`. **GMP 6.1.2**
-  ([gmp612](../gmp612/README.md), [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)). **Non-PIE** through the cc wrapper.
+  ([gmp612](../gmp612/README.md), [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)). **Non-PIE** through the cc wrapper.
 - **Parsers and lexers** of 7.4.2 itself are regenerated with 6.6's happy 1.16
   and alex 2.1.0.
 - **Test:** `common/test/T3.hs`.

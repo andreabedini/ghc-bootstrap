@@ -3,7 +3,7 @@
 MicroHs 0.17.0.0 (`mhs`), bootstrapped from [Hugs](../hugs/README.md) without
 any of the pre-generated C it ships, and without patches: since 0.16.9.0
 MicroHs's own `hugs/` shim tree covers what Hugs's 2006 libraries lack
-([D58](../DECISIONS.md#d58--the-chain-moves-to-microhs-01700)). It is the
+([D58](../DECISIONS.md#d58--the-chain-runs-on-microhs-01700)). It is the
 Haskell compiler that builds cpphs, happy, hsc2hs and GHC 6.2.2's compiler
 proper.
 
@@ -22,7 +22,7 @@ nix-build -A mhs
 The derivation deletes MicroHs's shipped `generated/*.c` before anything runs.
 The check phase also requires `bin/mhs`, run with `-z` as MicroHs's Makefile
 runs it, to reproduce the shipped `generated/mhs.c` byte for byte. It does, so
-the seed upstream ships is exactly what the Hugs-derived compiler emits ([D1](../DECISIONS.md#d1--the-seed-is-c-compiler--hugs-source-not-microhss-shipped-comb)).
+the seed upstream ships is exactly what the Hugs-derived compiler emits ([D1](../DECISIONS.md#d1--the-seed-is-a-c-compiler-and-hugss-source-not-microhss-shipped-c)).
 The shipped C was never wrong; it just wasn't source.
 
 The output is the source tree with `bin/` in it; `mhs` runs in place and finds

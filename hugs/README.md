@@ -30,6 +30,6 @@ nix-build -A hugs
   upstream has an old branch that rewrites MicroHs's own pattern guards into
   `case` instead. Patching Hugs once works for every program it will ever
   compile, and it doesn't need redoing every time MicroHs grows a new pattern
-  guard ([D18](../DECISIONS.md#d18--upstream-microhs-chose-the-other-fix-for-the-hugs-problem)). The patch matches the qualifiers once, in a binding lifted into
+  guard ([D18](../DECISIONS.md#d18--hugs-is-patched-for-pattern-guards-not-microhss-source)). The patch matches the qualifiers once, in a binding lifted into
   the enclosing `where`, instead of duplicating them;
   [`notes/phase0/FINDINGS.md`](../notes/phase0/FINDINGS.md) explains why.

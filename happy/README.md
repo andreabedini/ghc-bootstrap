@@ -17,7 +17,7 @@ from it regenerates both files byte for byte.
 
 Generation 1 came from a happy built by my machine's GHC 9.14, used once as a
 generator. Generation 3 is byte-identical to generation 2, so that GHC-built
-happy is out of the trusted base ([D7](../DECISIONS.md#d7--use-the-machines-ghc-9141-as-a-one-time-generator-then-discharge-it), [D14](../DECISIONS.md#d14--verify-happy-by-generation-not-by-equality-with-happy-ghc)).
+happy is out of the trusted base ([D7](../DECISIONS.md#d7--happys-seed-is-a-ghc-built-happys-output-discharged-twice), [D14](../DECISIONS.md#d14--happy-is-verified-by-regeneration-not-by-equality-with-a-ghc-built-happy)).
 
 A fixed point only shows that the seed reproduces itself, so I also check it
 by diverse double compilation, from a seed that has nothing to do with mine

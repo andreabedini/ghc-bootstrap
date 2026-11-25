@@ -14,7 +14,7 @@ nix-build -A ghc612
   x86-64 native code generator, even though the 6.10.4 that boots it is
   unregisterised. `GhcUnregisterised` describes the compiler being built.
   Stage 1 is whatever the boot compiler can produce, and everything stage 1
-  compiles is native code ([D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)). `registerised = false` gives the via-C
+  compiles is native code ([D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)). `registerised = false` gives the via-C
   variant.
 - **`Rts.h`'s `#if __GNUC__ > 4` blocks** were written for a gcc that did not
   exist in 2010. One of them defines macros as `#pragma GCC visibility ...`,
@@ -22,7 +22,7 @@ nix-build -A ghc612
 - **Parsers and lexers** are regenerated from their grammars with 6.6's
   happy 1.16 and alex 2.1.0 (`common/regen-parsers.sh`).
 - **`build.mk`** as for 6.10, in the new build system's names.
-- **GMP 6.1.2** ([gmp612](../gmp612/README.md), [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)). **Non-PIE** through the
+- **GMP 6.1.2** ([gmp612](../gmp612/README.md), [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)). **Non-PIE** through the
   cc wrapper.
 - **Test:** `common/test/T3.hs`.
 

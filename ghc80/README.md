@@ -14,7 +14,7 @@ nix-build -A ghc80
   generated C needed `-std=gnu89 -fpermissive -fwrapv`, but integer-gmp's
   C files are C99.
 - **The host's GMP from here on.** 8.0's integer-gmp works on limbs itself and
-  does not trip over GMP 6.2's lazy `mpz_init` ([D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)).
+  does not trip over GMP 6.2's lazy `mpz_init` ([D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)).
 - **Parsers and lexers** are regenerated with 7.4.2's happy 1.19.5 and alex
   3.2.7.4. happy 1.19.5 made the shipped parsers, so the comparison is strict.
 - **A Guix patch I don't apply.** Guix patches `rts/posix/OSMem.c` to fall

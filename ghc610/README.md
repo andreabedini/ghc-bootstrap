@@ -22,7 +22,7 @@ bootstrapping compiler. It asks for 6.4 or later; 6.12 asks for 6.8.
   These flags reach every compile.
 - **libffi gets a plain `ar`.** configure makes `AR` into `ar q`, and libffi's
   libtool then runs `ar q cru`.
-- **GMP 6.1.2** ([gmp612](../gmp612/README.md), [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80)). **Non-PIE** through the
+- **GMP 6.1.2** ([gmp612](../gmp612/README.md), [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612)). **Non-PIE** through the
   cc wrapper.
 - **Test:** `common/test/T3.hs`, compiled by the installed compiler.
 

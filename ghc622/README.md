@@ -1,6 +1,6 @@
 # GHC 6.2.2
 
-This is where the chain enters GHC (since [D45](../DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to-ghc-622)). [mhs](../mhs/README.md)
+This is where the chain enters GHC (since [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622)). [mhs](../mhs/README.md)
 compiles GHC 6.2.2's compiler proper. That compiler builds 6.2.2's runtime and
 libraries, then compiles its own source, until stage 5's Abstract C is
 byte-identical to stage 4's. Finally 6.2.2's own `configure && make` builds the
@@ -57,10 +57,10 @@ running notes.
 | `libraries/haskell98` compiled by it | 30/30 to `.o`, `libHShaskell98.a` |
 | **stage 2**: the compiler proper compiled by the mhs-built `ghc` | 220/220 modules, linked, compiles `Hello.hs` |
 | **stage 3**: the same 220 modules compiled by stage 2, from the pristine source | 220/220, linked as `ghc-stage3`; its `Hello.hc` equals stage 2's |
-| **stage 4**: compiled by `ghc-stage3` | 218 of 220 `.hc` identical to stage 3, all 220 `.hi` identical; [D51](../DECISIONS.md#d51--stage-3-and-stage-4-the-native-compiler-rebuilds-itself-218-of-220-modules-byte-identical) explains the two differences |
+| **stage 4**: compiled by `ghc-stage3` | 218 of 220 `.hc` identical to stage 3, all 220 `.hi` identical; [D51](../DECISIONS.md#d51--the-622-fixed-point-stage-5-equals-stage-4-in-all-220-modules) explains the two differences |
 | **stage 5**: compiled by `ghc-stage4` | **220/220 `.hc` byte-identical to stage 4: the fixed point** |
 
-The record is [D45](../DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to-ghc-622) to [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-the-chain-climbs-to-6123-gmp-62-breaks-every-ghc-before-80), [`build/ghc622-mhs/FINDINGS.md`](../build/ghc622-mhs/FINDINGS.md),
+The record is [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622) to [D52](../DECISIONS.md#d52--622-builds-itself-with-its-own-build-system-every-ghc-before-80-gets-gmp-612), [`build/ghc622-mhs/FINDINGS.md`](../build/ghc622-mhs/FINDINGS.md),
 [`build/ghc622-mhs/FINDINGS-link.md`](../build/ghc622-mhs/FINDINGS-link.md) and [`build/ghc622-stage2/LOG.md`](../build/ghc622-stage2/LOG.md).
 
 ## Files
@@ -71,7 +71,7 @@ The record is [D45](../DECISIONS.md#d45--d44-overturned-the-entry-point-moves-to
 | `patches/` | the compiler patch series, 0001 to 0026 without 0024 (see below), generated from `series.conf` by `make-patch.sh` |
 | `series.conf`, `make-patch.sh` | the series definition (each patch's header and hunk classes) and the script that splits the working tree's diff into patches with `tools/split-patch.py` |
 | `reproduce-6.2.2.sh` | the compiler tree without Nix: the pristine tarball, the series, and the generated files |
-| `rts/patches/` | three RTS patches: cast-as-lvalue (58 sites), a `static`/`extern` mismatch in the GC, and the megablock map window ([D50](../DECISIONS.md#d50--rts-patch-0003-the-megablock-map-gets-a-fixed-base-and-a-window)) |
+| `rts/patches/` | three RTS patches: cast-as-lvalue (58 sites), a `static`/`extern` mismatch in the GC, and the megablock map window ([D50](../DECISIONS.md#d50--the-rtss-megablock-map-gets-a-fixed-base-and-a-window)) |
 | `rts/genapply-shim/` | the `Text.PrettyPrint` that `genapply` needs |
 | `hsboot/` | 31 `.hs-boot` files for the compiler's module cycles, converted by hand from GHC's `.hi-boot` files |
 | `shims/` | the ghc-on-mhs shims stage 1 needs on top of `common/shims`: `FastString`, `StringBuffer`, `Parsec`, ... |
@@ -98,9 +98,9 @@ because 6.2.2 already knows x86-64 exists. Almost all of it is the Haskell of
 
 | Group | Patches | What |
 |---|---|---|
-| Haskell that stopped being legal | 0002, 0005, 0007-0017, 0019-0022 | `SLIT`/`FSLIT` over boxed `String` (the [D44](../DECISIONS.md#d44--is-ghc-6x-within-mhss-reach-measured-not-estimated) blocker, 13 hunks); `Ctype.lhs` transcoded from Latin-1 (mhs's lexer wants UTF-8); `_scc_`; `do { ;`; double and trailing commas; duplicate and abstract import items; Functor/Applicative/MonadFail instances; `f.g` -> `f . g`; `(<>)` hidden; pre-addendum `foreign import`; unboxed literals; `f :: T = e` split; array indexing and pointer casts through `GhcCompat` |
+| Haskell that stopped being legal | 0002, 0005, 0007-0017, 0019-0022 | `SLIT`/`FSLIT` over boxed `String` (the macro that kept mhs off 6.x, [D45](../DECISIONS.md#d45--the-mhs-entry-point-is-ghc-622); 13 hunks); `Ctype.lhs` transcoded from Latin-1 (mhs's lexer wants UTF-8); `_scc_`; `do { ;`; double and trailing commas; duplicate and abstract import items; Functor/Applicative/MonadFail instances; `f.g` -> `f . g`; `(<>)` hidden; pre-addendum `foreign import`; unboxed literals; `f :: T = e` split; array indexing and pointer casts through `GhcCompat` |
 | Portable serialisation | 0004, 0018 | `Binary.hs` without `ByteArray#`; float bit-casts |
-| MicroHs runtime semantics | 0006, 0025, 0026 | the `mk_supply#` CAF (mhs memoises `unsafeInterleaveIO`); strict `!FastInt` in `SrcLoc` (a lazy `Int` under the shims); arithmetic that must wrap, `hFileSize`, `exitWith` (the gaps found in [D47](../DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc)); `GetImports` reading source as bytes |
+| MicroHs runtime semantics | 0006, 0025, 0026 | the `mk_supply#` CAF (mhs memoises `unsafeInterleaveIO`); strict `!FastInt` in `SrcLoc` (a lazy `Int` under the shims); arithmetic that must wrap, `hFileSize`, `exitWith` (the gaps found in [D47](../DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis)); `GetImports` reading source as bytes |
 | Build plumbing | 0003, 0023 | the `MachDeps.h` include path; a `#error GHC >= 5.00` guard |
 | Bootstrapping proper | 0001 | `unlit` and a trailing space, as in 4.08.2 |
 
@@ -122,12 +122,12 @@ fix C that stopped being legal (58 cast-as-lvalue sites, one `static`/`extern`
 mismatch), not 64-bit bugs. configure accepted the triple unaided
 ([`build/rts622/FINDINGS.md`](../build/rts622/FINDINGS.md)). The 64-bit problems that did surface were in the
 toolchain, not the source: `-fwrapv` and `-std=gnu89` on every `.hc` compile
-([D48](../DECISIONS.md#d48--a-compiled-haskell-program-runs-putstrln-hello-works-on-622)), and the `HTYPE_*` block that gcc 16 stops configure from producing
-([D47](../DECISIONS.md#d47--the-compiler-links-runs-and-compiles-base-137143-modules-to-hc)).
+([D48](../DECISIONS.md#d48--hc-is-compiled-with--fwrapv)), and the `HTYPE_*` block that gcc 16 stops configure from producing
+([D31](../DECISIONS.md#d31--the-tarballs-configure-script-runs-probes-that-2026-compilers-break-are-repaired)).
 
 **One edit came late.** `main/GetImports.hs` reads source through a text
 handle. Under the MicroHs runtime that decodes UTF-8 and dies on `Ctype.lhs`.
-The `__MHS__` branch was made during stage 2 ([D49](../DECISIONS.md#d49--stage-2-begun-the-mhs-built-ghc-compiles-its-own-source-interrupted),
+The `__MHS__` branch was made during stage 2 ([D47](../DECISIONS.md#d47--on-the-microhs-runtime-stage-1-wraps-arithmetic-and-retries-without-strictness-analysis),
 [`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md#8-addendum-2026-09-15-the-series-is-one-hunk-behind-the-tree) section 8) and is the last hunk of
 `0026-runtime-wraps-and-driver-exit.patch`.
 
@@ -200,13 +200,13 @@ As of 2026-09-23, these are the things I know are not right:
      `-fno-strictness`.
 
    Neither difference propagates: stage 5 equals stage 4 in all 220 `.hc`
-   files ([D51](../DECISIONS.md#d51--stage-3-and-stage-4-the-native-compiler-rebuilds-itself-218-of-220-modules-byte-identical)).
+   files ([D51](../DECISIONS.md#d51--the-622-fixed-point-stage-5-equals-stage-4-in-all-220-modules)).
 2. **The reproduction without Nix depends on the host's headers.**
    `reproduce-6.2.2.sh` applies all 25 patches exactly. On a machine whose
    kernel headers define `EFTYPE` it writes `CONST_EFTYPE 134` where the
    reference tree has `-1` ([`notes/phase4/FINDINGS.md`](../notes/phase4/FINDINGS.md#3-verification) section 3).
 3. **Nine compiler modules do not typecheck under mhs**, none of them on
-   `Main`'s path ([D46](../DECISIONS.md#d46--the-622-probe-passes-main-typechecks-226235)):
+   `Main`'s path ([D46](../DECISIONS.md#d46--ghc-622s-generated-inputs-the-lexer-converted-the-rest-regenerated)):
    - `PrimPacked`, which the FastString shim shadows;
    - five GHCi bytecode modules plus `InteractiveUI` (`GHC.Ptr`; GHCi is off);
    - the dead `IlxGen` and `JavaGen` back ends.
@@ -215,7 +215,7 @@ As of 2026-09-23, these are the things I know are not right:
    - 6.2.2's `HEAP_ALLOCED` keyed a 4096-entry map on the low 32 bits of an
      address, and under ASLR the heap aliased static data in about 0.6% of
      processes. RTS patch 0003 replaces the map with a fixed heap base and a
-     64 GB window, so a program's heap cannot grow past 64 GB ([D50](../DECISIONS.md#d50--rts-patch-0003-the-megablock-map-gets-a-fixed-base-and-a-window)).
+     64 GB window, so a program's heap cannot grow past 64 GB ([D50](../DECISIONS.md#d50--the-rtss-megablock-map-gets-a-fixed-base-and-a-window)).
 5. **Hygiene.**
    - The RTS is compiled without `-fwrapv`. I haven't traced any failure to it.
    - Three shim modules (`FastString`, `Foreign`, `StringBuffer`) exist in
